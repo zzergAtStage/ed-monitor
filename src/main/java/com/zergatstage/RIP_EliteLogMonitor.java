@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class EliteLogMonitor extends JFrame {
+public class RIP_EliteLogMonitor extends JFrame {
     private final Instant appStartTime;
     private final JLabel droneLaunchedLabel;
     private final JLabel asteroidProspectedLabel;
@@ -44,7 +44,7 @@ public class EliteLogMonitor extends JFrame {
     private static final Color COLOR_HIGH = Color.ORANGE;
     private static final Color COLOR_VERY_HIGH = new Color(147, 112, 219); // Medium purple
 
-    public EliteLogMonitor() {
+    public RIP_EliteLogMonitor() {
         super("Elite Dangerous Log Monitor");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new GridLayout(2, 1));
@@ -228,6 +228,6 @@ public class EliteLogMonitor extends JFrame {
 
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(EliteLogMonitor::new);
+        SwingUtilities.invokeLater(RIP_EliteLogMonitor::new);
     }
 }
