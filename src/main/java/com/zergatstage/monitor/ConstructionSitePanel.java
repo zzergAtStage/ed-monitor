@@ -14,66 +14,253 @@ import java.util.List;
 /**
  * The ConstructionSitePanel class provides a UI panel for managing
  * construction sites and tracking their material requirements.
+ *
+ * It has two main tables:
+ *  1) A "Site Progress Table" at the top: columns for "Site" and "Progress" (with a progress bar).
+ *  2) A "Commodities Table" at the bottom: columns for "Site", "Material", "Required", "Delivered", "Remaining".
  */
 public class ConstructionSitePanel extends JPanel {
 
-    private final JTable siteTable;
-    private final DefaultTableModel tableModel;
+    // Top table: site progress
+    private final JTable siteProgressTable;
+    private final DefaultTableModel siteProgressTableModel;
+
+    // Bottom table: commodities
+    private final JTable commoditiesTable;
+    private final DefaultTableModel commoditiesTableModel;
+
     private final ConstructionSiteManager siteManager;
+
+    /**
+     * A sample list of available commodities to choose from when adding materials.
+     */
+    private static final String[] AVAILABLE_COMMODITIES = {
+            "Biowaste", "Building Fabricators", "Ceramic Composites",
+            "Computer Components", "Copper", "Crop Harvesters",
+            "Evacuation Shelter", "Food Cartridges", "Fruit and Vegetables",
+            "Grain", "Liquid Oxygen", "Pesticides", "Steel",
+            "Survival Equipment", "Land Enrichment Systems"
+    };
 
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
      */
     public ConstructionSitePanel() {
         siteManager = new ConstructionSiteManager();
-
-        // Set the layout for the panel
         setLayout(new BorderLayout());
 
-        // Define table columns for tracking construction site data
-        String[] columns = {"Site", "Material", "Required", "Delivered", "Remaining"};
-        tableModel = new DefaultTableModel(columns, 0);
-        siteTable = new JTable(tableModel);
+        // ============= Site Progress Table (Top) =============
+        String[] siteProgressColumns = {"Site", "Progress"};
+        siteProgressTableModel = new DefaultTableModel(siteProgressColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make this table read-only
+            }
+        };
+        siteProgressTable = new JTable(siteProgressTableModel);
+        siteProgressTable.setAutoCreateRowSorter(true);
 
-        // Add the table within a scroll pane to the center of the panel
-        JScrollPane scrollPane = new JScrollPane(siteTable);
-        add(scrollPane, BorderLayout.CENTER);
+        // Use our custom renderer for the "Progress" column (index 1)
+        siteProgressTable.getColumnModel().getColumn(1).setCellRenderer(new ProgressBarCellRenderer());
 
-        // Create a control panel with an "Add Site" button at the bottom
+        JScrollPane siteProgressScroll = new JScrollPane(siteProgressTable);
+
+        // ============= Commodities Table (Bottom) =============
+        String[] commodityColumns = {"Site", "Material", "Required", "Delivered", "Remaining"};
+        commoditiesTableModel = new DefaultTableModel(commodityColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // read-only as well
+            }
+        };
+        commoditiesTable = new JTable(commoditiesTableModel);
+        commoditiesTable.setAutoCreateRowSorter(true);
+
+        JScrollPane commoditiesScroll = new JScrollPane(commoditiesTable);
+
+        // ============= Split Pane for top/bottom layout =============
+        JSplitPane splitPane = new JSplitPane(
+                JSplitPane.VERTICAL_SPLIT,
+                siteProgressScroll,
+                commoditiesScroll
+        );
+        splitPane.setResizeWeight(0.3); // Give 30% space to top, 70% to bottom
+        add(splitPane, BorderLayout.CENTER);
+
+        // ============= Control Panel (Add Site, Add Commodity) =============
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton addButton = new JButton("Add Site");
-        addButton.addActionListener(this::handleAddSite);
-        controlPanel.add(addButton);
 
-        // Additional controls (e.g., edit/remove) can be added here
+        JButton addSiteButton = new JButton("Add Site");
+        addSiteButton.addActionListener(this::handleAddSite);
+        controlPanel.add(addSiteButton);
+
+        JButton addCommodityButton = new JButton("Add Commodity");
+        addCommodityButton.addActionListener(this::handleAddCommodity);
+        controlPanel.add(addCommodityButton);
 
         add(controlPanel, BorderLayout.SOUTH);
     }
 
     /**
      * Handles the action event of adding a new construction site.
-     *
-     * @param event the ActionEvent triggered by the "Add Site" button.
+     * Prompts the user to enter a unique site ID.
      */
     private void handleAddSite(ActionEvent event) {
-        // For demonstration, we create a sample construction site with one material requirement.
-        // In a complete implementation, you might show a dialog to collect user input.
-        String siteId = "Site-" + (siteManager.getSites().size() + 1);
-        List<MaterialRequirement> requirements = new ArrayList<>();
-        // Sample requirement: 100 units of "Steel" needed.
-        requirements.add(new MaterialRequirement("Steel", 100));
-        ConstructionSite site = new ConstructionSite(siteId, requirements);
-        siteManager.addSite(site);
-        refreshTable();
+        String siteId = JOptionPane.showInputDialog(
+                this,
+                "Enter a unique Construction Site ID:",
+                "Add Site",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (siteId == null || siteId.trim().isEmpty()) {
+            return; // User canceled or empty
+        }
+
+        // Check if a site with this ID already exists
+        if (siteManager.getSites().stream().anyMatch(s -> s.getSiteId().equals(siteId))) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "A site with this ID already exists!",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // Create the new site
+        ConstructionSite newSite = new ConstructionSite(siteId, new ArrayList<>());
+        siteManager.addSite(newSite);
+
+        refreshAll();
     }
 
     /**
-     * Refreshes the table content with current construction site data.
+     * Handles the action event of adding a new commodity (material) to an existing site.
      */
-    public void refreshTable() {
-        // Clear existing rows from the table
-        tableModel.setRowCount(0);
-        // Populate the table with updated construction site data
+    private void handleAddCommodity(ActionEvent event) {
+        if (siteManager.getSites().isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No sites available. Please add a site first.",
+                    "Warning",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // 1) Select the target site
+        String[] siteIds = siteManager.getSites().stream()
+                .map(ConstructionSite::getSiteId)
+                .toArray(String[]::new);
+
+        String selectedSiteId = (String) JOptionPane.showInputDialog(
+                this,
+                "Select a site:",
+                "Add Commodity",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                siteIds,
+                siteIds[0]
+        );
+
+        if (selectedSiteId == null) {
+            return; // user canceled
+        }
+
+        // 2) Select the commodity from the predefined list
+        String selectedCommodity = (String) JOptionPane.showInputDialog(
+                this,
+                "Select a commodity:",
+                "Add Commodity",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                AVAILABLE_COMMODITIES,
+                AVAILABLE_COMMODITIES[0]
+        );
+
+        if (selectedCommodity == null) {
+            return; // user canceled
+        }
+
+        // 3) Enter required quantity
+        String quantityStr = JOptionPane.showInputDialog(
+                this,
+                "Enter required quantity:",
+                "Add Commodity",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (quantityStr == null) {
+            return; // user canceled
+        }
+
+        int requiredQuantity;
+        try {
+            requiredQuantity = Integer.parseInt(quantityStr.trim());
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Invalid quantity!",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // Find the selected site
+        ConstructionSite selectedSite = siteManager.getSites().stream()
+                .filter(s -> s.getSiteId().equals(selectedSiteId))
+                .findFirst()
+                .orElse(null);
+
+        if (selectedSite == null) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Site not found!",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // Add the new requirement
+        selectedSite.getRequirements().add(
+                new MaterialRequirement(selectedCommodity, requiredQuantity)
+        );
+
+        refreshAll();
+    }
+
+    /**
+     * Refreshes both the "Site Progress Table" and the "Commodities Table."
+     */
+    private void refreshAll() {
+        refreshSiteProgressTable();
+        refreshCommoditiesTable();
+    }
+
+    /**
+     * Updates the top table, which shows each site's name and overall progress.
+     */
+    private void refreshSiteProgressTable() {
+        siteProgressTableModel.setRowCount(0);
+
+        for (ConstructionSite site : siteManager.getSites()) {
+            Object[] row = {
+                    site.getSiteId(),
+                    site.getProgressPercent() // an integer from 0–100
+            };
+            siteProgressTableModel.addRow(row);
+        }
+    }
+
+    /**
+     * Updates the bottom table, which lists each site's material requirements in detail.
+     */
+    private void refreshCommoditiesTable() {
+        commoditiesTableModel.setRowCount(0);
+
         for (ConstructionSite site : siteManager.getSites()) {
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
@@ -83,7 +270,7 @@ public class ConstructionSitePanel extends JPanel {
                         req.getDeliveredQuantity(),
                         req.getRemainingQuantity()
                 };
-                tableModel.addRow(row);
+                commoditiesTableModel.addRow(row);
             }
         }
     }

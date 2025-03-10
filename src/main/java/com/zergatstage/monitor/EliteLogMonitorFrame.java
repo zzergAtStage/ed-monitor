@@ -1,11 +1,13 @@
 package com.zergatstage.monitor;
 
 import com.zergatstage.services.*;
+import org.h2.tools.Server;
 
 import javax.swing.*;
 import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.Arrays;
 
 /**
@@ -43,6 +45,7 @@ public class EliteLogMonitorFrame extends JFrame {
 
         // Log Monitor Panel (Tab 1)
         JPanel logMonitorPanel = new JPanel(new GridLayout(2, 1));
+
         droneLaunchedLabel = new JLabel("Drone Launched: No");
         asteroidProspectedLabel = new JLabel("Asteroid Prospected: No");
         asteroidProspectedLabel.setOpaque(true);
@@ -50,7 +53,7 @@ public class EliteLogMonitorFrame extends JFrame {
 
         logMonitorPanel.add(droneLaunchedLabel);
         logMonitorPanel.add(asteroidProspectedLabel);
-        tabbedPane.addTab("Log Monitor", logMonitorPanel);
+        tabbedPane.addTab("Drone provisioner", logMonitorPanel);
 
         // Construction Sites Panel (Tab 2)
         ConstructionSitePanel constructionSitePanel = new ConstructionSitePanel();
@@ -149,6 +152,13 @@ public class EliteLogMonitorFrame extends JFrame {
      * @param args command-line arguments (not used).
      */
     public static void main(String[] args) {
+        // Start H2 Console
+        try {
+            Server webServer = Server.createWebServer("-webPort", "8082", "-tcpAllowOthers").start();
+            System.out.println("H2 Console started at: http://localhost:8082");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         SwingUtilities.invokeLater(EliteLogMonitorFrame::new);
     }
 }

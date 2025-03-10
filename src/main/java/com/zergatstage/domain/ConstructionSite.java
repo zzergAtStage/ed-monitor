@@ -1,30 +1,47 @@
 package com.zergatstage.domain;
 
-import lombok.Data;
-
 import java.util.List;
 
 /**
  * Represents a construction site with a list of material requirements.
  */
-@Data
 public class ConstructionSite {
+    private final String siteId;
+    private final List<MaterialRequirement> requirements;
 
-    private String siteId; // Unique identifier or name
-    private List<MaterialRequirement> requirements;
-
-    /**
-     * Constructs a ConstructionSite.
-     *
-     * @param siteId Unique identifier for the construction site.
-     * @param requirements List of material requirements.
-     */
     public ConstructionSite(String siteId, List<MaterialRequirement> requirements) {
         this.siteId = siteId;
         this.requirements = requirements;
     }
 
-    // Getters and setters omitted for brevity
+    public String getSiteId() {
+        return siteId;
+    }
+
+    public List<MaterialRequirement> getRequirements() {
+        return requirements;
+    }
+
+    /**
+     * Calculates the overall construction progress in percentage (0–100).
+     * This is the ratio of delivered materials to total required materials, across all commodities.
+     */
+    public int getProgressPercent() {
+        int totalRequired = 0;
+        int totalDelivered = 0;
+
+        for (MaterialRequirement req : requirements) {
+            totalRequired += req.getRequiredQuantity();
+            totalDelivered += req.getDeliveredQuantity();
+        }
+
+        if (totalRequired == 0) {
+            // If no materials are required, treat as 0% or 100%—here we choose 0%
+            return 0;
+        }
+        double ratio = (double) totalDelivered / totalRequired;
+        return (int) Math.min(ratio * 100, 100);
+    }
 
     /**
      * Updates the requirement based on newly available cargo materials.
@@ -40,4 +57,3 @@ public class ConstructionSite {
         }
     }
 }
-

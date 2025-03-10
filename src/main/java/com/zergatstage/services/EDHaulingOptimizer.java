@@ -1,82 +1,97 @@
 package com.zergatstage.services;
 
 import java.util.*;
+import java.nio.file.*;
+
+import com.zergatstage.domain.Market;
+import com.zergatstage.domain.MarketItem;
+import com.zergatstage.domain.MarketRepository;
+import lombok.Getter;
+import org.json.simple.*;
+import org.json.simple.parser.*;
 
 public class EDHaulingOptimizer {
 
-    // Classes to represent our domain model
+    // Domain models
     static class Material {
-        String name;
-        int requiredAmount;
-        List<SourceLocation> availableAt;
+        private final String name;
+        private final int requiredAmount;
 
-        Material(String name, int requiredAmount) {
+        public Material(String name, int requiredAmount) {
             this.name = name;
             this.requiredAmount = requiredAmount;
-            this.availableAt = new ArrayList<>();
         }
 
-        void addSource(SourceLocation source) {
-            availableAt.add(source);
+        public String getName() {
+            return name;
+        }
+
+        public int getRequiredAmount() {
+            return requiredAmount;
         }
     }
 
-    static class SourceLocation {
-        String systemName;
-        String stationName;
-        Map<String, Integer> availableMaterials; // Material name -> available quantity
+    static class TripStop {
+        @Getter
+        private final Market market;
+        private final Map<String, Integer> materialsLoaded;
 
-        SourceLocation(String systemName, String stationName) {
-            this.systemName = systemName;
-            this.stationName = stationName;
-            this.availableMaterials = new HashMap<>();
+        public TripStop(Market market, Map<String, Integer> materialsLoaded) {
+            this.market = market;
+            this.materialsLoaded = new HashMap<>(materialsLoaded);
         }
 
-        void addMaterial(String materialName, int quantity) {
-            availableMaterials.put(materialName, quantity);
+        public Map<String, Integer> getMaterialsLoaded() {
+            return Collections.unmodifiableMap(materialsLoaded);
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SourceLocation that = (SourceLocation) o;
-            return Objects.equals(systemName, that.systemName) &&
-                    Objects.equals(stationName, that.stationName);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(systemName, stationName);
+        public int getTotalLoaded() {
+            return materialsLoaded.values().stream().mapToInt(Integer::intValue).sum();
         }
 
         @Override
         public String toString() {
-            return systemName + " - " + stationName;
+            StringBuilder sb = new StringBuilder();
+            sb.append(market);
+            sb.append("\n Loading: ");
+            for (Map.Entry<String, Integer> entry : materialsLoaded.entrySet()) {
+                sb.append("\n  ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" tons");
+            }
+            return sb.toString();
         }
     }
 
     static class Trip {
-        List<TripStop> stops;
-        Map<String, Integer> cargo; // Material name -> quantity
-        int totalCargo;
+        private final List<TripStop> stops;
+        @Getter
+        private int totalCargo;
 
-        Trip() {
+        public Trip() {
             this.stops = new ArrayList<>();
-            this.cargo = new HashMap<>();
             this.totalCargo = 0;
         }
 
-        void addStop(SourceLocation source, Map<String, Integer> materials) {
-            stops.add(new TripStop(source, new HashMap<>(materials)));
-            for (Map.Entry<String, Integer> entry : materials.entrySet()) {
-                cargo.put(entry.getKey(), cargo.getOrDefault(entry.getKey(), 0) + entry.getValue());
-                totalCargo += entry.getValue();
-            }
+        public void addStop(Market market, Map<String, Integer> materials) {
+            stops.add(new TripStop(market, materials));
+            totalCargo += materials.values().stream().mapToInt(Integer::intValue).sum();
         }
 
-        boolean canAddCargo(int quantity, int shipCapacity) {
+        public List<TripStop> getStops() {
+            return Collections.unmodifiableList(stops);
+        }
+
+        public boolean canAddCargo(int quantity, int shipCapacity) {
             return totalCargo + quantity <= shipCapacity;
+        }
+
+        public Map<String, Integer> getTotalMaterialsByType() {
+            Map<String, Integer> result = new HashMap<>();
+            for (TripStop stop : stops) {
+                for (Map.Entry<String, Integer> entry : stop.getMaterialsLoaded().entrySet()) {
+                    result.put(entry.getKey(), result.getOrDefault(entry.getKey(), 0) + entry.getValue());
+                }
+            }
+            return result;
         }
 
         @Override
@@ -84,222 +99,376 @@ public class EDHaulingOptimizer {
             StringBuilder sb = new StringBuilder();
             sb.append("Trip with ").append(stops.size()).append(" stops:");
             for (int i = 0; i < stops.size(); i++) {
-                TripStop stop = stops.get(i);
-                sb.append("\n Stop ").append(i+1).append(": ").append(stop.source);
-                sb.append("\n  Loading: ");
-                for (Map.Entry<String, Integer> entry : stop.materialsLoaded.entrySet()) {
-                    sb.append("\n   ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" tons");
-                }
+                sb.append("\n Stop ").append(i+1).append(": ").append(stops.get(i));
             }
             sb.append("\n Total cargo: ").append(totalCargo).append(" tons");
             return sb.toString();
         }
     }
 
-    static class TripStop {
-        SourceLocation source;
-        Map<String, Integer> materialsLoaded;
+    // Service for parsing market data
+    static class MarketDataParser {
+        public static List<Market> parseMarketData(String jsonData) throws ParseException {
+            List<Market> markets = new ArrayList<>();
 
-        TripStop(SourceLocation source, Map<String, Integer> materialsLoaded) {
-            this.source = source;
-            this.materialsLoaded = materialsLoaded;
+            JSONParser parser = new JSONParser();
+            JSONObject jsonObject = (JSONObject) parser.parse(jsonData);
+
+            String marketId = jsonObject.get("MarketID").toString();
+            String stationName = (String) jsonObject.get("StationName");
+            String stationType = (String) jsonObject.get("StationType");
+            String systemName = (String) jsonObject.get("StarSystem");
+
+            Market market = new Market(marketId, stationName, stationType, systemName);
+
+            JSONArray items = (JSONArray) jsonObject.get("Items");
+            for (Object itemObj : items) {
+                JSONObject item = (JSONObject) itemObj;
+
+                String id = item.get("id").toString();
+                String name = (String) item.get("Name_Localised");
+                String category = (String) item.get("Category_Localised");
+
+                long buyPrice = (long) item.get("BuyPrice");
+                long sellPrice = (long) item.get("SellPrice");
+                long stock = (long) item.get("Stock");
+                long demand = (long) item.get("Demand");
+
+                MarketItem marketItem = new MarketItem(
+                        id, name, category,
+                        (int) buyPrice, (int) sellPrice,
+                        (int) stock, (int) demand
+                );
+
+                market.addItem(marketItem);
+            }
+
+            markets.add(market);
+            return markets;
+        }
+
+        public static List<Market> parseMarketDataFromFile(String filePath) {
+            try {
+                String content = new String(Files.readAllBytes(Paths.get(filePath)));
+                return parseMarketData(content);
+            } catch (Exception e) {
+                System.err.println("Error parsing market data: " + e.getMessage());
+                e.printStackTrace();
+                return new ArrayList<>();
+            }
         }
     }
 
-    // Main optimization algorithm
-    public static List<Trip> optimizeHauling(Map<String, Material> requiredMaterials,
-                                             List<SourceLocation> sources,
-                                             int shipCapacity) {
-        List<Trip> trips = new ArrayList<>();
-        Map<String, Integer> remaining = new HashMap<>();
+    // Route optimization service
+    static class RouteOptimizer {
+        public static List<Trip> optimizeHauling(Map<String, Material> requiredMaterials,
+                                                 List<Market> markets,
+                                                 int shipCapacity) {
+            List<Trip> trips = new ArrayList<>();
+            Map<String, Integer> remaining = new HashMap<>();
 
-        // Initialize remaining materials
-        for (Material material : requiredMaterials.values()) {
-            remaining.put(material.name, material.requiredAmount);
-        }
+            // Initialize remaining materials
+            for (Material material : requiredMaterials.values()) {
+                remaining.put(material.getName(), material.getRequiredAmount());
+            }
 
-        // Continue until all materials are delivered
-        while (!allMaterialsDelivered(remaining)) {
-            Trip currentTrip = new Trip();
-            boolean tripModified = true;
+            // Find best markets for each material based on price and availability
+            Map<String, List<Market>> bestMarketsForMaterials = findBestMarketsForMaterials(requiredMaterials, markets);
 
-            // Keep adding to the current trip until we can't add more
-            while (tripModified && !allMaterialsDelivered(remaining)) {
-                tripModified = false;
+            // Continue until all materials are delivered
+            while (!allMaterialsDelivered(remaining)) {
+                Trip currentTrip = new Trip();
+                boolean tripModified = true;
 
-                // Try each source
-                for (SourceLocation source : sources) {
-                    // Skip if we already visited this source in this trip
-                    boolean alreadyVisited = false;
-                    for (TripStop stop : currentTrip.stops) {
-                        if (stop.source.equals(source)) {
-                            alreadyVisited = true;
-                            break;
-                        }
-                    }
-                    if (alreadyVisited) continue;
+                // Keep adding to the current trip until we can't add more
+                while (tripModified && !allMaterialsDelivered(remaining)) {
+                    tripModified = false;
 
-                    // Check what we can load from this source
-                    Map<String, Integer> potentialLoad = new HashMap<>();
-                    int potentialCargoAmount = 0;
+                    // Find the next best market to visit
+                    Market bestMarket = null;
+                    Map<String, Integer> bestLoad = null;
+                    int bestLoadValue = 0;
 
-                    for (String materialName : source.availableMaterials.keySet()) {
-                        if (remaining.containsKey(materialName) && remaining.get(materialName) > 0) {
-                            int neededAmount = remaining.get(materialName);
-                            int availableAmount = source.availableMaterials.get(materialName);
-                            int toLoad = Math.min(neededAmount, availableAmount);
-
-                            // Check if we can add to current trip respecting ship capacity
-                            if (currentTrip.canAddCargo(toLoad, shipCapacity - potentialCargoAmount)) {
-                                potentialLoad.put(materialName, toLoad);
-                                potentialCargoAmount += toLoad;
-                            } else {
-                                // Try to fit as much as possible
-                                int remainingCapacity = shipCapacity - currentTrip.totalCargo - potentialCargoAmount;
-                                if (remainingCapacity > 0) {
-                                    potentialLoad.put(materialName, remainingCapacity);
-                                    potentialCargoAmount += remainingCapacity;
-                                }
+                    for (Market market : markets) {
+                        // Skip if we already visited this market in this trip
+                        boolean alreadyVisited = false;
+                        for (TripStop stop : currentTrip.getStops()) {
+                            if (stop.getMarket().equals(market)) {
+                                alreadyVisited = true;
+                                break;
                             }
                         }
+                        if (alreadyVisited) continue;
+
+                        // Calculate potential load from this market
+                        Map<String, Integer> potentialLoad = calculatePotentialLoad(market, remaining,
+                                shipCapacity - currentTrip.getTotalCargo());
+
+                        int loadValue = potentialLoad.values().stream().mapToInt(Integer::intValue).sum();
+
+                        // Check if this is the best market so far
+                        if (loadValue > bestLoadValue) {
+                            bestLoadValue = loadValue;
+                            bestMarket = market;
+                            bestLoad = potentialLoad;
+                        }
                     }
 
-                    // If we can load something, add this stop
-                    if (!potentialLoad.isEmpty()) {
-                        // Update the source's available materials
-                        for (Map.Entry<String, Integer> entry : potentialLoad.entrySet()) {
+                    // If we found a market with something to load
+                    if (bestMarket != null && bestLoadValue > 0) {
+                        // Update remaining materials
+                        for (Map.Entry<String, Integer> entry : bestLoad.entrySet()) {
                             String materialName = entry.getKey();
                             int loadAmount = entry.getValue();
 
-                            source.availableMaterials.put(materialName,
-                                    source.availableMaterials.get(materialName) - loadAmount);
                             remaining.put(materialName, remaining.get(materialName) - loadAmount);
                         }
 
-                        currentTrip.addStop(source, potentialLoad);
+                        currentTrip.addStop(bestMarket, bestLoad);
                         tripModified = true;
-
-                        // If we're full, break
-                        if (currentTrip.totalCargo >= shipCapacity) {
-                            break;
-                        }
                     }
                 }
+
+                // Add the trip if it has any stops
+                if (!currentTrip.getStops().isEmpty()) {
+                    trips.add(currentTrip);
+                } else {
+                    // If we couldn't create a trip, something went wrong
+                    System.err.println("Error: Cannot find a source for remaining materials!");
+                    break;
+                }
             }
 
-            // Add the trip if it has any stops
-            if (!currentTrip.stops.isEmpty()) {
-                trips.add(currentTrip);
-            } else {
-                // If we couldn't create a trip, something went wrong
-                System.out.println("Error: Cannot find a source for remaining materials!");
-                break;
-            }
+            // Final optimization: Combine trips if possible
+            return optimizeTrips(trips, shipCapacity);
         }
 
-        // Final optimization: Try to combine the last two trips if they're not full
-        if (trips.size() >= 2) {
-            Trip lastTrip = trips.get(trips.size() - 1);
-            Trip secondLastTrip = trips.get(trips.size() - 2);
+        private static Map<String, List<Market>> findBestMarketsForMaterials(Map<String, Material> requiredMaterials,
+                                                                             List<Market> markets) {
+            Map<String, List<Market>> result = new HashMap<>();
 
-            if (lastTrip.totalCargo + secondLastTrip.totalCargo <= shipCapacity) {
-                // We can combine these trips
-                Trip combinedTrip = new Trip();
+            for (String materialName : requiredMaterials.keySet()) {
+                List<Market> marketsWithMaterial = new ArrayList<>();
 
-                // Add stops from second last trip
-                for (TripStop stop : secondLastTrip.stops) {
-                    combinedTrip.addStop(stop.source, stop.materialsLoaded);
+                for (Market market : markets) {
+                    MarketItem item = market.getItem(materialName);
+                    if (item != null && item.getStock() > 0) {
+                        marketsWithMaterial.add(market);
+                    }
                 }
 
-                // Add stops from last trip
-                for (TripStop stop : lastTrip.stops) {
-                    // Check if this source is already in the combined trip
-                    boolean sourceExists = false;
-                    for (TripStop existingStop : combinedTrip.stops) {
-                        if (existingStop.source.equals(stop.source)) {
-                            // Merge the materials
-                            for (Map.Entry<String, Integer> entry : stop.materialsLoaded.entrySet()) {
-                                String material = entry.getKey();
-                                int amount = entry.getValue();
-                                existingStop.materialsLoaded.put(material,
-                                        existingStop.materialsLoaded.getOrDefault(material, 0) + amount);
+                // Sort markets by buy price (lowest first)
+                marketsWithMaterial.sort(Comparator.comparingInt(
+                        market -> market.getItem(materialName).getBuyPrice()
+                ));
+
+                result.put(materialName, marketsWithMaterial);
+            }
+
+            return result;
+        }
+
+        private static Map<String, Integer> calculatePotentialLoad(Market market,
+                                                                   Map<String, Integer> remaining,
+                                                                   int availableCapacity) {
+            Map<String, Integer> potentialLoad = new HashMap<>();
+            int capacityLeft = availableCapacity;
+
+            // Try to load materials based on what we need
+            for (Map.Entry<String, Integer> entry : remaining.entrySet()) {
+                String materialName = entry.getKey();
+                int neededAmount = entry.getValue();
+
+                if (neededAmount <= 0) continue;
+
+                MarketItem item = market.getItem(materialName);
+                if (item != null && item.getStock() > 0) {
+                    // Calculate how much we can load
+                    int availableAmount = item.getStock();
+                    int toLoad = Math.min(neededAmount, availableAmount);
+                    toLoad = Math.min(toLoad, capacityLeft);
+
+                    if (toLoad > 0) {
+                        potentialLoad.put(materialName, toLoad);
+                        capacityLeft -= toLoad;
+                    }
+                }
+
+                if (capacityLeft <= 0) break;
+            }
+
+            return potentialLoad;
+        }
+
+        private static boolean allMaterialsDelivered(Map<String, Integer> remaining) {
+            return remaining.values().stream().allMatch(v -> v <= 0);
+        }
+
+        private static List<Trip> optimizeTrips(List<Trip> trips, int shipCapacity) {
+            if (trips.size() <= 1) return trips;
+
+            List<Trip> optimizedTrips = new ArrayList<>();
+            int i = 0;
+
+            while (i < trips.size()) {
+                Trip currentTrip = trips.get(i);
+
+                // Try to combine with next trip if possible
+                if (i + 1 < trips.size()) {
+                    Trip nextTrip = trips.get(i + 1);
+
+                    if (currentTrip.getTotalCargo() + nextTrip.getTotalCargo() <= shipCapacity) {
+                        // Create combined trip
+                        Trip combinedTrip = new Trip();
+
+                        // Add stops from current trip
+                        for (TripStop stop : currentTrip.getStops()) {
+                            combinedTrip.addStop(stop.getMarket(), stop.getMaterialsLoaded());
+                        }
+
+                        // Add stops from next trip (checking for duplicates)
+                        for (TripStop stop : nextTrip.getStops()) {
+                            boolean marketExists = false;
+
+                            for (TripStop existingStop : combinedTrip.getStops()) {
+                                if (existingStop.getMarket().equals(stop.getMarket())) {
+                                    marketExists = true;
+                                    break;
+                                }
                             }
-                            sourceExists = true;
-                            break;
+
+                            if (!marketExists) {
+                                combinedTrip.addStop(stop.getMarket(), stop.getMaterialsLoaded());
+                            }
+                        }
+
+                        optimizedTrips.add(combinedTrip);
+                        i += 2;  // Skip next trip since we combined it
+                    } else {
+                        // Can't combine, add current trip as is
+                        optimizedTrips.add(currentTrip);
+                        i++;
+                    }
+                } else {
+                    // Last trip, add as is
+                    optimizedTrips.add(currentTrip);
+                    i++;
+                }
+            }
+
+            // If we managed to combine any trips, try optimizing again
+            if (optimizedTrips.size() < trips.size()) {
+                return optimizeTrips(optimizedTrips, shipCapacity);
+            }
+
+            return optimizedTrips;
+        }
+    }
+
+    // Main application: integration of market IO with hauling optimization.
+    public static void main(String[] args) {
+        try {
+            // Define the file path for Market.json.
+            // (Adjust the path as needed, e.g., relative to your log directory)
+            Path marketFile = Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous", "Market.json");
+
+            // Create a MarketRepository instance (using production defaults).
+            MarketRepository repository = new MarketRepository();
+            // Create a listener to receive market data updates.
+            MarketDataIOService.MarketDataListener listener = jsonData -> {
+                try {
+                    // Parse the market data from the updated JSON content.
+                    List<Market> parsedMarkets = MarketDataParser.parseMarketData(jsonData);
+                    if (parsedMarkets.isEmpty()) {
+                        System.out.println("No market data found from file update.");
+                        return;
+                    }
+                    // Save or update each parsed market in the repository.
+                    for (Market market : parsedMarkets) {
+                        repository.saveOrUpdateMarket(market);
+                    }
+                    // Retrieve updated market data from the repository.
+                    List<Market> markets = repository.getAllMarkets();
+                    // Print available markets
+                    System.out.println("Available markets (updated):");
+                    for (Market market : markets) {
+                        System.out.println("- " + market);
+                        System.out.println("  Items available: " + market.getItems().size());
+                    }
+
+                    // Define required materials for construction (example data)
+                    Map<String, Material> requiredMaterials = new HashMap<>();
+                    requiredMaterials.put("Aluminum", new Material("Aluminum", 1117));
+                    requiredMaterials.put("Steel", new Material("Steel", 1456));
+                    requiredMaterials.put("Biowaste", new Material("Biowaste", 450));
+                    requiredMaterials.put("Surface Stabilizers", new Material("Surface Stabilizers", 367));
+
+                    // Ship capacity (example value)
+                    int shipCapacity = 720;
+
+                    // Run the hauling optimization based on the updated market data.
+                    List<Trip> optimalTrips = RouteOptimizer.optimizeHauling(requiredMaterials, parsedMarkets, shipCapacity);
+
+                    // Output the hauling plan
+                    System.out.println("\nOptimal hauling plan with " + optimalTrips.size() + " trips:");
+                    for (int i = 0; i < optimalTrips.size(); i++) {
+                        System.out.println("\nTrip " + (i + 1) + ":");
+                        System.out.println(optimalTrips.get(i));
+                    }
+
+                    // Calculate and output total materials delivered
+                    Map<String, Integer> totalDelivered = new HashMap<>();
+                    for (Trip trip : optimalTrips) {
+                        Map<String, Integer> tripMaterials = trip.getTotalMaterialsByType();
+                        for (Map.Entry<String, Integer> entry : tripMaterials.entrySet()) {
+                            totalDelivered.put(entry.getKey(),
+                                    totalDelivered.getOrDefault(entry.getKey(), 0) + entry.getValue());
                         }
                     }
-
-                    if (!sourceExists) {
-                        combinedTrip.addStop(stop.source, stop.materialsLoaded);
+                    System.out.println("\nTotal materials delivered:");
+                    for (Map.Entry<String, Integer> entry : totalDelivered.entrySet()) {
+                        System.out.println("  " + entry.getKey() + ": " + entry.getValue() + " tons");
                     }
+                } catch (ParseException e) {
+                    System.err.println("Error parsing market data: " + e.getMessage());
                 }
+            };
 
-                // Replace the last two trips with the combined one
-                trips.remove(trips.size() - 1);
-                trips.remove(trips.size() - 1);
-                trips.add(combinedTrip);
-            }
+            // Create and start the MarketDataIOService.
+            MarketDataIOService marketDataService = new MarketDataIOService(marketFile, listener);
+            marketDataService.start();
+
+            // Keep the application running to listen for file updates.
+            // (In a real application, this might be integrated into your UI or service lifecycle.)
+            System.out.println("EDHaulingOptimizer is running. Press Enter to exit.");
+            System.in.read();
+
+            // Stop the market data service before exiting.
+            marketDataService.stop();
+
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        return trips;
     }
 
-    private static boolean allMaterialsDelivered(Map<String, Integer> remaining) {
-        for (int value : remaining.values()) {
-            if (value > 0) {
-                return false;
-            }
-        }
-        return true;
+    // Helper method to create example markets if file parsing fails
+    private static Market createExampleMarketA() {
+        Market market = new Market("1", "Station A", "Orbital", "System A1");
+
+        market.addItem(new MarketItem("1", "Aluminum", "Metals", 100, 90, 2000, 0));
+        market.addItem(new MarketItem("2", "Steel", "Metals", 200, 180, 2000, 0));
+        market.addItem(new MarketItem("3", "Biowaste", "Waste", 50, 30, 1000, 0));
+
+        return market;
     }
 
-    // Example usage
-    public static void main(String[] args) {
-// Define required materials
-        Map<String, Material> requiredMaterials = new HashMap<>();
-        requiredMaterials.put("Aluminum", new Material("Aluminum", 409));
-        requiredMaterials.put("Steel", new Material("Steel", 1462));
-        requiredMaterials.put("Liquid oxygen", new Material("Liquid oxygen", 436));
-        requiredMaterials.put("Surface Stabilizers", new Material("Surface Stabilizers", 367));
+    private static Market createExampleMarketB() {
+        Market market = new Market("2", "Station B", "Outpost", "System B1");
 
-        // Define sources
-        SourceLocation stationA = new SourceLocation("System A1", "Station A");
-        stationA.addMaterial("Aluminum", 2000);
-        stationA.addMaterial("Steel", 2000);
-        stationA.addMaterial("Liquid oxygen", 1000);
+        market.addItem(new MarketItem("4", "Surface Stabilizers", "Chemicals", 500, 450, 1000, 0));
+        market.addItem(new MarketItem("3", "Biowaste", "Waste", 55, 35, 1000, 0));
 
-        SourceLocation stationB = new SourceLocation("System B1", "Station B");
-        stationB.addMaterial("Surface Stabilizers", 1000);
-        stationB.addMaterial("Biowaste", 1000);
-
-        List<SourceLocation> sources = Arrays.asList(stationA, stationB);
-
-        // Ship capacity
-        int shipCapacity = 720;
-
-        // Run optimization
-        List<Trip> optimalTrips = optimizeHauling(requiredMaterials, sources, shipCapacity);
-
-        // Output results
-        System.out.println("Optimal hauling plan with " + optimalTrips.size() + " trips:");
-        for (int i = 0; i < optimalTrips.size(); i++) {
-            System.out.println("\nTrip " + (i+1) + ":");
-            System.out.println(optimalTrips.get(i));
-        }
-
-        // Calculate total materials delivered
-        Map<String, Integer> totalDelivered = new HashMap<>();
-        for (Trip trip : optimalTrips) {
-            for (Map.Entry<String, Integer> entry : trip.cargo.entrySet()) {
-                totalDelivered.put(entry.getKey(),
-                        totalDelivered.getOrDefault(entry.getKey(), 0) + entry.getValue());
-            }
-        }
-
-        System.out.println("\nTotal materials delivered:");
-        for (Map.Entry<String, Integer> entry : totalDelivered.entrySet()) {
-            System.out.println("  " + entry.getKey() + ": " + entry.getValue() + " tons");
-        }
+        return market;
     }
 }
-
