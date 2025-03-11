@@ -33,11 +33,10 @@ public class MarketDataIOService {
     /**
      * Constructs a MarketDataIOService.
      *
-     * @param marketFile the path to the Market.json file.
      * @param listener the listener to notify when new market data is available.
      */
-    public MarketDataIOService(Path marketFile, MarketDataListener listener) {
-        this.marketFile = marketFile;
+    public MarketDataIOService( MarketDataListener listener) {
+        this.marketFile  = Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous", "Market.json");
         this.listener = listener;
         this.executor = Executors.newSingleThreadScheduledExecutor();
         this.lastContent = "";
@@ -47,6 +46,7 @@ public class MarketDataIOService {
      * Starts monitoring the Market.json file.
      */
     public void start() {
+
         if (scheduledTask == null || scheduledTask.isCancelled() || scheduledTask.isDone()) {
             scheduledTask = executor.scheduleAtFixedRate(this::checkMarketFile, 0, 1, TimeUnit.SECONDS);
             log.info("Market Data IO Service started.");
