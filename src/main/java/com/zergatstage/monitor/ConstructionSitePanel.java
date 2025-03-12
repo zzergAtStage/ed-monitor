@@ -2,14 +2,15 @@ package com.zergatstage.monitor;
 
 import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
+import com.zergatstage.services.ApplicationContextProvider;
 import com.zergatstage.services.ConstructionSiteManager;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * The ConstructionSitePanel class provides a UI panel for managing
@@ -28,8 +29,8 @@ public class ConstructionSitePanel extends JPanel {
     // Bottom table: commodities
     private final JTable commoditiesTable;
     private final DefaultTableModel commoditiesTableModel;
-
-    private final ConstructionSiteManager siteManager;
+    @Autowired
+    private ConstructionSiteManager siteManager;
 
     /**
      * A sample list of available commodities to choose from when adding materials.
@@ -39,15 +40,15 @@ public class ConstructionSitePanel extends JPanel {
             "Computer Components", "Copper", "Crop Harvesters",
             "Evacuation Shelter", "Food Cartridges", "Fruit and Vegetables",
             "Grain", "Liquid Oxygen", "Pesticides", "Steel",
-            "Survival Equipment", "Land Enrichment Systems"
+            "Survival Equipment", "Land Enrichment Systems" , "gold"
     };
 
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
      */
     public ConstructionSitePanel() {
-        siteManager = new ConstructionSiteManager();
         setLayout(new BorderLayout());
+        siteManager = ApplicationContextProvider.getApplicationContext().getBean(ConstructionSiteManager.class);
 
         // ============= Site Progress Table (Top) =============
         String[] siteProgressColumns = {"Site", "Progress"};
@@ -75,7 +76,6 @@ public class ConstructionSitePanel extends JPanel {
         };
         commoditiesTable = new JTable(commoditiesTableModel);
         commoditiesTable.setAutoCreateRowSorter(true);
-
         JScrollPane commoditiesScroll = new JScrollPane(commoditiesTable);
 
         // ============= Split Pane for top/bottom layout =============
@@ -99,6 +99,9 @@ public class ConstructionSitePanel extends JPanel {
         controlPanel.add(addCommodityButton);
 
         add(controlPanel, BorderLayout.SOUTH);
+
+        // Register as a listener so that the panel updates when the siteManager data changes.
+        siteManager.addListener(() -> SwingUtilities.invokeLater(this::refreshAll));
     }
 
     /**

@@ -1,6 +1,10 @@
 package com.zergatstage.monitor;
 
 import com.zergatstage.services.*;
+import com.zergatstage.services.handlers.AsteroidProspectEventHandler;
+import com.zergatstage.services.handlers.CargoUpdateEventHandler;
+import com.zergatstage.services.handlers.DroneLaunchEventHandler;
+import com.zergatstage.services.handlers.LogEventHandler;
 import org.h2.tools.Server;
 
 import javax.swing.*;
@@ -13,11 +17,12 @@ import java.util.Arrays;
 /**
  * The EliteLogMonitorFrame class creates the main application frame.
  * It uses a JTabbedPane to hold two tabs:
- *  - "Log Monitor" which displays real-time log event updates.
+ *  - "Drone provisioner" which displays real-time log event updates.
  *  - "Construction Sites" which allows users to manage construction projects.
  * Additionally, a runner panel is added at the bottom with buttons to start and stop
  * the StatusMonitor service.
  */
+
 public class EliteLogMonitorFrame extends JFrame {
 
     private final JLabel droneLaunchedLabel;
@@ -25,7 +30,6 @@ public class EliteLogMonitorFrame extends JFrame {
     private final LogMonitor logMonitor;
     private StatusMonitor statusMonitor;
     private boolean isStatusMonitorRunning = false; // Flag to track service state
-
     /**
      * Constructs the EliteLogMonitorFrame, initializes UI components,
      * sets up the log monitoring service, and integrates the runner panel.
@@ -42,6 +46,13 @@ public class EliteLogMonitorFrame extends JFrame {
         // Create Tabbed Pane for Main Content
         // -------------------------------
         JTabbedPane tabbedPane = new JTabbedPane();
+        Color darkBackground = new Color( 12, 12, 12);   // #0C0C0C
+        Color lightBackground = new Color(50, 29, 11);   // #321d0b
+
+        Color accentGray     = new Color( 63, 63, 63);   // #3F3F3F
+        Color orangeText     = new Color( 236, 151, 6);  // #EC9706
+        Color neutralText    = new Color( 191, 191, 191);// #BFBFBF
+
 
         // Log Monitor Panel (Tab 1)
         JPanel logMonitorPanel = new JPanel(new GridLayout(2, 1));
@@ -69,14 +80,14 @@ public class EliteLogMonitorFrame extends JFrame {
 
         // Start button: Orange background with white text
         JButton startButton = new JButton("Start Status Monitor");
-        startButton.setBackground(new Color(255, 165, 0)); // Orange
-        startButton.setForeground(Color.WHITE);
+        startButton.setBackground(lightBackground); // Orange
+        startButton.setForeground(orangeText);
         startButton.addActionListener(e -> startStatusMonitor());
 
         // Stop button: Black background with orange text
         JButton stopButton = new JButton("Stop Status Monitor");
-        stopButton.setBackground(Color.BLACK);
-        stopButton.setForeground(new Color(255, 165, 0)); // Orange
+        stopButton.setBackground(darkBackground);
+        stopButton.setForeground(orangeText); // Orange
         stopButton.addActionListener(e -> stopStatusMonitor());
 
         runnerPanel.add(startButton);
@@ -93,11 +104,12 @@ public class EliteLogMonitorFrame extends JFrame {
         // -------------------------------
         LogEventHandler droneHandler = new DroneLaunchEventHandler(droneLaunchedLabel, this);
         LogEventHandler asteroidHandler = new AsteroidProspectEventHandler(asteroidProspectedLabel);
+        LogEventHandler cargoHandler = new CargoUpdateEventHandler();
 
         Path logDirectory = Paths.get(System.getProperty("user.home"),
                 "Saved Games", "Frontier Developments", "Elite Dangerous");
 
-        logMonitor = new LogMonitor(logDirectory, Arrays.asList(droneHandler, asteroidHandler));
+        logMonitor = new LogMonitor(logDirectory, Arrays.asList(droneHandler, asteroidHandler, cargoHandler));
         logMonitor.start();
 
         // -------------------------------
@@ -106,7 +118,7 @@ public class EliteLogMonitorFrame extends JFrame {
         // Assume Status.json and Journal.log are located in the same log directory
         Path statusFile = logDirectory.resolve("Status.json");
         Path sessionSummaryFile = logDirectory.resolve("Journal.log");
-        statusMonitor = new StatusMonitor(statusFile, sessionSummaryFile);
+        statusMonitor = new StatusMonitor(statusFile.toString(), sessionSummaryFile.toString());
 
         setVisible(true);
     }

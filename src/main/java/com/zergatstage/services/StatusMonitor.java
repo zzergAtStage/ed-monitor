@@ -1,105 +1,77 @@
 package com.zergatstage.services;
 
+import com.zergatstage.services.readers.RewriteFileReadStrategy;
+import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.file.*;
-import java.time.Instant;
-import java.util.concurrent.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 /**
- * The StatusMonitor class monitors the game's Status.json file.
- * It reads the file at regular intervals and, when a change is detected,
- * appends the new state to a session summary file (e.g., Journal.log) to create a running history.
- *
- * The service supports start/stop operations by canceling or scheduling its task without shutting down the executor.
+ * The StatusMonitor now delegates file monitoring to a GenericFileMonitor,
+ * making it extendable to other file types that are rewritten.
  */
+@Log4j2
 public class StatusMonitor {
 
-    private final Path statusFile;              // Path to the Status.json file
-    private final Path sessionSummaryFile;      // Path to the session summary file (e.g., Journal.log)
-    private final ScheduledExecutorService executor;
-    private ScheduledFuture<?> scheduledTask;   // Reference to the scheduled polling task
-    private String lastStateContent;
+     private final GenericFileMonitor fileMonitor;
 
     /**
      * Constructs a StatusMonitor.
      *
-     * @param statusFile         the path to the Status.json file.
-     * @param sessionSummaryFile the path to the session summary file.
+     * @param statusFilePath the path to the Status.json file.
+     * @param sessionSummaryFilePath the path to the session summary file.
      */
-    public StatusMonitor(Path statusFile, Path sessionSummaryFile) {
-        this.statusFile = statusFile;
-        this.sessionSummaryFile = sessionSummaryFile;
-        this.executor = Executors.newSingleThreadScheduledExecutor();
-        this.lastStateContent = "";
+    public StatusMonitor(String statusFilePath, String sessionSummaryFilePath) {
+        Path statusFile = Paths.get(statusFilePath);
+        Path sessionSummaryFile = Paths.get(sessionSummaryFilePath);
+        // Here we use the RewriteFileReadStrategy because the file is rewritten.
+        fileMonitor = new GenericFileMonitor(statusFile, new RewriteFileReadStrategy(),
+                newStatusContent -> {
+            try {
+                // Validate and parse the JSON to ensure we have a valid state update
+                JSONObject jsonState = new JSONObject(new JSONTokener(newStatusContent));
+                // Append the new state to the session summary
+                appendStateToSessionSummary(jsonState, sessionSummaryFile);
+            } catch (Exception e) {
+                System.err.println("Error processing status file content: " + e.getMessage());
+            }
+        });
     }
 
     /**
-     * Starts the status monitoring service.
-     * It polls the Status.json file every second.
+     * Starts monitoring the status file.
      */
     public void start() {
-        if (scheduledTask == null || scheduledTask.isCancelled() || scheduledTask.isDone()) {
-            scheduledTask = executor.scheduleAtFixedRate(this::checkStatusFile, 0, 1, TimeUnit.SECONDS);
-        System.out.println("Status monitoring started at: " + Instant.now());
-        } else {
-            System.out.println("Status monitoring is already running.");
-        }
+        fileMonitor.start();
     }
 
     /**
-     * Stops the status monitoring service.
-     * The scheduled task is canceled while keeping the executor active for potential restarts.
+     * Stops monitoring the status file.
      */
     public void stop() {
-        if (scheduledTask != null && !scheduledTask.isCancelled()) {
-            scheduledTask.cancel(true);
-            System.out.println("Status monitoring stopped at: " + Instant.now());
-        } else {
-            System.out.println("Status monitoring is not running.");
-        }
-    }
-
-    /**
-     * Checks the Status.json file for updates.
-     * If the content differs from the last recorded state, the new state is appended to the session summary file.
-     */
-    private void checkStatusFile() {
-        try {
-            // Read the current content of the Status.json file
-            String content = new String(Files.readAllBytes(statusFile));
-            if (!content.equals(lastStateContent)) {
-                // File content has changed: update the last state and append it to the summary file
-                lastStateContent = content;
-                // Validate and parse the JSON to ensure we have a valid state update
-                JSONObject jsonState = new JSONObject(new JSONTokener(content));
-                appendStateToSessionSummary(jsonState);
-            }
-        } catch (IOException e) {
-            System.err.println("Error reading status file: " + e.getMessage());
-        } catch (Exception e) {
-            // Log any parsing or processing errors without stopping the monitor
-            System.err.println("Error processing status file content: " + e.getMessage());
-        }
+        fileMonitor.stop();
     }
 
     /**
      * Appends the given JSON state to the session summary file.
-     * Each state is written on a new line.
      *
      * @param jsonState the JSON object representing the current status.
+     * @param sessionSummaryFilePath the path to the session summary file.
      */
-    private void appendStateToSessionSummary(JSONObject jsonState) {
-        try (BufferedWriter writer = Files.newBufferedWriter(sessionSummaryFile,
+    private void appendStateToSessionSummary(JSONObject jsonState, Path sessionSummaryFilePath) {
+        try (BufferedWriter writer = Files.newBufferedWriter(sessionSummaryFilePath,
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
             writer.write(jsonState.toString());
             writer.newLine();
-            System.out.println("Status updated: " + jsonState.toString());
+            log.debug("Status updated: {}", jsonState);
         } catch (IOException e) {
-            System.err.println("Error writing to session summary file: " + e.getMessage());
+            log.error("Error writing to session summary file: {}", e.getMessage());
         }
     }
 }

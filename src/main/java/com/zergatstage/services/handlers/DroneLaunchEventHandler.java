@@ -1,4 +1,4 @@
-package com.zergatstage.services;
+package com.zergatstage.services.handlers;
 
 import com.zergatstage.monitor.EliteLogMonitorFrame;
 import org.json.JSONObject;

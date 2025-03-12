@@ -1,7 +1,10 @@
 package com.zergatstage.services;
 
+import com.zergatstage.services.handlers.LogEventHandler;
+import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.json.JSONArray;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -14,9 +17,12 @@ import java.util.concurrent.*;
 
 /**
  * The LogMonitor class is responsible for continuously monitoring the
- * Elite Dangerous log directory for new log entries and delegating
- * event processing to registered LogEventHandlers.
+ * Elite Dangerous log directory, including the commander log file,
+ * for new log entries and delegating event processing to registered
+ * LogEventHandlers. This modified version handles multiple events
+ * per log line, supporting mixed event types.
  */
+@Log4j2
 public class LogMonitor {
 
     private final Path logDirectory;
@@ -42,6 +48,7 @@ public class LogMonitor {
 
     /**
      * Starts the log monitoring service.
+     * It schedules the periodic check for new log entries.
      */
     public void start() {
         executor.scheduleAtFixedRate(this::checkLogs, 0, 1, TimeUnit.SECONDS);
@@ -133,13 +140,39 @@ public class LogMonitor {
     }
 
     /**
-     * Processes an individual log line by parsing the JSON and delegating to the appropriate event handler.
+     * Processes a log line. This method has been enhanced to handle multiple events
+     * per line. It attempts to parse the line as either a JSONObject or a JSONArray,
+     * and then processes each JSON object found.
      *
      * @param line the log file line.
      */
     private void processLogLine(String line) {
         try {
-            JSONObject jsonObject = new JSONObject(new JSONTokener(line));
+            // Parse the next JSON value from the line.
+            Object jsonValue = new JSONTokener(line).nextValue();
+            if (jsonValue instanceof JSONObject) {
+                // Process a single JSON object.
+                processJsonObject((JSONObject) jsonValue);
+            } else if (jsonValue instanceof JSONArray jsonArray) {
+                // Process each JSON object in the array.
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    processJsonObject(jsonObject);
+                }
+            }
+        } catch (Exception e) {
+
+        }
+    }
+
+    /**
+     * Processes an individual JSON object by checking its timestamp and delegating to the appropriate event handlers.
+     *
+     * @param jsonObject the JSON object representing a log event.
+     */
+    private void processJsonObject(JSONObject jsonObject) {
+        try {
+            // Extract the timestamp from the JSON event.
             String timestampStr = jsonObject.getString("timestamp");
             Instant timestamp = OffsetDateTime.parse(timestampStr).toInstant();
 
@@ -154,7 +187,7 @@ public class LogMonitor {
                 lastProcessedTimestamp = timestamp;
             }
         } catch (Exception e) {
-            // Silently ignore malformed JSON lines
+            log.warn("Error processing JSON: {}", e.getMessage());
         }
     }
 }
