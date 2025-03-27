@@ -7,14 +7,14 @@ import java.util.*;
 
 // Route optimization service
 class RouteOptimizer {
-    public static List<EDHaulingOptimizer.Trip> optimizeHauling(Map<String, EDHaulingOptimizer.Material> requiredMaterials,
-                                                                List<Market> markets,
-                                                                int shipCapacity) {
-        List<EDHaulingOptimizer.Trip> trips = new ArrayList<>();
+    public static List<Trip> optimizeHauling(Map<String, Material> requiredMaterials,
+                                             List<Market> markets,
+                                             int shipCapacity) {
+        List<Trip> trips = new ArrayList<>();
         Map<String, Integer> remaining = new HashMap<>();
 
         // Initialize remaining materials
-        for (EDHaulingOptimizer.Material material : requiredMaterials.values()) {
+        for (Material material : requiredMaterials.values()) {
             remaining.put(material.getName(), material.getRequiredAmount());
         }
 
@@ -23,7 +23,7 @@ class RouteOptimizer {
 
         // Continue until all materials are delivered
         while (!allMaterialsDelivered(remaining)) {
-            EDHaulingOptimizer.Trip currentTrip = new EDHaulingOptimizer.Trip();
+            Trip currentTrip = new Trip();
             boolean tripModified = true;
 
             // Keep adding to the current trip until we can't add more
@@ -38,7 +38,7 @@ class RouteOptimizer {
                 for (Market market : markets) {
                     // Skip if we already visited this market in this trip
                     boolean alreadyVisited = false;
-                    for (EDHaulingOptimizer.TripStop stop : currentTrip.getStops()) {
+                    for (TripStop stop : currentTrip.getStops()) {
                         if (stop.getMarket().equals(market)) {
                             alreadyVisited = true;
                             break;
@@ -89,7 +89,7 @@ class RouteOptimizer {
         return optimizeTrips(trips, shipCapacity);
     }
 
-    private static Map<String, List<Market>> findBestMarketsForMaterials(Map<String, EDHaulingOptimizer.Material> requiredMaterials,
+    private static Map<String, List<Market>> findBestMarketsForMaterials(Map<String, Material> requiredMaterials,
                                                                          List<Market> markets) {
         Map<String, List<Market>> result = new HashMap<>();
 
@@ -150,33 +150,33 @@ class RouteOptimizer {
         return remaining.values().stream().allMatch(v -> v <= 0);
     }
 
-    private static List<EDHaulingOptimizer.Trip> optimizeTrips(List<EDHaulingOptimizer.Trip> trips, int shipCapacity) {
+    private static List<Trip> optimizeTrips(List<Trip> trips, int shipCapacity) {
         if (trips.size() <= 1) return trips;
 
-        List<EDHaulingOptimizer.Trip> optimizedTrips = new ArrayList<>();
+        List<Trip> optimizedTrips = new ArrayList<>();
         int i = 0;
 
         while (i < trips.size()) {
-            EDHaulingOptimizer.Trip currentTrip = trips.get(i);
+            Trip currentTrip = trips.get(i);
 
             // Try to combine with next trip if possible
             if (i + 1 < trips.size()) {
-                EDHaulingOptimizer.Trip nextTrip = trips.get(i + 1);
+                Trip nextTrip = trips.get(i + 1);
 
                 if (currentTrip.getTotalCargo() + nextTrip.getTotalCargo() <= shipCapacity) {
                     // Create combined trip
-                    EDHaulingOptimizer.Trip combinedTrip = new EDHaulingOptimizer.Trip();
+                    Trip combinedTrip = new Trip();
 
                     // Add stops from current trip
-                    for (EDHaulingOptimizer.TripStop stop : currentTrip.getStops()) {
+                    for (TripStop stop : currentTrip.getStops()) {
                         combinedTrip.addStop(stop.getMarket(), stop.getMaterialsLoaded());
                     }
 
                     // Add stops from next trip (checking for duplicates)
-                    for (EDHaulingOptimizer.TripStop stop : nextTrip.getStops()) {
+                    for (TripStop stop : nextTrip.getStops()) {
                         boolean marketExists = false;
 
-                        for (EDHaulingOptimizer.TripStop existingStop : combinedTrip.getStops()) {
+                        for (TripStop existingStop : combinedTrip.getStops()) {
                             if (existingStop.getMarket().equals(stop.getMarket())) {
                                 marketExists = true;
                                 break;

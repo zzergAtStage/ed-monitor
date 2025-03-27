@@ -80,9 +80,10 @@ public class RIP_EliteLogMonitor extends JFrame {
 
 
     private void startLogMonitoring() {
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(this::checkLogs, 0, 1, TimeUnit.SECONDS);
-        System.out.println("Log monitoring started at: " + appStartTime);
+        try (ScheduledExecutorService executor = Executors.newScheduledThreadPool(1)) {
+            executor.scheduleAtFixedRate(this::checkLogs, 0, 1, TimeUnit.SECONDS);
+            System.out.println("Log monitoring started at: " + appStartTime);
+        }
     }
 
     private void checkLogs() {
@@ -104,7 +105,6 @@ public class RIP_EliteLogMonitor extends JFrame {
             }
         } catch (IOException e) {
             System.err.println("Error checking logs: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -145,7 +145,6 @@ public class RIP_EliteLogMonitor extends JFrame {
             }
         } catch (IOException e) {
             System.err.println("Error processing log file: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

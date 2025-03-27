@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import org.h2.tools.Server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import javax.swing.*;
 import java.sql.SQLException;
@@ -15,6 +16,7 @@ import java.sql.SQLException;
  */
 
 @SpringBootApplication
+@EnableScheduling
 @Log4j2
 public class Main {
     public static void main(String[] args) {

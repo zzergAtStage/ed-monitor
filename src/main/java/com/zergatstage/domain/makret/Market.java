@@ -13,6 +13,7 @@ import java.util.Map;
 
 @Entity
 @Data
+@ToString(exclude = {"items"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,7 +26,7 @@ public class Market {
     private String stationType;
     private String systemName;
 
-    @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Map<String, MarketItem> items = new HashMap<>();
 
     /**
@@ -58,4 +59,11 @@ public class Market {
     public MarketItem getItem(String commodityId) {
         return items.get(commodityId);
     }
+
+//    @Override
+//    public String toString(){
+//
+//        return String.format("Market: id=%s, name=%s, items=%d%n", this.getMarketId()
+//                , this.getStationName(), this.getItems().size() );
+//    }
 }

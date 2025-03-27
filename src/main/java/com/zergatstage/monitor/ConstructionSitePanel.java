@@ -2,6 +2,7 @@ package com.zergatstage.monitor;
 
 import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
+import com.zergatstage.domain.dictionary.CommodityService;
 import com.zergatstage.services.ApplicationContextProvider;
 import com.zergatstage.services.ConstructionSiteManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,24 +33,30 @@ public class ConstructionSitePanel extends JPanel {
     @Autowired
     private ConstructionSiteManager siteManager;
 
+    @Autowired
+    private final CommodityService commodityService;
+
     /**
      * A sample list of available commodities to choose from when adding materials.
      */
-    private static final String[] AVAILABLE_COMMODITIES = {
-            "Biowaste", "Building Fabricators", "Ceramic Composites",
-            "Computer Components", "Copper", "Crop Harvesters",
-            "Evacuation Shelter", "Food Cartridges", "Fruit and Vegetables",
-            "Grain", "Liquid Oxygen", "Pesticides", "Steel",
-            "Survival Equipment", "Land Enrichment Systems" , "gold"
-    };
+    private final String[] AVAILABLE_COMMODITIES;
+//            {
+//            "Biowaste", "Building Fabricators", "Ceramic Composites",
+//            "Computer Components", "Copper", "Crop Harvesters",
+//            "Evacuation Shelter", "Food Cartridges", "Fruit and Vegetables",
+//            "Grain", "Liquid Oxygen", "Pesticides", "Steel",
+//            "Survival Equipment", "Land Enrichment Systems" , "gold"
+//    };
 
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
      */
     public ConstructionSitePanel() {
+
         setLayout(new BorderLayout());
         siteManager = ApplicationContextProvider.getApplicationContext().getBean(ConstructionSiteManager.class);
-
+        commodityService = ApplicationContextProvider.getApplicationContext().getBean(CommodityService.class);
+        AVAILABLE_COMMODITIES = commodityService.getAllNames();
         // ============= Site Progress Table (Top) =============
         String[] siteProgressColumns = {"Site", "Progress"};
         siteProgressTableModel = new DefaultTableModel(siteProgressColumns, 0) {
@@ -252,7 +259,7 @@ public class ConstructionSitePanel extends JPanel {
         for (ConstructionSite site : siteManager.getSites()) {
             Object[] row = {
                     site.getSiteId(),
-                    site.getProgressPercent() // an integer from 0–100
+                    site.getProgressPercent()
             };
             siteProgressTableModel.addRow(row);
         }

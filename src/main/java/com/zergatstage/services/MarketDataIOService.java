@@ -1,81 +1,62 @@
 package com.zergatstage.services;
 
+import com.zergatstage.domain.makret.MarketDataUpdateEvent;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.concurrent.*;
-import lombok.extern.java.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 /**
- * The MarketDataIOService monitors the Market.json file for changes.
- * When a change is detected, it notifies the registered listener with the new JSON data.
+ * Service that monitors the Market.json file for changes.
+ * When a change is detected, it publishes a MarketDataUpdateEvent.
  */
-@Log
+@Service
 public class MarketDataIOService {
 
+    private static final Logger logger = LoggerFactory.getLogger(MarketDataIOService.class);
+
     private final Path marketFile;
-    private final ScheduledExecutorService executor;
-    private ScheduledFuture<?> scheduledTask;
     private String lastContent;
-    private final MarketDataListener listener;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * Listener interface to be implemented by clients that want to receive market data updates.
-     */
-    public interface MarketDataListener {
-        /**
-         * Called when new market data is available.
-         *
-         * @param jsonData the updated JSON data from the market file.
-         */
-        void onMarketDataUpdate(String jsonData);
-    }
-
-    /**
-     * Constructs a MarketDataIOService.
+     * Constructs the MarketDataIOService.
+     * The file path is constructed based on the user's home directory.
      *
-     * @param listener the listener to notify when new market data is available.
+     * @param eventPublisher the Spring event publisher used to publish market update events
      */
-    public MarketDataIOService( MarketDataListener listener) {
-        this.marketFile  = Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous", "Market.json");
-        this.listener = listener;
-        this.executor = Executors.newSingleThreadScheduledExecutor();
+    public MarketDataIOService(ApplicationEventPublisher eventPublisher) {
+        this.marketFile = Paths.get(
+                System.getProperty("user.home"),
+                "Saved Games",
+                "Frontier Developments",
+                "Elite Dangerous",
+                "Market.json"
+        );
+        this.eventPublisher = eventPublisher;
         this.lastContent = "";
     }
 
     /**
-     * Starts monitoring the Market.json file.
+     * Periodically checks the market file for changes.
+     * This method is automatically invoked by Spring every 1 second.
      */
-    public void start() {
-
-        if (scheduledTask == null || scheduledTask.isCancelled() || scheduledTask.isDone()) {
-            scheduledTask = executor.scheduleAtFixedRate(this::checkMarketFile, 0, 1, TimeUnit.SECONDS);
-            log.info("Market Data IO Service started.");
-        }
-    }
-
-    /**
-     * Stops monitoring the Market.json file.
-     */
-    public void stop() {
-        if (scheduledTask != null && !scheduledTask.isCancelled()) {
-            scheduledTask.cancel(true);
-            log.info("Market Data IO Service stopped.");
-        }
-    }
-
-    /**
-     * Reads the market file and checks for changes.
-     * If the content has changed, the new data is passed to the listener.
-     */
-    private void checkMarketFile() {
+    @Scheduled(fixedDelay = 1000)
+    public void checkMarketFile() {
         try {
+            // Read the current content of the market file.
             String content = new String(Files.readAllBytes(marketFile));
+            // If content has changed, update the lastContent and publish an event.
             if (!content.equals(lastContent)) {
                 lastContent = content;
-                listener.onMarketDataUpdate(content);
+                eventPublisher.publishEvent(new MarketDataUpdateEvent(this, content));
+                logger.info("Published market data update event.");
             }
         } catch (IOException e) {
-            log.severe("Error reading market file: " + e.getMessage());
+            logger.error("Error reading market file: {}", e.getMessage(), e);
         }
     }
 }

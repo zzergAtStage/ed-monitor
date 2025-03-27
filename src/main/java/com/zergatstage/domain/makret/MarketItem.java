@@ -1,8 +1,10 @@
 package com.zergatstage.domain.makret;
 
-import com.zergatstage.domain.Commodity;
+import com.zergatstage.domain.dictionary.Commodity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.UUID;
 
 @Entity
 @Data
@@ -13,7 +15,9 @@ import lombok.*;
 public class MarketItem {
 
     @Id
-    private String id;
+    @GeneratedValue
+    private UUID id;
+
     @ManyToOne
     @JoinColumn(name = "commodity_id", nullable = false)
     private Commodity commodity;

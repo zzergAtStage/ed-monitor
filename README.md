@@ -68,7 +68,7 @@ Submit a pull request detailing the modifications and their purposes.
 
 ## License
 
-This project is licensed under the MIT License. For more information, refer to the LICENSE file in the repository.
+This project is licensed under the [MIT License](./license/license.txt). For more information, refer to the LICENSE file in the repository.
 
 ### Acknowledgements
 
@@ -76,7 +76,9 @@ Gratitude is extended to the open-source community and the developers of the fra
 
 ### Contact
 
-For inquiries, suggestions, or feedback, please contact the project maintainer at zzergAtStage@example.com.
+For inquiries, suggestions, or feedback, please contact the project maintainer at @zzergAtStage
+
+
 
 ```shell
 mvn clean package -Pprod

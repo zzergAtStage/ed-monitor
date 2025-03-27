@@ -1,4 +1,4 @@
-package com.zergatstage.domain;
+package com.zergatstage.domain.dictionary;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

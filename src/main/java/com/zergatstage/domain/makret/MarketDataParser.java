@@ -1,19 +1,29 @@
 package com.zergatstage.domain.makret;
 
-import com.zergatstage.domain.Commodity;
+import com.zergatstage.domain.dictionary.Commodity;
+import com.zergatstage.domain.dictionary.CommodityService;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+@Component
 // Service for parsing market data
 public class MarketDataParser {
-    public static List<Market> parseMarketData(String jsonData) throws ParseException {
+    private final CommodityService commodityService;
+
+    public MarketDataParser(CommodityService commodityService) {
+        this.commodityService = commodityService;
+    }
+
+    public List<Market> parseMarketData(String jsonData) throws ParseException {
         List<Market> markets = new ArrayList<>();
 
         JSONParser parser = new JSONParser();
@@ -29,6 +39,7 @@ public class MarketDataParser {
                 .stationName(stationName)
                 .stationType(stationType)
                 .systemName(systemName)
+                .items(new HashMap<>())
                 .build();
 
         JSONArray items = (JSONArray) jsonObject.get("Items");
@@ -43,12 +54,13 @@ public class MarketDataParser {
             long sellPrice = (long) item.get("SellPrice");
             long stock = (long) item.get("Stock");
             long demand = (long) item.get("Demand");
+            Commodity commodity = commodityService.getOrAddCommodity(
+                    id, name, category
+            );
+
             MarketItem marketItem = MarketItem.builder()
-                    .commodity(Commodity.builder()
-                            .id(id)
-                            .name(name)
-                            .category(category)
-                            .build())
+                    .commodity(commodity)
+                    .market(market)
                     .buyPrice((int) buyPrice)
                     .sellPrice((int) sellPrice)
                     .stock((int) stock)
@@ -61,13 +73,12 @@ public class MarketDataParser {
         return markets;
     }
 
-    public static List<Market> parseMarketDataFromFile(String filePath) {
+    public List<Market> parseMarketDataFromFile(String filePath) {
         try {
             String content = new String(Files.readAllBytes(Paths.get(filePath)));
             return parseMarketData(content);
         } catch (Exception e) {
             System.err.println("Error parsing market data: " + e.getMessage());
-            e.printStackTrace();
             return new ArrayList<>();
         }
     }

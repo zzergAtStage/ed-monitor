@@ -90,6 +90,7 @@ public class EliteLogMonitorFrame extends JFrame {
         stopButton.setForeground(orangeText); // Orange
         stopButton.addActionListener(e -> stopStatusMonitor());
 
+
         runnerPanel.add(startButton);
         runnerPanel.add(stopButton);
 
