@@ -52,6 +52,10 @@ mvn clean test -Ptest
 * Java Development Kit (JDK): Ensure JDK 17 or higher is installed on your system.
 
 * Build Tool: Maven or Gradle is required for building the project.
+```bash
+mvn package -Dmaven.test.skip
+mvn spring-boot:run
+* ```
 
 # Usage
 

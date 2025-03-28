@@ -1,5 +1,8 @@
 package com.zergatstage.domain.dictionary;
 
+import com.zergatstage.domain.components.StepCategoryPanel;
+import com.zergatstage.domain.components.StepPanel;
+import com.zergatstage.domain.components.StepWizardDialog;
 import com.zergatstage.services.ApplicationContextProvider;
 
 import javax.swing.*;
@@ -88,16 +91,25 @@ public class CommodityManager extends JPanel {
      * Handles adding a new commodity via input dialogs.
      */
     private void onAddCommodity() {
-        String category = JOptionPane.showInputDialog(this, "Enter category:");
-        if (category == null || category.trim().isEmpty()) return;
+        List<StepPanel> steps = List.of(
+                new StepCategoryPanel(),
+                new StepNamePanel()
+        );
 
-        String name = JOptionPane.showInputDialog(this, "Enter name:");
-        if (name == null || name.trim().isEmpty()) return;
+        StepWizardDialog dialog = new StepWizardDialog(null, steps);
+        dialog.setVisible(true);
 
-        Commodity newCommodity = new Commodity(UUID.randomUUID().toString(), name, category);
-        commodityService.getOrAddCommodity(newCommodity.getId(),newCommodity.getName(),newCommodity.getCategory());
-        loadCommodities();
+        List<Object> results = dialog.getResults();
+        if (results.size() == 2) {
+            String category = (String) results.get(0);
+            String name = (String) results.get(1);
+
+            Commodity newCommodity = new Commodity(UUID.randomUUID().toString(), name, category);
+            commodityService.getOrAddCommodity(newCommodity.getId(), newCommodity.getName(), newCommodity.getCategory());
+            loadCommodities();
+        }
     }
+
 
     /**
      * Handles deleting the selected commodity.
