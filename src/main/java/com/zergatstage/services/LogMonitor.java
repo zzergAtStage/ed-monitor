@@ -2,9 +2,11 @@ package com.zergatstage.services;
 
 import com.zergatstage.services.handlers.LogEventHandler;
 import lombok.extern.log4j.Log4j2;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.json.JSONArray;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -13,29 +15,30 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
 
 /**
- * The LogMonitor class is responsible for continuously monitoring the
- * Elite Dangerous log directory, including the commander log file,
- * for new log entries and delegating event processing to registered
- * LogEventHandlers. This modified version handles multiple events
- * per log line, supporting mixed event types.
+ * The LogMonitor class is responsible for monitoring the Elite Dangerous log directory
+ * for new log entries. It now leverages Spring Boot’s scheduling capabilities and is controlled
+ * via UI interactions (start/stop). This makes the service lifecycle fully managed by Spring Boot,
+ * while still allowing UI-based control.
  */
 @Log4j2
+@Service
 public class LogMonitor {
 
     private final Path logDirectory;
     private Path lastProcessedFile;
     private long lastProcessedFilePosition;
     private Instant lastProcessedTimestamp;
-    private final ScheduledExecutorService executor;
     private final List<LogEventHandler> eventHandlers;
+
+    // Flag to indicate whether monitoring is enabled (controlled from the UI)
+    private volatile boolean monitoring;
 
     /**
      * Constructs a LogMonitor.
      *
-     * @param logDirectory the directory where log files are stored.
+     * @param logDirectory  the directory where log files are stored.
      * @param eventHandlers a list of handlers to process log events.
      */
     public LogMonitor(Path logDirectory, List<LogEventHandler> eventHandlers) {
@@ -43,16 +46,38 @@ public class LogMonitor {
         this.eventHandlers = new ArrayList<>(eventHandlers);
         this.lastProcessedFilePosition = 0;
         this.lastProcessedTimestamp = Instant.now();
-        this.executor = Executors.newScheduledThreadPool(1);
+        this.monitoring = false; // Monitoring is initially off.
     }
 
     /**
-     * Starts the log monitoring service.
-     * It schedules the periodic check for new log entries.
+     * Enables the log monitoring process.
+     * This method can be called from the UI to start processing log entries.
      */
-    public void start() {
-        executor.scheduleAtFixedRate(this::checkLogs, 0, 1, TimeUnit.SECONDS);
-        System.out.println("Log monitoring started at: " + Instant.now());
+    public void startMonitoring() {
+        this.monitoring = true;
+        log.info("Log monitoring started at: {} ",Instant.now());
+    }
+
+    /**
+     * Disables the log monitoring process.
+     * This method can be called from the UI to stop processing log entries.
+     */
+    public void stopMonitoring() {
+        this.monitoring = false;
+        log.info("Log monitoring stopped.");
+    }
+
+    /**
+     * Periodically checks the log directory for new log entries.
+     * This method is scheduled by Spring Boot to run every 1 second.
+     * It only processes log files if monitoring is enabled.
+     */
+    @Scheduled(fixedDelay = 1000)
+    public void scheduledCheckLogs() {
+        if (!monitoring) {
+            return; // Do nothing if monitoring is not enabled.
+        }
+        checkLogs();
     }
 
     /**
@@ -62,7 +87,7 @@ public class LogMonitor {
         try {
             List<Path> logFiles = findLogFiles(logDirectory);
             if (logFiles.isEmpty()) {
-                System.out.println("No log files found in: " + logDirectory);
+                log.warn("No log files found in: {}" ,logDirectory);
                 return;
             }
             Path latestLogFile = findLatestLogFile(logFiles);
@@ -75,8 +100,7 @@ public class LogMonitor {
                 processLogFile(latestLogFile);
             }
         } catch (IOException e) {
-            System.err.println("Error checking logs: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error checking logs: {}", e.getMessage());
         }
     }
 
@@ -134,21 +158,17 @@ public class LogMonitor {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error processing log file: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error processing log file: {} \n {}",e.getMessage(),e.getStackTrace() );
         }
     }
 
     /**
-     * Processes a log line. This method has been enhanced to handle multiple events
-     * per line. It attempts to parse the line as either a JSONObject or a JSONArray,
-     * and then processes each JSON object found.
+     * Processes a log line by parsing it as JSON and delegating to event handlers.
      *
      * @param line the log file line.
      */
     private void processLogLine(String line) {
         try {
-            // Parse the next JSON value from the line.
             Object jsonValue = new JSONTokener(line).nextValue();
             if (jsonValue instanceof JSONObject) {
                 // Process a single JSON object.
@@ -161,22 +181,19 @@ public class LogMonitor {
                 }
             }
         } catch (Exception e) {
-
+            log.warn("Error processing log line: {}", e.getMessage());
         }
     }
 
     /**
-     * Processes an individual JSON object by checking its timestamp and delegating to the appropriate event handlers.
+     * Processes an individual JSON object by checking its timestamp and delegating to appropriate event handlers.
      *
      * @param jsonObject the JSON object representing a log event.
      */
     private void processJsonObject(JSONObject jsonObject) {
         try {
-            // Extract the timestamp from the JSON event.
             String timestampStr = jsonObject.getString("timestamp");
             Instant timestamp = OffsetDateTime.parse(timestampStr).toInstant();
-
-            // Process only new events based on timestamp
             if (timestamp.isAfter(lastProcessedTimestamp)) {
                 String eventType = jsonObject.getString("event");
                 for (LogEventHandler handler : eventHandlers) {

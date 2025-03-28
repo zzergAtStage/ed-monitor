@@ -5,14 +5,16 @@ import com.zergatstage.services.handlers.AsteroidProspectEventHandler;
 import com.zergatstage.services.handlers.CargoUpdateEventHandler;
 import com.zergatstage.services.handlers.DroneLaunchEventHandler;
 import com.zergatstage.services.handlers.LogEventHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.h2.tools.Server;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 
 import javax.swing.*;
 import java.awt.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.Arrays;
 
 /**
  * The EliteLogMonitorFrame class creates the main application frame.
@@ -22,14 +24,17 @@ import java.util.Arrays;
  * Additionally, a runner panel is added at the bottom with buttons to start and stop
  * the StatusMonitor service.
  */
-
+@Slf4j
 public class EliteLogMonitorFrame extends JFrame {
 
     private final JLabel droneLaunchedLabel;
     private final JLabel asteroidProspectedLabel;
-    private final LogMonitor logMonitor;
+    private final Path logDirectory;
     private StatusMonitor statusMonitor;
     private boolean isStatusMonitorRunning = false; // Flag to track service state
+
+    @Autowired
+    ApplicationContext applicationContext;
     /**
      * Constructs the EliteLogMonitorFrame, initializes UI components,
      * sets up the log monitoring service, and integrates the runner panel.
@@ -53,6 +58,8 @@ public class EliteLogMonitorFrame extends JFrame {
         Color orangeText     = new Color( 236, 151, 6);  // #EC9706
         Color neutralText    = new Color( 191, 191, 191);// #BFBFBF
 
+        createMenuBar();
+
 
         // Log Monitor Panel (Tab 1)
         JPanel logMonitorPanel = new JPanel(new GridLayout(2, 1));
@@ -73,9 +80,104 @@ public class EliteLogMonitorFrame extends JFrame {
         // Add the tabbed pane to the center of the main panel
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
 
+        /*
+        Runner Panel for StatusMonitor Controls
+        -------------------------------
+        */
+        JPanel runnerPanel = getStatusManageJPanel(lightBackground, orangeText, darkBackground);
+
+        mainPanel.add(runnerPanel, BorderLayout.SOUTH);
+
+        setContentPane(mainPanel);
+
+        LogEventHandler droneHandler = new DroneLaunchEventHandler(droneLaunchedLabel, this);
+        LogEventHandler asteroidHandler = new AsteroidProspectEventHandler(asteroidProspectedLabel);
+        LogEventHandler cargoHandler = new CargoUpdateEventHandler();
+
+        ApplicationContext context = ApplicationContextProvider.getApplicationContext();
+        LogMonitor logMonitor = context.getBean(LogMonitor.class);
+        logDirectory = context.getBean(Path.class);
+        logMonitor.scheduledCheckLogs();
+
         // -------------------------------
-        // Runner Panel for StatusMonitor Controls
+        // StatusMonitor Initialization
         // -------------------------------
+        // Assume Status.json and Journal.log are located in the same log directory
+        Path statusFile = logDirectory.resolve("Status.json");
+        Path sessionSummaryFile = logDirectory.resolve("Journal.log");
+        statusMonitor = new StatusMonitor(statusFile.toString(), sessionSummaryFile.toString());
+
+        setVisible(true);
+    }
+
+    /**
+     * Creates and sets up the main menu bar for the application.
+     * Adds "File", "Tools", and "Dictionary" menus with example actions.
+     */
+    private void createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu fileMenu = getFileJMenu();
+        JMenu toolsMenu = new JMenu("Tools");
+
+        JMenuItem monitorToggle = new JMenuItem("Toggle Log Monitoring");
+        monitorToggle.addActionListener(e -> {
+            if (isStatusMonitorRunning) {
+                stopStatusMonitor();
+            } else {
+                startStatusMonitor();
+            }
+        });
+
+        toolsMenu.add(monitorToggle);
+
+        JMenu dictionaryMenu = new JMenu("Dictionary");
+
+        JMenuItem openDictionaryItem = new JMenuItem("Open Dictionary");
+        openDictionaryItem.addActionListener(e -> {
+            DictionaryManagerDialog dialog = new DictionaryManagerDialog(this);
+            dialog.setVisible(true);
+        });
+
+
+        dictionaryMenu.add(openDictionaryItem);
+
+        // Add menus to the menu bar
+        menuBar.add(fileMenu);
+        menuBar.add(toolsMenu);
+        menuBar.add(dictionaryMenu);
+
+        // Set the menu bar for this frame
+        setJMenuBar(menuBar);
+    }
+
+    private JMenu getFileJMenu() {
+        applicationContext = ApplicationContextProvider.getApplicationContext();
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.addActionListener(e -> {
+            log.info("Exiting application...");
+            int exitCode = SpringApplication.exit(applicationContext, () -> 0);
+            System.exit(exitCode);
+        });
+
+        JMenuItem loadMarketItem = new JMenuItem("Load Market File");
+        loadMarketItem.addActionListener(e -> {
+            // Example placeholder action
+            JOptionPane.showMessageDialog(this,
+                    "Market file loading not implemented yet.",
+                    "Load Market File",
+                    JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        fileMenu.add(loadMarketItem);
+        fileMenu.addSeparator();
+        fileMenu.add(exitItem);
+        return fileMenu;
+    }
+
+
+    private JPanel getStatusManageJPanel(Color lightBackground, Color orangeText, Color darkBackground) {
         JPanel runnerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
         // Start button: Orange background with white text
@@ -93,35 +195,7 @@ public class EliteLogMonitorFrame extends JFrame {
 
         runnerPanel.add(startButton);
         runnerPanel.add(stopButton);
-
-        // Add the runner panel to the south of the main panel
-        mainPanel.add(runnerPanel, BorderLayout.SOUTH);
-
-        // Set the main panel as the content pane of the frame
-        setContentPane(mainPanel);
-
-        // -------------------------------
-        // Log Monitor Initialization
-        // -------------------------------
-        LogEventHandler droneHandler = new DroneLaunchEventHandler(droneLaunchedLabel, this);
-        LogEventHandler asteroidHandler = new AsteroidProspectEventHandler(asteroidProspectedLabel);
-        LogEventHandler cargoHandler = new CargoUpdateEventHandler();
-
-        Path logDirectory = Paths.get(System.getProperty("user.home"),
-                "Saved Games", "Frontier Developments", "Elite Dangerous");
-
-        logMonitor = new LogMonitor(logDirectory, Arrays.asList(droneHandler, asteroidHandler, cargoHandler));
-        logMonitor.start();
-
-        // -------------------------------
-        // StatusMonitor Initialization
-        // -------------------------------
-        // Assume Status.json and Journal.log are located in the same log directory
-        Path statusFile = logDirectory.resolve("Status.json");
-        Path sessionSummaryFile = logDirectory.resolve("Journal.log");
-        statusMonitor = new StatusMonitor(statusFile.toString(), sessionSummaryFile.toString());
-
-        setVisible(true);
+        return runnerPanel;
     }
 
     /**
@@ -140,9 +214,9 @@ public class EliteLogMonitorFrame extends JFrame {
         if (!isStatusMonitorRunning) {
             statusMonitor.start();
             isStatusMonitorRunning = true;
-            System.out.println("Status Monitor started.");
+            log.info("Status Monitor started.");
         } else {
-            System.out.println("Status Monitor is already running.");
+            log.info("Status Monitor is already running.");
         }
     }
 
@@ -153,9 +227,9 @@ public class EliteLogMonitorFrame extends JFrame {
         if (isStatusMonitorRunning) {
             statusMonitor.stop();
             isStatusMonitorRunning = false;
-            System.out.println("Status Monitor stopped.");
+            log.info("Status Monitor stopped.");
         } else {
-            System.out.println("Status Monitor is not running.");
+            log.info("Status Monitor is not running.");
         }
     }
 
@@ -168,9 +242,9 @@ public class EliteLogMonitorFrame extends JFrame {
         // Start H2 Console
         try {
             Server webServer = Server.createWebServer("-webPort", "8082", "-tcpAllowOthers").start();
-            System.out.println("H2 Console started at: http://localhost:8082");
+           log.info("H2 Console started at: http://localhost:8082");
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Error starting the H2 webServer: {} \n {}", e.getMessage(),e.getCause().getMessage());
         }
         SwingUtilities.invokeLater(EliteLogMonitorFrame::new);
     }

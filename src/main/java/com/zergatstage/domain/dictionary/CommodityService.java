@@ -35,6 +35,14 @@ public class CommodityService {
         return repository.findById(id).orElseThrow();
     }
 
+    /**
+     * Get all Commodities for the Dictionary
+     * @return List of Commodities
+     */
+    public List<Commodity> getAll() {
+        return repository.findAll();
+    }
+
     public String[] getAllNames(){
         return repository.findAll().stream()
                 .map(Commodity::getName)
@@ -59,4 +67,11 @@ public class CommodityService {
         return repository.save(newCommodity);
     }
 
+    public void updateCommodity(Commodity updated) {
+        repository.save(updated);
+    }
+
+    public void deleteCommodity(String id) {
+        repository.deleteById(id);
+    }
 }

@@ -12,3 +12,6 @@ spring:
   sql:
     init:
       mode: never
+log:
+  monitor:
+    directory: ${user.home}/Saved Games/Frontier Developments/Elite Dangerous

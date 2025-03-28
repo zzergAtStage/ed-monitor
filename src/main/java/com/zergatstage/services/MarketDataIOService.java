@@ -1,10 +1,13 @@
 package com.zergatstage.services;
 
 import com.zergatstage.domain.makret.MarketDataUpdateEvent;
+
 import java.io.IOException;
 import java.nio.file.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,13 +32,9 @@ public class MarketDataIOService {
      * @param eventPublisher the Spring event publisher used to publish market update events
      */
     public MarketDataIOService(ApplicationEventPublisher eventPublisher) {
-        this.marketFile = Paths.get(
-                System.getProperty("user.home"),
-                "Saved Games",
-                "Frontier Developments",
-                "Elite Dangerous",
-                "Market.json"
-        );
+        ApplicationContext applicationContext = ApplicationContextProvider.getApplicationContext();
+        Path logDirectory = applicationContext.getBean(Path.class);
+        this.marketFile = logDirectory.resolve("Market.json");
         this.eventPublisher = eventPublisher;
         this.lastContent = "";
     }
