@@ -17,6 +17,10 @@ to ensure resilience and scalability.
 * Persistent Market Data Management: Incorporates mechanisms for the persistent storage and retrieval of market data, ensuring data integrity and availability across sessions. This is particularly beneficial for applications requiring reliable data persistence.
 
 * Modular Architecture: Designed with a modular approach, facilitating maintainability and extensibility. This architecture supports the seamless integration of additional features and components as the application evolves.
+  ### Screenshoots
+![Screenshot 2025-04-22 125423](https://github.com/user-attachments/assets/971c08bf-7c65-48ae-a3ac-df020952c78a)
+![Screenshot 2025-04-22 125450](https://github.com/user-attachments/assets/4e57c442-abc5-4422-aba3-d86d0032e5cd)
+![Screenshot 2025-04-22 125517](https://github.com/user-attachments/assets/13c86f5b-1b0e-494b-b534-3723fc188151)
 
 # Getting Started
 
