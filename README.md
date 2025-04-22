@@ -82,9 +82,3 @@ Gratitude is extended to the open-source community and the developers of the fra
 
 For inquiries, suggestions, or feedback, please contact the project maintainer at @zzergAtStage
 
-
-
-```shell
-mvn clean package -Pprod
-java -jar target/your-app.jar --spring.profiles.active=prod
-```
