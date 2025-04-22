@@ -55,7 +55,7 @@ mvn clean test -Ptest
 ```bash
 mvn package -Dmaven.test.skip
 mvn spring-boot:run
-* ```
+```
 
 # Usage
 
