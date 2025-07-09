@@ -1,10 +1,7 @@
 package com.zergatstage.monitor;
 
 import com.zergatstage.services.*;
-import com.zergatstage.services.handlers.AsteroidProspectEventHandler;
-import com.zergatstage.services.handlers.CargoUpdateEventHandler;
-import com.zergatstage.services.handlers.DroneLaunchEventHandler;
-import com.zergatstage.services.handlers.LogEventHandler;
+import com.zergatstage.services.handlers.*;
 import lombok.extern.slf4j.Slf4j;
 import org.h2.tools.Server;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,6 +90,8 @@ public class EliteLogMonitorFrame extends JFrame {
         LogEventHandler droneHandler = new DroneLaunchEventHandler(droneLaunchedLabel, this);
         LogEventHandler asteroidHandler = new AsteroidProspectEventHandler(asteroidProspectedLabel);
         LogEventHandler cargoHandler = new CargoUpdateEventHandler();
+        LogEventHandler constructionDepotHandler = new ColonisationConstructionDepot();
+
 
         ApplicationContext context = ApplicationContextProvider.getApplicationContext();
         LogMonitor logMonitor = context.getBean(LogMonitor.class);
