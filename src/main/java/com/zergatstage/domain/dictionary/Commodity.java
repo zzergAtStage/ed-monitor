@@ -26,5 +26,5 @@ public class Commodity {
     private String id;
 
     private String name;
-    private String category;
+    private String category;    
 }

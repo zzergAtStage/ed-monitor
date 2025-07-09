@@ -1,8 +1,8 @@
 package com.zergatstage.domain.dictionary;
 
-import com.zergatstage.domain.components.StepCategoryPanel;
-import com.zergatstage.domain.components.StepPanel;
-import com.zergatstage.domain.components.StepWizardDialog;
+import com.zergatstage.shared.components.StepCategoryPanel;
+import com.zergatstage.shared.components.StepPanel;
+import com.zergatstage.shared.components.StepWizardDialog;
 import com.zergatstage.services.ApplicationContextProvider;
 
 import javax.swing.*;

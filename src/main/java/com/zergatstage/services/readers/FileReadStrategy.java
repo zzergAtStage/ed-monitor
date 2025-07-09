@@ -35,8 +35,6 @@ public interface FileReadStrategy {
          * @param newContent the new content read from the file.
          * @param newState   the new state to be persisted for subsequent reads.
          */
-        public ReadResult {
-        }
-
+            public ReadResult {}
         }
 }

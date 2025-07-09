@@ -1,4 +1,4 @@
-package com.zergatstage.domain.components;
+package com.zergatstage.shared.components;
 
 import javax.swing.*;
 import java.awt.*;

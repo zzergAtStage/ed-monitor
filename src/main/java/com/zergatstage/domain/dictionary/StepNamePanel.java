@@ -1,6 +1,6 @@
 package com.zergatstage.domain.dictionary;
 
-import com.zergatstage.domain.components.StepPanel;
+import com.zergatstage.shared.components.StepPanel;
 
 import javax.swing.*;
 import java.awt.*;
