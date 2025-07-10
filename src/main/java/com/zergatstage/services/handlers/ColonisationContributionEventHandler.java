@@ -25,6 +25,6 @@ public class ColonisationContributionEventHandler implements LogEventHandler {
      */
     @Override
     public void handleEvent(JSONObject event) {
-
+        log.debug("");
     }
 }

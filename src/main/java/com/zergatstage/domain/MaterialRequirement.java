@@ -9,8 +9,8 @@ import lombok.Data;
 public class MaterialRequirement {
 
     private String materialName;
-    private double requiredQuantity;
-    private double deliveredQuantity;
+    private int requiredQuantity;
+    private int deliveredQuantity;
 
     /**
      * Constructs a MaterialRequirement.
@@ -18,10 +18,10 @@ public class MaterialRequirement {
      * @param materialName Name of the material.
      * @param requiredQuantity Total quantity required.
      */
-    public MaterialRequirement(String materialName, double requiredQuantity) {
+    public MaterialRequirement(String materialName, int requiredQuantity) {
         this.materialName = materialName;
         this.requiredQuantity = requiredQuantity;
-        this.deliveredQuantity = 0.0;
+        this.deliveredQuantity = 0;
     }
 
     // Getters and setters omitted for brevity
@@ -31,7 +31,7 @@ public class MaterialRequirement {
      *
      * @param quantity Quantity to add.
      */
-    public void addDeliveredQuantity(double quantity) {
+    public void addDeliveredQuantity(int quantity) {
         this.deliveredQuantity += quantity;
     }
 
@@ -40,7 +40,7 @@ public class MaterialRequirement {
      *
      * @return remaining quantity.
      */
-    public double getRemainingQuantity() {
+    public int getRemainingQuantity() {
         return Math.max(requiredQuantity - deliveredQuantity, 0);
     }
 }

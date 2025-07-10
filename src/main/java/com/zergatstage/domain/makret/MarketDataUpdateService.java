@@ -4,6 +4,7 @@ import com.zergatstage.domain.makret.Market;
 import com.zergatstage.domain.makret.MarketDataParser;
 import com.zergatstage.domain.makret.MarketDataUpdateEvent;
 import com.zergatstage.domain.makret.MarketRepository;
+import lombok.extern.log4j.Log4j2;
 import org.json.simple.parser.ParseException;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.List;
  * </p>
  */
 @Service
+@Log4j2
 public class MarketDataUpdateService {
 
     private final MarketRepository repository;
@@ -50,16 +52,16 @@ public class MarketDataUpdateService {
             List<Market> parsedMarkets = marketDataParser.parseMarketData(jsonData);
             if (parsedMarkets.isEmpty()) {
                 // Log a message when no data is found
-                System.out.println("No market data found from file update.");
+                log.warn("No market data found from file update. (It's okay)");
                 return;
             }
 
             // Save or update each parsed market in the repository
             parsedMarkets.forEach(repository::save);
-            System.out.println("Market data updated successfully.");
+            log.info("Market data updated successfully.");
         } catch (ParseException e) {
             // Log the parsing error; consider using a logging framework in production
-            System.err.println("Error parsing market data: " + e.getMessage());
+            log.error("Error parsing market data: {}", e.getMessage());
         }
     }
 

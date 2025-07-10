@@ -1,25 +1,22 @@
 package com.zergatstage.domain;
 
+import lombok.Getter;
+
 import java.util.List;
 
 /**
  * Represents a construction site with a list of material requirements.
  */
+@Getter
 public class ConstructionSite {
     private final String siteId;
+    private final long marketId;
     private final List<MaterialRequirement> requirements;
 
-    public ConstructionSite(String siteId, List<MaterialRequirement> requirements) {
+    public ConstructionSite(String siteId, long marketId, List<MaterialRequirement> requirements) {
         this.siteId = siteId;
+        this.marketId = marketId;
         this.requirements = requirements;
-    }
-
-    public String getSiteId() {
-        return siteId;
-    }
-
-    public List<MaterialRequirement> getRequirements() {
-        return requirements;
     }
 
     /**
@@ -49,7 +46,7 @@ public class ConstructionSite {
      * @param cargoMaterial Material name delivered from the cargo event.
      * @param deliveredQuantity Quantity delivered.
      */
-    public void updateRequirement(String cargoMaterial, double deliveredQuantity) {
+    public void updateRequirement(String cargoMaterial, int deliveredQuantity) {
         for (MaterialRequirement req : requirements) {
             if (req.getMaterialName().equalsIgnoreCase(cargoMaterial)) {
                 req.addDeliveredQuantity(deliveredQuantity);

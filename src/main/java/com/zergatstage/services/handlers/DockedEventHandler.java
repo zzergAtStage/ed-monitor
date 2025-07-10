@@ -1,20 +1,19 @@
 package com.zergatstage.services.handlers;
 
+import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.services.ApplicationContextProvider;
 import com.zergatstage.services.ConstructionSiteManager;
-import lombok.extern.log4j.Log4j2;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-
 @Service
-@Log4j2
-public class ColonisationConstructionDepot implements LogEventHandler {
+public class DockedEventHandler implements LogEventHandler {
+
     private final ConstructionSiteManager siteManager;
 
-    public ColonisationConstructionDepot() {
-        siteManager =  ApplicationContextProvider.getApplicationContext().getBean(ConstructionSiteManager.class);
+    public DockedEventHandler() {
+        this.siteManager = ApplicationContextProvider.getApplicationContext().getBean(ConstructionSiteManager.class);;
     }
 
     /**
@@ -25,7 +24,7 @@ public class ColonisationConstructionDepot implements LogEventHandler {
      */
     @Override
     public boolean canHandle(String eventType) {
-        return "ColonisationConstructionDepot".equals(eventType);
+        return "Docked".equals(eventType);
     }
 
     /**
@@ -35,13 +34,20 @@ public class ColonisationConstructionDepot implements LogEventHandler {
      */
     @Override
     public void handleEvent(JSONObject event) {
-        long marketId;
         try {
-            marketId = event.getInt("MarketID");
+            String stationName = event.getString("StationName");
+            long marketId = event.getLong("MarketID");
+            ConstructionSite constructionSite = siteManager.getSites().get(marketId);
+            //TODO: WIP
+            if (constructionSite == null) {
+                constructionSite = siteManager.getSites().values().stream()
+                        .filter(s -> s.getSiteId().equals(stationName))
+                        .findFirst()
+                        .orElse(null);
+
+            }
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
-        log.debug("Event: ColonisationConstructionDepot -> MarketId: {}", marketId );
-        siteManager.updateSite(marketId, event); //TODO: WIP
     }
 }

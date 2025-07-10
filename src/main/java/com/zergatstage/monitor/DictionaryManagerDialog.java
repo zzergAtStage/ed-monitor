@@ -110,6 +110,7 @@ public class DictionaryManagerDialog extends JDialog {
         model.addElement("Outpost");
         model.addElement("Surface Port");
         model.addElement("Mega Ship");
+        model.addElement("SpaceConstructionDepot");
 
         JList<String> list = new JList<>(model);
         panel.add(new JScrollPane(list), BorderLayout.CENTER);

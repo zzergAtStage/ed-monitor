@@ -8,6 +8,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+
 /**
  * Handles cargo update events and updates the construction site requirements.
  */
@@ -29,20 +31,30 @@ public class CargoUpdateEventHandler implements LogEventHandler {
     @Override
     public void handleEvent(JSONObject event) {
         String material = null;
-        double quantity;
+        int quantity;
+        CargoTransferDirection direction;
         try {
-            // Extract the "Transfers" array from the event JSON object
+            // Extract the "Transfers" array from the event JSON object sw
             JSONArray transfers = event.getJSONArray("Transfers");
 
             // Assuming the first element in the transfers array holds the relevant cargo details.
             JSONObject transfer = transfers.getJSONObject(0);
 
             material = transfer.getString("Type");
-            quantity = transfer.getDouble("Count");
+            quantity = transfer.getInt("Count");
+            direction = transfer.getString("Direction")
+                    .equalsIgnoreCase("tocarrier") ? CargoTransferDirection.TO_CARRIER
+                                                                : CargoTransferDirection.TO_SHIP;
+            //TODO: implement Ship haul update
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
         log.info("Trying to update site commodities list...");
         siteManager.updateSitesWithCargo(material, quantity);
     }
+}
+
+enum CargoTransferDirection {
+    TO_SHIP,
+    TO_CARRIER
 }

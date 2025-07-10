@@ -13,6 +13,8 @@ import java.io.RandomAccessFile;
 import java.nio.file.*;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +47,7 @@ public class LogMonitor {
         this.logDirectory = logDirectory;
         this.eventHandlers = new ArrayList<>(eventHandlers);
         this.lastProcessedFilePosition = 0;
-        this.lastProcessedTimestamp = Instant.now();
+        this.lastProcessedTimestamp = Instant.now().minus(5 , ChronoUnit.MINUTES);
         this.monitoring = false; // Monitoring is initially off.
     }
 
@@ -64,7 +66,7 @@ public class LogMonitor {
      */
     public void stopMonitoring() {
         this.monitoring = false;
-        log.info("Log monitoring stopped.");
+        log.info("Log monitoring stopped at: {}", Instant.now());
     }
 
     /**

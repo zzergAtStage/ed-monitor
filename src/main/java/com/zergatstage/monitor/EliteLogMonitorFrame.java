@@ -12,6 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Instant;
 
 /**
  * The EliteLogMonitorFrame class creates the main application frame.
@@ -29,7 +30,8 @@ public class EliteLogMonitorFrame extends JFrame {
     private final Path logDirectory;
     private StatusMonitor statusMonitor;
     private boolean isStatusMonitorRunning = false; // Flag to track service state
-
+    private boolean isLogMonitorRunning = false; // Flag to track service state
+    private final LogMonitor logMonitor;
     @Autowired
     ApplicationContext applicationContext;
     /**
@@ -91,11 +93,14 @@ public class EliteLogMonitorFrame extends JFrame {
         LogEventHandler asteroidHandler = new AsteroidProspectEventHandler(asteroidProspectedLabel);
         LogEventHandler cargoHandler = new CargoUpdateEventHandler();
         LogEventHandler constructionDepotHandler = new ColonisationConstructionDepot();
-
+        LogEventHandler dockedEventHandler = new DockedEventHandler();
 
         ApplicationContext context = ApplicationContextProvider.getApplicationContext();
-        LogMonitor logMonitor = context.getBean(LogMonitor.class);
+
+        logMonitor = context.getBean(LogMonitor.class);
         logDirectory = context.getBean(Path.class);
+        logMonitor.startMonitoring();
+        isLogMonitorRunning = true;
         logMonitor.scheduledCheckLogs();
 
         // -------------------------------
@@ -119,8 +124,8 @@ public class EliteLogMonitorFrame extends JFrame {
         JMenu fileMenu = getFileJMenu();
         JMenu toolsMenu = new JMenu("Tools");
 
-        JMenuItem monitorToggle = new JMenuItem("Toggle Log Monitoring");
-        monitorToggle.addActionListener(e -> {
+        JMenuItem statusMonitorToggle = new JMenuItem("Toggle Status File Monitoring");
+        statusMonitorToggle.addActionListener(e -> {
             if (isStatusMonitorRunning) {
                 stopStatusMonitor();
             } else {
@@ -128,7 +133,17 @@ public class EliteLogMonitorFrame extends JFrame {
             }
         });
 
-        toolsMenu.add(monitorToggle);
+        toolsMenu.add(statusMonitorToggle);
+        JMenuItem logMonitorToggle = new JMenuItem("Toggle Logs Monitoring");
+        logMonitorToggle.addActionListener(e -> {
+            if (isLogMonitorRunning) {
+                stopLogMonitor();
+            } else {
+                startLogMonitor();
+            }
+        });
+
+        toolsMenu.add(logMonitorToggle);
 
         JMenu dictionaryMenu = new JMenu("Dictionary");
 
@@ -150,12 +165,23 @@ public class EliteLogMonitorFrame extends JFrame {
         setJMenuBar(menuBar);
     }
 
+    private void startLogMonitor() {
+        isLogMonitorRunning = true;
+        logMonitor.startMonitoring();
+    }
+
+    private void stopLogMonitor() {
+        isLogMonitorRunning = false;
+        logMonitor.stopMonitoring();
+    }
+
     private JMenu getFileJMenu() {
         applicationContext = ApplicationContextProvider.getApplicationContext();
         JMenu fileMenu = new JMenu("File");
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(e -> {
             log.info("Exiting application...");
+            logMonitor.stopMonitoring();
             int exitCode = SpringApplication.exit(applicationContext, () -> 0);
             System.exit(exitCode);
         });

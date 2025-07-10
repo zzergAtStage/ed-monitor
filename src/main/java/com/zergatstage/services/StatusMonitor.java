@@ -39,6 +39,7 @@ public class StatusMonitor {
                 // Append the new state to the session summary
                 appendStateToSessionSummary(jsonState, sessionSummaryFile);
             } catch (Exception e) {
+                log.error("Error processing status file content: {}", e.getMessage());
                 System.err.println("Error processing status file content: " + e.getMessage());
             }
         });

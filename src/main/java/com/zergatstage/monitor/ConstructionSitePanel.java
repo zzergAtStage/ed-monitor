@@ -128,7 +128,9 @@ public class ConstructionSitePanel extends JPanel {
         }
 
         // Check if a site with this ID already exists
-        if (siteManager.getSites().stream().anyMatch(s -> s.getSiteId().equals(siteId))) {
+        boolean isSitePresent = siteManager.getSites().values().stream()
+                .anyMatch(s -> s.getSiteId().equals(siteId));
+        if (isSitePresent) {
             JOptionPane.showMessageDialog(
                     this,
                     "A site with this ID already exists!",
@@ -138,8 +140,8 @@ public class ConstructionSitePanel extends JPanel {
             return;
         }
 
-        // Create the new site
-        ConstructionSite newSite = new ConstructionSite(siteId, new ArrayList<>());
+        // Create the new site with 0 marketId. The not zero ID means site is imported.
+        ConstructionSite newSite = new ConstructionSite(siteId, 0,new ArrayList<>());
         siteManager.addSite(newSite);
 
         refreshAll();
@@ -160,7 +162,7 @@ public class ConstructionSitePanel extends JPanel {
         }
 
         // 1) Select the target site
-        String[] siteIds = siteManager.getSites().stream()
+        String[] siteIds = siteManager.getSites().values().stream()
                 .map(ConstructionSite::getSiteId)
                 .toArray(String[]::new);
 
@@ -218,8 +220,8 @@ public class ConstructionSitePanel extends JPanel {
             return;
         }
 
-        // Find the selected site
-        ConstructionSite selectedSite = siteManager.getSites().stream()
+        // Find the selected site with StringID - manually added enteties
+        ConstructionSite selectedSite = siteManager.getSites().values().stream()
                 .filter(s -> s.getSiteId().equals(selectedSiteId))
                 .findFirst()
                 .orElse(null);
@@ -256,7 +258,7 @@ public class ConstructionSitePanel extends JPanel {
     private void refreshSiteProgressTable() {
         siteProgressTableModel.setRowCount(0);
 
-        for (ConstructionSite site : siteManager.getSites()) {
+        for (ConstructionSite site : siteManager.getSites().values()) {
             Object[] row = {
                     site.getSiteId(),
                     site.getProgressPercent()
@@ -271,7 +273,7 @@ public class ConstructionSitePanel extends JPanel {
     private void refreshCommoditiesTable() {
         commoditiesTableModel.setRowCount(0);
 
-        for (ConstructionSite site : siteManager.getSites()) {
+        for (ConstructionSite site : siteManager.getSites().values()) {
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
                         site.getSiteId(),

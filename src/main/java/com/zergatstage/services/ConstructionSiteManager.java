@@ -3,10 +3,13 @@ package com.zergatstage.services;
 import com.zergatstage.domain.ConstructionSite;
 import lombok.Getter;
 import lombok.Setter;
+import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Manages construction sites and their material requirements.
@@ -16,7 +19,7 @@ import java.util.List;
 @Component
 public class ConstructionSiteManager {
 
-    private final List<ConstructionSite> sites = new ArrayList<>();
+    private final Map<Long, ConstructionSite> sites = new HashMap<>();
     private final List<ConstructionSiteUpdateListener> listeners = new ArrayList<>();
 
     /**
@@ -25,7 +28,7 @@ public class ConstructionSiteManager {
      * @param site the construction site to add.
      */
     public void addSite(ConstructionSite site) {
-        sites.add(site);
+        sites.put(site.getMarketId(), site);
     }
 
     /**
@@ -34,8 +37,9 @@ public class ConstructionSiteManager {
      * @param material the material name.
      * @param deliveredQuantity the delivered quantity.
      */
-    public void updateSitesWithCargo(String material, double deliveredQuantity) {
-        for (ConstructionSite site : sites) {
+    //todo: rework it - this is a GPT a result of hallucination.
+    public void updateSitesWithCargo(String material, int deliveredQuantity) {
+        for (ConstructionSite site : sites.values()) {
             site.updateRequirement(material, deliveredQuantity);
             notifyListeners();
         }
@@ -65,6 +69,12 @@ public class ConstructionSiteManager {
      */
     public void updateSites() {
         notifyListeners();
+    }
+    //TODO: WIP
+    public void updateSite(long marketId, JSONObject event) {
+//        ConstructionSite currentSite = sites.getOrDefault(marketId, new ConstructionSite());
+
+
     }
     // Additional methods for removal, lookup, etc.
 }
