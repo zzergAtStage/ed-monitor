@@ -18,4 +18,17 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <!-- The Swing APIs are provided by the JDK -->
+        <!-- Optionally, include the core module to share business logic -->
+        <dependency>
+            <groupId>com.zergatstage.core</groupId>
+            <artifactId>ed-monitor-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+
 </project>

@@ -4,8 +4,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Represents a material requirement for a construction site.
@@ -13,6 +15,8 @@ import lombok.Data;
 @Data
 @Entity
 @Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class MaterialRequirement {
 
     @Id
