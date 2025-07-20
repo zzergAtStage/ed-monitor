@@ -8,8 +8,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-import java.util.Locale;
-
 /**
  * Handles cargo update events and updates the construction site requirements.
  */
@@ -30,7 +28,7 @@ public class CargoUpdateEventHandler implements LogEventHandler {
 
     @Override
     public void handleEvent(JSONObject event) {
-        String material = null;
+        String material;
         int quantity;
         CargoTransferDirection direction;
         try {

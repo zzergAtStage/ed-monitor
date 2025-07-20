@@ -188,7 +188,7 @@ public class MarketRepositoryTest {
                                          int sellPrice, int stock, int buyPrice, int demand) {
         return new MarketItem(
                 UUID.randomUUID(),
-                new Commodity(id, name, category),
+                new Commodity(id, name,"" ,category, ""),
                 market,
                 stock,
                 sellPrice,

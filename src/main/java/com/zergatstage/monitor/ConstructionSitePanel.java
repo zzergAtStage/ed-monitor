@@ -5,6 +5,7 @@ import com.zergatstage.domain.MaterialRequirement;
 import com.zergatstage.domain.dictionary.CommodityService;
 import com.zergatstage.services.ApplicationContextProvider;
 import com.zergatstage.services.ConstructionSiteManager;
+import com.zergatstage.services.ConstructionSiteUpdateListener;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.swing.*;
@@ -21,7 +22,7 @@ import java.util.ArrayList;
  *  1) A "Site Progress Table" at the top: columns for "Site" and "Progress" (with a progress bar).
  *  2) A "Commodities Table" at the bottom: columns for "Site", "Material", "Required", "Delivered", "Remaining".
  */
-public class ConstructionSitePanel extends JPanel {
+public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpdateListener {
 
     // Top table: site progress
     private final JTable siteProgressTable;
@@ -141,7 +142,7 @@ public class ConstructionSitePanel extends JPanel {
         }
 
         // Create the new site with 0 marketId. The not zero ID means site is imported.
-        ConstructionSite newSite = new ConstructionSite(siteId, 0,new ArrayList<>());
+        ConstructionSite newSite = new ConstructionSite( 0, siteId, new ArrayList<>());
         siteManager.addSite(newSite);
 
         refreshAll();
@@ -285,5 +286,13 @@ public class ConstructionSitePanel extends JPanel {
                 commoditiesTableModel.addRow(row);
             }
         }
+    }
+
+    /**
+     * Invoked when the construction site data has been updated.
+     */
+    @Override
+    public void onConstructionSiteUpdated() {
+        refreshAll();
     }
 }

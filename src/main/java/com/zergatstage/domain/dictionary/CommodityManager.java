@@ -83,7 +83,7 @@ public class CommodityManager extends JPanel {
         String name = JOptionPane.showInputDialog(this, "Edit name:", oldName);
         if (name == null || name.trim().isEmpty()) return;
 
-        Commodity updated = new Commodity(id, name, category);
+        Commodity updated = new Commodity(id, name,"", category, "");
         commodityService.updateCommodity(updated);
         loadCommodities();
     }
@@ -104,7 +104,7 @@ public class CommodityManager extends JPanel {
             String category = (String) results.get(0);
             String name = (String) results.get(1);
 
-            Commodity newCommodity = new Commodity(UUID.randomUUID().toString(), name, category);
+            Commodity newCommodity = new Commodity(UUID.randomUUID().toString(), name, "", category, "");
             commodityService.getOrAddCommodity(newCommodity.getId(), newCommodity.getName(), newCommodity.getCategory());
             loadCommodities();
         }

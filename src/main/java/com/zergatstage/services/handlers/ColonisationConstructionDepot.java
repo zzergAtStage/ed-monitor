@@ -2,6 +2,7 @@ package com.zergatstage.services.handlers;
 
 import com.zergatstage.services.ApplicationContextProvider;
 import com.zergatstage.services.ConstructionSiteManager;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,15 +34,15 @@ public class ColonisationConstructionDepot implements LogEventHandler {
      *
      * @param event the JSON object representing the log event.
      */
+    @SneakyThrows
     @Override
     public void handleEvent(JSONObject event) {
-        long marketId;
-        try {
-            marketId = event.getInt("MarketID");
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
+        if (!event.has("MarketID")) {
+            log.warn("There is no any required attributes (StationName, MarketID)");
+            return;
         }
-        log.debug("Event: ColonisationConstructionDepot -> MarketId: {}", marketId );
+        long marketId = event.getLong("MarketID");
+        log.info("Event: ColonisationConstructionDepot -> MarketId: {}", marketId );
         siteManager.updateSite(marketId, event); //TODO: WIP
     }
 }

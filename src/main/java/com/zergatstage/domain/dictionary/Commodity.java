@@ -1,5 +1,6 @@
 package com.zergatstage.domain.dictionary;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -26,5 +27,9 @@ public class Commodity {
     private String id;
 
     private String name;
-    private String category;    
+    @Column(name = "Name_Localised")
+    private String nameLocalised;
+    private String category;
+    @Column(name = "Category_Localised")
+    private String categoryLocalised;
 }

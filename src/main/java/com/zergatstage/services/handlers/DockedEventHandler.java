@@ -3,11 +3,15 @@ package com.zergatstage.services.handlers;
 import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.services.ApplicationContextProvider;
 import com.zergatstage.services.ConstructionSiteManager;
-import org.json.JSONException;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+
 @Service
+@Log4j2
 public class DockedEventHandler implements LogEventHandler {
 
     private final ConstructionSiteManager siteManager;
@@ -32,22 +36,27 @@ public class DockedEventHandler implements LogEventHandler {
      *
      * @param event the JSON object representing the log event.
      */
+    @SneakyThrows
     @Override
     public void handleEvent(JSONObject event) {
-        try {
-            String stationName = event.getString("StationName");
-            long marketId = event.getLong("MarketID");
-            ConstructionSite constructionSite = siteManager.getSites().get(marketId);
-            //TODO: WIP
-            if (constructionSite == null) {
-                constructionSite = siteManager.getSites().values().stream()
-                        .filter(s -> s.getSiteId().equals(stationName))
-                        .findFirst()
-                        .orElse(null);
-
-            }
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
+        if (!event.has("StationName") || !event.has("MarketID")) {
+            log.warn("There is no any required attributes (StationName, MarketID)");
+            return;
         }
+        String stationName = event.getString("StationName");
+        if (!stationName.contains("Construction Site")) return;
+        long marketId = event.getLong("MarketID");
+        ConstructionSite constructionSite = siteManager.getSites().get(marketId);
+        //TODO: WIP
+        if (constructionSite == null) {
+            constructionSite = siteManager.getSites().values().stream()
+                    .filter(s -> s.getSiteId().equals(stationName))
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (constructionSite == null) constructionSite = new ConstructionSite(marketId, stationName, new ArrayList<>());
+        siteManager.addSite(constructionSite);
+        assert constructionSite != null;
+        log.info("Construction site {} added to list", constructionSite.getSiteId());
     }
 }

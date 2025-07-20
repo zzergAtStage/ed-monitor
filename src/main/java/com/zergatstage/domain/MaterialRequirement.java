@@ -1,14 +1,27 @@
 package com.zergatstage.domain;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.Builder;
 import lombok.Data;
 
 /**
  * Represents a material requirement for a construction site.
  */
 @Data
+@Entity
+@Builder
 public class MaterialRequirement {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+    private String name;
+
     private String materialName;
+
     private int requiredQuantity;
     private int deliveredQuantity;
 

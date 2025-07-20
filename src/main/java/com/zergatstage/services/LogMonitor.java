@@ -14,7 +14,6 @@ import java.nio.file.*;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +46,7 @@ public class LogMonitor {
         this.logDirectory = logDirectory;
         this.eventHandlers = new ArrayList<>(eventHandlers);
         this.lastProcessedFilePosition = 0;
-        this.lastProcessedTimestamp = Instant.now().minus(5 , ChronoUnit.MINUTES);
+        this.lastProcessedTimestamp = Instant.now().minus(1 , ChronoUnit.DAYS);
         this.monitoring = false; // Monitoring is initially off.
     }
 
@@ -206,6 +205,7 @@ public class LogMonitor {
                 lastProcessedTimestamp = timestamp;
             }
         } catch (Exception e) {
+            e.printStackTrace();
             log.warn("Error processing JSON: {}", e.getMessage());
         }
     }

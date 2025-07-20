@@ -1,6 +1,13 @@
 package com.zergatstage.domain;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -8,16 +15,17 @@ import java.util.List;
  * Represents a construction site with a list of material requirements.
  */
 @Getter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
 public class ConstructionSite {
-    private final String siteId;
-    private final long marketId;
-    private final List<MaterialRequirement> requirements;
 
-    public ConstructionSite(String siteId, long marketId, List<MaterialRequirement> requirements) {
-        this.siteId = siteId;
-        this.marketId = marketId;
-        this.requirements = requirements;
-    }
+
+    @Id
+    private long marketId;
+    private String siteId;
+    @OneToMany(fetch = FetchType.LAZY)
+    private List<MaterialRequirement> requirements;
 
     /**
      * Calculates the overall construction progress in percentage (0–100).
@@ -43,14 +51,27 @@ public class ConstructionSite {
     /**
      * Updates the requirement based on newly available cargo materials.
      *
-     * @param cargoMaterial Material name delivered from the cargo event.
-     * @param deliveredQuantity Quantity delivered.
+     * @param materialRequirement MaterialRequirement delivered from the cargo event.
      */
-    public void updateRequirement(String cargoMaterial, int deliveredQuantity) {
+    public void updateRequirement(MaterialRequirement materialRequirement) {
         for (MaterialRequirement req : requirements) {
-            if (req.getMaterialName().equalsIgnoreCase(cargoMaterial)) {
-                req.addDeliveredQuantity(deliveredQuantity);
+            if (req.getMaterialName().equalsIgnoreCase(materialRequirement.getMaterialName())) {
+                req.addDeliveredQuantity(materialRequirement.getDeliveredQuantity());
+                req.setRequiredQuantity(materialRequirement.getRequiredQuantity());
             }
+        }
+    }
+
+    /**
+     * Update delivered quantity
+     * @parameter Commodity name
+     * @parameter Delivered quality
+     */
+    public void updateDeliveredQuantity(String commodityName, int delivered){
+        for (MaterialRequirement req : requirements) {
+            if (req.getMaterialName().equalsIgnoreCase(commodityName)) {
+                req.addDeliveredQuantity(delivered);//TODO: check negative values
+               }
         }
     }
 }

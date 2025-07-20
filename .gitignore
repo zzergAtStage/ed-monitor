@@ -39,3 +39,6 @@ build/
 /.idea/codeStyles/codeStyleConfig.xml
 /data/marketdb.mv.db
 /.idea/codeStyles/Project.xml
+/out/artifacts/ed_monitor_jar/ed-monitor.jar
+/data/marketdb.trace.db
+/src/main/java/com/zergatstage/DemoApp.java
