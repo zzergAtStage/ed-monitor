@@ -42,3 +42,9 @@ build/
 /out/artifacts/ed_monitor_jar/ed-monitor.jar
 /data/marketdb.trace.db
 /src/main/java/com/zergatstage/DemoApp.java
+.idea/jpa.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/vcs.xml
+.idea/inspectionProfiles/Project_Default.xml
+ed-monitor-server/data/**
