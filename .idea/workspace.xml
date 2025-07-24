@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="ed-monitor:jar" />
+    </artifacts-to-build>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JUnit5 Test Class" />
+        <option value="Class" />
+        <option value="Interface" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="MIXED" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;zzergAtStage&quot;
+  }
+}</component>
+  <component name="GithubDefaultAccount">
+    <option name="defaultAccountId" value="f098c4b5-e1fc-492d-9201-c59809d225ae" />
+  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/zzergAtStage/ed-monitor.git&quot;,
+    &quot;accountId&quot;: &quot;f098c4b5-e1fc-492d-9201-c59809d225ae&quot;
+  }
+}</component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="2" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2rXaOeCmAK5Bys6MEfcj4gV9dmh" />
+  <component name="ProjectViewState">
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.App.executor&quot;: &quot;Run&quot;,
+    &quot;Application.ClientApp.executor&quot;: &quot;Run&quot;,
+    &quot;Application.DemoApp.executor&quot;: &quot;Run&quot;,
+    &quot;Application.EDHaulingOptimizer.executor&quot;: &quot;Run&quot;,
+    &quot;Application.EliteLogMonitor.executor&quot;: &quot;Run&quot;,
+    &quot;Application.EliteLogMonitorFrame.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
+    &quot;JAR Application.ed-monitor.jar.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.MarketDataIOServiceTest.executor&quot;: &quot;Debug&quot;,
+    &quot;JUnit.MarketRepositoryTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.MarketRepositoryTest.testGetAllItems_WhenAddMarket.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.MarketRepositoryTest.testGetAllMarkets.executor&quot;: &quot;Debug&quot;,
+    &quot;JUnit.MarketRepositoryTest.testInsertMarket.executor&quot;: &quot;Debug&quot;,
+    &quot;JUnit.MarketRepositoryTest.testUpdateMarketItem_WhenMarketUpdated_ItemPersists.executor&quot;: &quot;Debug&quot;,
+    &quot;Java Scratch.Main.executor&quot;: &quot;Debug&quot;,
+    &quot;Maven.ed-monitor [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor [install].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor [package] without tests.executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor [package].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor-core [install].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor-server [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor-server [compile].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor-server [install].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.ed-monitor-server [validate].executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary&quot;: &quot;JUnit5&quot;,
+    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5&quot;: &quot;&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_directory_selection&quot;: &quot;C:/App/ed-monitor/ed-monitor-core/src/main/java/com/zergatstage&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/App/ed-monitor&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.34712642&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
+      &quot;kotlin&quot;
+    ]
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CreateClassDialog.RecentsKey">
+      <recent name="com.zergatstage.dto" />
+      <recent name="com.zergatstage.domain.commander" />
+      <recent name="com.zergatstage.services" />
+      <recent name="com.zergatstage.services.handlers" />
+      <recent name="com.zergatstage.domain.dictionary" />
+    </key>
+    <key name="CreateTestDialog.Recents.Supers">
+      <recent name="" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\App\ed-monitor\ed-monitor-server\src\main\resources" />
+    </key>
+    <key name="MoveInnerDialog.RECENTS_KEY">
+      <recent name="com.zergatstage.services.hauling" />
+      <recent name="com.zergatstage.services.readers" />
+      <recent name="com.zergatstage.domain" />
+    </key>
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="com.zergatstage.services" />
+      <recent name="com.zergatstage" />
+    </key>
+    <key name="CreateTestDialog.RecentsKey">
+      <recent name="com.zergatstage.services" />
+      <recent name="com.zergatstage.domain" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Application.ClientApp">
+    <configuration name="App" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.App" />
+      <module name="ed-monitor-server" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ed-monitor-server" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ClientApp" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.ClientApp" />
+      <module name="ed-monitor-swing" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="EliteLogMonitor" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.EliteLogMonitor" />
+      <module name="ed-monitor" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="MarketRepositoryTest.testInsertMarket" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ed-monitor" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.monitor.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.zergatstage.domain" />
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.domain.MarketRepositoryTest" />
+      <option name="METHOD_NAME" value="testInsertMarket" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ed-monitor.jar" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/out/artifacts/ed_monitor_jar/ed-monitor.jar" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ed-monitor [package] without tests" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="cmdOptions" />
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list>
+                <option value="package" />
+                <option value="-Dmaven.test.skip" />
+              </list>
+            </option>
+            <option name="multimoduleDir" />
+            <option name="pomFileName" value="pom.xml" />
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="projectsCmdOptionValues">
+              <list />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Application.EliteLogMonitor" />
+      <item itemvalue="Application.App" />
+      <item itemvalue="Application.ClientApp" />
+      <item itemvalue="JAR Application.ed-monitor.jar" />
+      <item itemvalue="JUnit.MarketRepositoryTest.testInsertMarket" />
+      <item itemvalue="Maven.ed-monitor [package] without tests" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JUnit.MarketRepositoryTest.testInsertMarket" />
+        <item itemvalue="JAR Application.ed-monitor.jar" />
+        <item itemvalue="Application.ClientApp" />
+        <item itemvalue="Application.App" />
+        <item itemvalue="Application.EliteLogMonitor" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="" />
+      <created>1734955360859</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1734955360859</updated>
+      <workItem from="1736707843715" duration="11061000" />
+      <workItem from="1737300734876" duration="817000" />
+      <workItem from="1737410811927" duration="608000" />
+    </task>
+    <task id="LOCAL-00001" summary="dev: First version with simple tracking 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1736721863691</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1736721863691</updated>
+    </task>
+    <task id="LOCAL-00002" summary="dev: Routes optimizing 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741390755431</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1741390755431</updated>
+    </task>
+    <task id="LOCAL-00003" summary="dev: Market readings 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741607948061</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1741607948062</updated>
+    </task>
+    <task id="LOCAL-00004" summary="dev: Spring boot migration, Spring data  &#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741734152877</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1741734152877</updated>
+    </task>
+    <task id="LOCAL-00005" summary="dev: Spring boot migration, Spring data  &#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741750426003</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1741750426003</updated>
+    </task>
+    <task id="LOCAL-00006" summary="chores: License and README.md&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741776993918</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1741776993918</updated>
+    </task>
+    <task id="LOCAL-00007" summary="dev: Updating repo and market information. remove #$%it from AI.&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1743108703489</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1743108703489</updated>
+    </task>
+    <task id="LOCAL-00008" summary="dev: CommodityManager form and graceful shutdown process&#10;- Main menu add&#10;- Dictionary support&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1743174922023</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1743174922023</updated>
+    </task>
+    <task id="LOCAL-00009" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1743182852297</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1743182852297</updated>
+    </task>
+    <task id="LOCAL-00010" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1752020225082</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1752020225082</updated>
+    </task>
+    <task id="LOCAL-00011" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1752024202607</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1752024202607</updated>
+    </task>
+    <task id="LOCAL-00012" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1752140053639</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1752140053639</updated>
+    </task>
+    <task id="LOCAL-00013" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753009052800</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1753009052800</updated>
+    </task>
+    <task id="LOCAL-00014" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753356275002</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1753356275002</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="dev: First version with simple tracking 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Routes optimizing 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Market readings 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Spring boot migration, Spring data  &#10;&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="chores: License and README.md&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Updating repo and market information. remove #$%it from AI.&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: CommodityManager form and graceful shutdown process&#10;- Main menu add&#10;- Dictionary support&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT" />
+    <option name="LAST_COMMIT_MESSAGE" value="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/services/LogMonitor.java</url>
+          <line>198</line>
+          <option name="timeStamp" value="51" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/services/ConstructionSiteManager.java</url>
+          <line>98</line>
+          <option name="timeStamp" value="54" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
