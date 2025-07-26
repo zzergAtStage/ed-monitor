@@ -27,6 +27,7 @@ public class Market {
     private String systemName;
 
     @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @Builder.Default
     private Map<String, MarketItem> items = new HashMap<>();
 
     /**

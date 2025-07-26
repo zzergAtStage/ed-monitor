@@ -6,6 +6,9 @@ This document summarizes the discussion and suggestions regarding the refactorin
 
 ## Project Separation Strategy
 
+
+# DONE at this moment. need to be removed.
+
 1. **Modularization:**  
    - Create a multi-module Maven project with a root `pom.xml` and separate modules for:
      - Core business logic and domain (ed-monitor-core)

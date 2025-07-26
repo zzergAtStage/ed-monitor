@@ -1,10 +1,11 @@
 package com.zergatstage.monitor;
 
 import com.zergatstage.dto.CommodityDTO;
-import com.zergatstage.services.CommodityUIService;
-import com.zergatstage.shared.components.StepCategoryPanel;
-import com.zergatstage.shared.components.StepPanel;
-import com.zergatstage.shared.components.StepWizardDialog;
+import com.zergatstage.monitor.component.StepNamePanel;
+import com.zergatstage.monitor.service.CommodityUIService;
+import com.zergatstage.monitor.component.StepCategoryPanel;
+import com.zergatstage.monitor.component.StepPanel;
+import com.zergatstage.monitor.component.StepWizardDialog;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -46,9 +47,9 @@ public class CommodityManager extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
 
         // Button actions
-        addButton.addActionListener(e -> onAddCommodity());
-        editButton.addActionListener(e -> onEditCommodity());
-        deleteButton.addActionListener(e -> onDeleteCommodity());
+        addButton.addActionListener(_ -> onAddCommodity());
+        editButton.addActionListener(_ -> onEditCommodity());
+        deleteButton.addActionListener(_ -> onDeleteCommodity());
 
         loadCommodities();
     }

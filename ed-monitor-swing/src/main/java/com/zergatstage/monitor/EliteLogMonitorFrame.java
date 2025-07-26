@@ -1,19 +1,22 @@
 package com.zergatstage.monitor;
 
-import com.zergatstage.services.*;
-import com.zergatstage.services.config.LogMonitorConfig;
-import com.zergatstage.services.handlers.*;
+import com.zergatstage.monitor.component.ConstructionSitePanel;
+import com.zergatstage.monitor.component.DictionaryManagerDialog;
+import com.zergatstage.monitor.config.DisplayConfig;
+import com.zergatstage.monitor.handlers.HandlerConfiguration;
+import com.zergatstage.monitor.service.JournalLogMonitor;
+import com.zergatstage.monitor.service.StatusMonitor;
+import com.zergatstage.monitor.config.LogMonitorConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.h2.tools.Server;
 
 import javax.swing.*;
 import java.awt.*;
 import java.nio.file.Path;
-import java.sql.SQLException;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static com.zergatstage.monitor.config.UiConstants.*;
 
 /**
  * The EliteLogMonitorFrame class creates the main application frame.
@@ -27,10 +30,12 @@ import java.util.concurrent.TimeUnit;
 public class EliteLogMonitorFrame extends JFrame {
 
     private final JLabel asteroidProspectedLabel;
+    private final JLabel droneLaunchedLabel;
     private final StatusMonitor statusMonitor;
+    Path logDirectory = LogMonitorConfig.logDirectory();
     private boolean isStatusMonitorRunning = false; // Flag to track service state
     private boolean isLogMonitorRunning = false; // Flag to track service state
-    private final LogMonitor logMonitor;
+    private final JournalLogMonitor journalLogMonitor;
 
 
     // Initialize the ScheduledExecutorService
@@ -52,27 +57,22 @@ public class EliteLogMonitorFrame extends JFrame {
         // Create Tabbed Pane for Main Content
         // -------------------------------
         JTabbedPane tabbedPane = new JTabbedPane();
-        Color darkBackground = new Color(12, 12, 12);   // #0C0C0C
-        Color lightBackground = new Color(50, 29, 11);   // #321d0b
 
-        Color accentGray = new Color(63, 63, 63);   // #3F3F3F
-        Color orangeText = new Color(236, 151, 6);  // #EC9706
-        Color neutralText = new Color(191, 191, 191);// #BFBFBF
 
         createMenuBar();
 
 
         // Log Monitor Panel (Tab 1)
-        JPanel logMonitorPanel = new JPanel(new GridLayout(2, 1));
+        JPanel droneProvisionerPanel = new JPanel(new GridLayout(2, 1));
 
-        JLabel droneLaunchedLabel = new JLabel("Drone Launched: No");
+        droneLaunchedLabel = new JLabel("Drone Launched: No");
         asteroidProspectedLabel = new JLabel("Asteroid Prospected: No");
         asteroidProspectedLabel.setOpaque(true);
         resetAsteroidLabel();
 
-        logMonitorPanel.add(droneLaunchedLabel);
-        logMonitorPanel.add(asteroidProspectedLabel);
-        tabbedPane.addTab("Drone provisioner", logMonitorPanel);
+        droneProvisionerPanel.add(droneLaunchedLabel);
+        droneProvisionerPanel.add(asteroidProspectedLabel);
+        tabbedPane.addTab("Drone provisioner", droneProvisionerPanel);
 
         // Construction Sites Panel (Tab 2)
         ConstructionSitePanel constructionSitePanel = new ConstructionSitePanel();
@@ -91,16 +91,15 @@ public class EliteLogMonitorFrame extends JFrame {
 
         setContentPane(mainPanel);
 
-        LogMonitorConfig logMonitorconfig = new LogMonitorConfig();
-        Path logDirectory = logMonitorconfig.logDirectory();
+
         //starting log monitor
-        logMonitor = new LogMonitor(logDirectory,
-                getLogEventHandlers(droneLaunchedLabel));
-        logMonitor.startMonitoring();
+        journalLogMonitor = new JournalLogMonitor(logDirectory,
+                HandlerConfiguration.getLogEventHandlers());
+        journalLogMonitor.startMonitoring();
         isLogMonitorRunning = true;
 
         // Schedule the periodic task
-        scheduler.scheduleAtFixedRate(logMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(journalLogMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
 
         // logMonitor.scheduledCheckLogs();
 
@@ -118,20 +117,11 @@ public class EliteLogMonitorFrame extends JFrame {
         // Assume Status.json and Journal.log are located in the same log directory
         Path statusFile = logDirectory.resolve("Status.json");
         Path sessionSummaryFile = logDirectory.resolve("Journal.log");
-        statusMonitor = new StatusMonitor(statusFile.toString(), sessionSummaryFile.toString());
+        statusMonitor = new StatusMonitor(statusFile, sessionSummaryFile);
 
         setVisible(true);
     }
 
-    private List<LogEventHandler> getLogEventHandlers(JLabel droneLaunchedLabel) {
-        LogEventHandler droneHandler = new DroneLaunchEventHandler(droneLaunchedLabel, this);
-        LogEventHandler asteroidHandler = new AsteroidProspectEventHandler(asteroidProspectedLabel);
-        LogEventHandler cargoHandler = new CargoUpdateEventHandler();
-        LogEventHandler constructionDepotHandler = new ColonisationConstructionDepot();
-        LogEventHandler dockedEventHandler = new DockedEventHandler();
-        return List.of(droneHandler, asteroidHandler,
-                cargoHandler, constructionDepotHandler, dockedEventHandler);
-    }
 
     /**
      * Creates and sets up the main menu bar for the application.
@@ -167,7 +157,7 @@ public class EliteLogMonitorFrame extends JFrame {
         JMenu dictionaryMenu = new JMenu("Dictionary");
 
         JMenuItem openDictionaryItem = new JMenuItem("Open Dictionary");
-        openDictionaryItem.addActionListener(e -> {
+        openDictionaryItem.addActionListener(_ -> {
             DictionaryManagerDialog dialog = new DictionaryManagerDialog(this);
             dialog.setVisible(true);
         });
@@ -187,14 +177,14 @@ public class EliteLogMonitorFrame extends JFrame {
     private void startLogMonitor() {
         if (scheduler == null || scheduler.isShutdown()) {
             scheduler = Executors.newSingleThreadScheduledExecutor();
-            scheduler.scheduleAtFixedRate(logMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(journalLogMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
         }
         isLogMonitorRunning = true;
-        logMonitor.startMonitoring();
+        journalLogMonitor.startMonitoring();
     }
     private void stopLogMonitor() {
         isLogMonitorRunning = false;
-        logMonitor.stopMonitoring();
+        journalLogMonitor.stopMonitoring();
         if (scheduler != null) {
             scheduler.shutdown();
         }
@@ -206,7 +196,7 @@ public class EliteLogMonitorFrame extends JFrame {
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(_ -> {
             log.info("Exiting application...");
-            logMonitor.stopMonitoring();
+            journalLogMonitor.stopMonitoring();
             if (statusMonitor != null && isStatusMonitorRunning) {
                 statusMonitor.stop();
             }
