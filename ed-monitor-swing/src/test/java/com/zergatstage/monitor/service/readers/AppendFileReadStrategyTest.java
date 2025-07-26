@@ -24,15 +24,15 @@ class AppendFileReadStrategyTest {
         // Act
         FileReadStrategy.ReadResult result1 = strategy.readChanges(tempFile, 0L);
         Files.writeString(tempFile, "Line 3\n", java.nio.file.StandardOpenOption.APPEND);
-        FileReadStrategy.ReadResult result2 = strategy.readChanges(tempFile, result1.newState());
+        FileReadStrategy.ReadResult result2 = strategy.readChanges(tempFile, result1.getNewState());
 
         // Assert
-        assertEquals("Line 1\nLine 2\n", result1.newContent());
-        assertEquals("Line 3\n", result2.newContent());
+        assertEquals("Line 1\nLine 2\n", result1.getNewContent());
+        assertEquals("Line 3\n", result2.getNewContent());
     }
 
     @Test
-    void testReadChanges_NoNewContent() throws IOException {
+    void testReadChanges_NogetNewContent() throws IOException {
         // Arrange
         Path tempFile = tempDir.resolve("testFile.txt");
         Files.writeString(tempFile, "Line 1\nLine 2\n");
@@ -40,11 +40,11 @@ class AppendFileReadStrategyTest {
 
         // Act
         FileReadStrategy.ReadResult result1 = strategy.readChanges(tempFile, 0L);
-        FileReadStrategy.ReadResult result2 = strategy.readChanges(tempFile, result1.newState());
+        FileReadStrategy.ReadResult result2 = strategy.readChanges(tempFile, result1.getNewState());
 
         // Assert
-        assertEquals("Line 1\nLine 2\n", result1.newContent());
-        assertEquals("", result2.newContent());
+        assertEquals("Line 1\nLine 2\n", result1.getNewContent());
+        assertEquals("", result2.getNewContent());
     }
 
     @Test
@@ -58,7 +58,7 @@ class AppendFileReadStrategyTest {
         FileReadStrategy.ReadResult result = strategy.readChanges(tempFile, 0L);
 
         // Assert
-        assertEquals("", result.newContent());
-        assertEquals(0L, result.newState());
+        assertEquals("", result.getNewContent());
+        assertEquals(0L, result.getNewState());
     }
 }

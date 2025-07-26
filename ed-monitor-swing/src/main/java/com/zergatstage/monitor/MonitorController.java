@@ -1,6 +1,6 @@
 package com.zergatstage.monitor;
 
-import com.zergatstage.monitor.factory.DefaultManagerFactory;
+import com.zergatstage.domain.makret.MarketDataUpdateEvent;
 import com.zergatstage.monitor.handlers.ExitHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.MarketDataIOService;
@@ -9,12 +9,12 @@ import com.zergatstage.monitor.service.StatusMonitor;
 import java.awt.event.ActionEvent;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class MonitorController {
     private final JournalLogMonitor logService;
     private final StatusMonitor statusService;
-    //private final MarketDataIOService marketDataIOService;
+    private final MarketDataIOService marketDataIOService;
     private final ScheduledExecutorService scheduler;
     private final ExitHandler exitHandler;
 
@@ -26,11 +26,14 @@ public class MonitorController {
         this.statusService = statusService;
         this.exitHandler = exitHandler;
         this.scheduler = Executors.newScheduledThreadPool(1);
+
+        Consumer<MarketDataUpdateEvent> marketConsumer = this::onMarketDataUpdate;
+        this.marketDataIOService = new MarketDataIOService(marketConsumer);
     }
 
     public void startAll() {
         logService.startMonitoring();
-        scheduler.scheduleAtFixedRate(logService::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
+        marketDataIOService.start();
         Runtime.getRuntime().addShutdownHook(new Thread(this::stopAll));
     }
 
@@ -38,6 +41,7 @@ public class MonitorController {
         scheduler.shutdownNow();
         logService.stopMonitoring();
         statusService.stop();
+        marketDataIOService.stop();
     }
 
     public void onExit(ActionEvent e) {
@@ -51,17 +55,20 @@ public class MonitorController {
         startAll();
     }
 
-    public void startStatusMonitor(ActionEvent e) {
-        statusService.start();
-    }
-
-    public void stopStatusMonitor(ActionEvent e) {
-        statusService.stop();
-    }
-
     public void toggleStatusMonitor(ActionEvent e) {
         // delegate: if running, stop; else start
         statusService.stop();
         statusService.start();
+    }
+    /**
+     * Callback that receives each new MarketDataUpdateEvent.
+     * Here you can parse the JSON payload, update the UI, etc.
+     *
+     * @param event the event carrying the fresh market-data content
+     */
+    private void onMarketDataUpdate(MarketDataUpdateEvent event) {
+        //String jsonPayload = event.getPayload();
+        // TODO: parse JSON and update Swing UI components
+//        System.out.println("Received market update: " + jsonPayload);
     }
 }

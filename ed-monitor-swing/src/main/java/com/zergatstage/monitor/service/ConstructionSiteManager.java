@@ -20,19 +20,22 @@ import java.util.*;
 @Getter
 @Setter
 @Log4j2
-
 public class ConstructionSiteManager {
 
-    private static ConstructionSiteManager instance;
+    private static volatile  ConstructionSiteManager instance;
     private final Map<Long, ConstructionSite> sites = new HashMap<>();
-    private final List<ConstructionSiteUpdateListener> listeners = new ArrayList<>();
+    private final Set<ConstructionSiteUpdateListener> listeners = new HashSet<>();
 
 
     private ConstructionSiteManager() {}
 
-    public static ConstructionSiteManager getInstance() {
+    public static synchronized ConstructionSiteManager getInstance() {
         if (instance == null) {
-            return new ConstructionSiteManager();
+            synchronized(ConstructionSiteManager.class) {
+                if (instance == null) {
+                    instance = new ConstructionSiteManager();
+                }
+            }
         }
         return instance;
     }
@@ -95,7 +98,7 @@ public class ConstructionSiteManager {
         ConstructionSite currentSite = sites.get(marketId);
 
         if (currentSite == null) {
-            createConstructionSite(event);
+            currentSite = createConstructionSite(event);
         }
         if (!event.has("ResourcesRequired")) {
             log.warn("No required materials found!");
@@ -113,23 +116,25 @@ public class ConstructionSiteManager {
             int providedAmount = resource.getInt("ProvidedAmount");
 
             Optional<MaterialRequirement> first = requirementList.stream()
-                    .filter(c -> c.getName().equalsIgnoreCase(name))
+                    .filter(c -> c.getName().equalsIgnoreCase(name) || c.getName().equalsIgnoreCase(nameLocalised))
                     .findFirst();
-            if (first.isPresent()) {
+            if (first.isEmpty()) {
                 MaterialRequirement requirement = MaterialRequirement.builder().build();
-                requirement.setName(nameLocalised);
-                requirement.setMaterialName(requirement.getMaterialName());
+                requirement.setName(name);
+                requirement.setMaterialName(nameLocalised);
                 requirement.setRequiredQuantity(requiredAmount);
                 requirement.setDeliveredQuantity(providedAmount);
 
                 requirementList.add(requirement);
             } else {
-                log.warn("Warning: No matching commodity found for: {}",name);
+                first.get().setRequiredQuantity(requiredAmount);
+                first.get().setDeliveredQuantity(providedAmount);
             }
         }
+        notifyListeners();
     }
 
-    private void createConstructionSite(JSONObject event) {
+    private ConstructionSite createConstructionSite(JSONObject event) {
         try {
             ConstructionSite site = ConstructionSite.builder()
                     .marketId(event.getLong("MarketID"))
@@ -137,6 +142,7 @@ public class ConstructionSiteManager {
                     .requirements(new ArrayList<>())
                     .build();
             sites.put(site.getMarketId(), site);
+            return site;
         } catch (JSONException e) {
             throw new IllegalArgumentException("Invalid event data for creating construction site: " + e.getMessage(), e);
         }

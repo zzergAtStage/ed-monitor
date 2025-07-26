@@ -98,8 +98,8 @@ public class EliteLogMonitorFrame extends JFrame {
         journalLogMonitor.startMonitoring();
         isLogMonitorRunning = true;
 
-        // Schedule the periodic task
-        scheduler.scheduleAtFixedRate(journalLogMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
+//        // Schedule the periodic task
+//        scheduler.scheduleAtFixedRate(journalLogMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
 
         // logMonitor.scheduledCheckLogs();
 
@@ -175,10 +175,10 @@ public class EliteLogMonitorFrame extends JFrame {
     }
 
     private void startLogMonitor() {
-        if (scheduler == null || scheduler.isShutdown()) {
-            scheduler = Executors.newSingleThreadScheduledExecutor();
-            scheduler.scheduleAtFixedRate(journalLogMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
-        }
+//        if (scheduler == null || scheduler.isShutdown()) {
+//            //scheduler = Executors.newSingleThreadScheduledExecutor();
+//            //scheduler.scheduleAtFixedRate(journalLogMonitor::scheduledCheckLogs, 0, 1, TimeUnit.SECONDS);
+//        }
         isLogMonitorRunning = true;
         journalLogMonitor.startMonitoring();
     }

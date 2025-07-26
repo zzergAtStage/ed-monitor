@@ -1,6 +1,7 @@
 package com.zergatstage.monitor.service;
 
 import com.zergatstage.monitor.handlers.LogEventHandler;
+import com.zergatstage.monitor.service.readers.AppendFileReadStrategy;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,27 +26,27 @@ import java.util.List;
 @Log4j2
 public class JournalLogMonitor {
 
-    private final Path logDirectory;
-    private Path lastProcessedFile;
-    private long lastProcessedFilePosition;
-    private Instant lastProcessedTimestamp;
-    private final List<LogEventHandler> eventHandlers;
-
-    // Flag to indicate whether monitoring is enabled (controlled from the UI)
-    private volatile boolean monitoring;
-
+    private final GenericFileMonitor fileMonitor;
     /**
      * Constructs a LogMonitor.
      *
-     * @param logDirectory  the directory where log files are stored.
-     * @param eventHandlers a list of handlers to process log events.
+     * @param logDirectoryPath   the path to the folder containing your Journal.log
+     * @param eventHandlers      the list of event handlers to dispatch incoming events to
      */
-    public JournalLogMonitor(Path logDirectory, List<LogEventHandler> eventHandlers) {
-        this.logDirectory = logDirectory;
-        this.eventHandlers = new ArrayList<>(eventHandlers);
-        this.lastProcessedFilePosition = 0;
-        this.lastProcessedTimestamp = Instant.now().minus(1 , ChronoUnit.DAYS);
-        this.monitoring = false; // Monitoring is initially off.
+    public JournalLogMonitor(Path logDirectoryPath,
+                      List<LogEventHandler> eventHandlers) {
+
+        // Process lastest log file in the directory
+        List<Path> logFiles = findLogFiles(logDirectoryPath);
+        Path latestLogFile = findLatestLogFile(logFiles);
+        // Use AppendFileReadStrategy so we only process new lines added to the file
+        this.fileMonitor = new GenericFileMonitor(
+                latestLogFile,
+                new AppendFileReadStrategy(),
+                // onUpdate callback: process each JSON line
+                newContent ->
+                    processAppendedLines(newContent, eventHandlers)
+        );
     }
 
     /**
@@ -53,7 +54,7 @@ public class JournalLogMonitor {
      * This method can be called from the UI to start processing log entries.
      */
     public void startMonitoring() {
-        this.monitoring = true;
+        this.fileMonitor.start();
         log.info("Log monitoring started at: {} ",Instant.now());
     }
 
@@ -62,62 +63,28 @@ public class JournalLogMonitor {
      * This method can be called from the UI to stop processing log entries.
      */
     public void stopMonitoring() {
-        this.monitoring = false;
-        log.info("Log monitoring stopped at: {}", Instant.now());
+       this.fileMonitor.stop();
+        log.info("Log monitoring ({}) stopped at: {}",this, Instant.now());
     }
-
-    /**
-     * Periodically checks the log directory for new log entries.
-     * This method is scheduled by Spring Boot to run every 1 second.
-     * It only processes log files if monitoring is enabled.
-     */
-    public void scheduledCheckLogs() {
-        if (!monitoring) {
-            return; // Do nothing if monitoring is not enabled.
-        }
-        checkLogs();
-    }
-
-    /**
-     * Checks the log directory for new log files and processes new log entries.
-     */
-    private void checkLogs() {
-        try {
-            List<Path> logFiles = findLogFiles(logDirectory);
-            if (logFiles.isEmpty()) {
-                log.warn("No log files found in: {}" ,logDirectory);
-                return;
-            }
-            Path latestLogFile = findLatestLogFile(logFiles);
-            if (latestLogFile != null) {
-                if (!latestLogFile.equals(lastProcessedFile)) {
-                    // New log file detected, reset reading position
-                    lastProcessedFilePosition = 0;
-                    lastProcessedFile = latestLogFile;
-                }
-                processLogFile(latestLogFile);
-            }
-        } catch (IOException e) {
-            log.error("Error checking logs: {}", e.getMessage());
-        }
-    }
-
     /**
      * Finds all log files in the specified directory.
      *
      * @param directory the log directory.
      * @return a list of log file paths.
-     * @throws IOException if an I/O error occurs.
      */
-    private List<Path> findLogFiles(Path directory) throws IOException {
+    private List<Path> findLogFiles(Path directory){
         List<Path> logFiles = new ArrayList<>();
         if (Files.exists(directory) && Files.isDirectory(directory)) {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*.log")) {
                 stream.forEach(logFiles::add);
+            } catch (IOException e) {
+                log.error("Error reading log directory: {}", e.getMessage());
+                System.err.println("Error reading log directory: " + e.getMessage());
             }
         }
         return logFiles;
     }
+
 
     /**
      * Determines the latest log file based on the last modified time.
@@ -138,72 +105,36 @@ public class JournalLogMonitor {
     }
 
     /**
-     * Processes new entries in the specified log file.
+     * Parses a chunk of appended text into individual JSON lines,
+     * then finds and invokes the appropriate handler(s) for each event.
      *
-     * @param logFile the log file to process.
+     * @param newContent     the raw text newly appended to Journal.log
+     * @param handlers       the registered list of LogEventHandler implementations
      */
-    private void processLogFile(Path logFile) {
-        try {
-            long fileSize = Files.size(logFile);
-            if (fileSize > lastProcessedFilePosition) {
-                try (RandomAccessFile raf = new RandomAccessFile(logFile.toFile(), "r")) {
-                    raf.seek(lastProcessedFilePosition);
-                    String line;
-                    while ((line = raf.readLine()) != null) {
-                        processLogLine(line);
-                    }
-                    lastProcessedFilePosition = fileSize;
-                }
+    private void processAppendedLines(String newContent, List<LogEventHandler> handlers) {
+        // Split into lines on both Unix and Windows line endings
+        String[] lines = newContent.split("\\r?\\n");
+        for (String line : lines) {
+            if (line.isBlank()) {
+                continue;  // skip empty lines
             }
-        } catch (IOException e) {
-            log.error("Error processing log file: {} \n {}",e.getMessage(),e.getStackTrace() );
+            processLine(handlers, line);
         }
     }
 
-    /**
-     * Processes a log line by parsing it as JSON and delegating to event handlers.
-     *
-     * @param line the log file line.
-     */
-    private void processLogLine(String line) {
+    private void processLine(List<LogEventHandler> handlers, String line) {
         try {
-            Object jsonValue = new JSONTokener(line).nextValue();
-            if (jsonValue instanceof JSONObject) {
-                // Process a single JSON object.
-                processJsonObject((JSONObject) jsonValue);
-            } else if (jsonValue instanceof JSONArray jsonArray) {
-                // Process each JSON object in the array.
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    processJsonObject(jsonObject);
+            JSONObject json = new JSONObject(new JSONTokener(line));
+            String eventType = json.getString("event");
+            // Dispatch to all handlers that claim they can handle this event
+            for (LogEventHandler handler : handlers) {
+                if (handler.canHandle(eventType)) {
+                    handler.handleEvent(json);
                 }
             }
         } catch (Exception e) {
-            log.warn("Error processing log line: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Processes an individual JSON object by checking its timestamp and delegating to appropriate event handlers.
-     *
-     * @param jsonObject the JSON object representing a log event.
-     */
-    private void processJsonObject(JSONObject jsonObject) {
-        try {
-            String timestampStr = jsonObject.getString("timestamp");
-            Instant timestamp = OffsetDateTime.parse(timestampStr).toInstant();
-            if (timestamp.isAfter(lastProcessedTimestamp)) {
-                String eventType = jsonObject.getString("event");
-                for (LogEventHandler handler : eventHandlers) {
-                    if (handler.canHandle(eventType)) {
-                        handler.handleEvent(jsonObject);
-                    }
-                }
-                lastProcessedTimestamp = timestamp;
-            }
-        } catch (Exception e) {
-            //e.printStackTrace();
-            log.warn("Error processing JSON: {}", e.getMessage());
+            System.err.println("Error parsing or handling line: " + line + " – " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

@@ -44,6 +44,7 @@ public class DockedEventHandler implements LogEventHandler {
         String stationName = event.getString("StationName");
         if (!stationName.contains("Construction Site")) return;
         long marketId = event.getLong("MarketID");
+
         ConstructionSiteDTO constructionSite = ConstructionSiteMapper
                 .INSTANCE.constructionSiteToDto(siteManager.getSite(marketId));
 
@@ -56,6 +57,9 @@ public class DockedEventHandler implements LogEventHandler {
                     .marketId(marketId)
                     .requirements(new ArrayList<>())
                     .build();
+            constructionSite.setSiteId(stationName);
+        }
+        if (!constructionSite.getSiteId().equalsIgnoreCase(stationName)) {
             constructionSite.setSiteId(stationName);
         }
         siteManager.addSite(constructionSite);

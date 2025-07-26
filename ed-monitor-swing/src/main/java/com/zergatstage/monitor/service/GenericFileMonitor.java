@@ -64,11 +64,11 @@ public class GenericFileMonitor {
     private void checkFile() {
         try {
             ReadResult result = readStrategy.readChanges(file, previousState);
-            if (!result.newContent().isEmpty()) {
+            if (!result.getNewContent().isEmpty()) {
                 // Process the new content using the provided callback
-                onUpdate.accept(result.newContent());
+                onUpdate.accept(result.getNewContent());
                 // Update the previous state for the next polling cycle
-                previousState = result.newState();
+                previousState = result.getNewState();
             }
         } catch (IOException e) {
             log.error("Error monitoring file {}: {}", file, e.getMessage());

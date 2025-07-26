@@ -46,7 +46,7 @@ public class StatusMonitor {
      * Starts monitoring the status file.
      */
     public void start() {
-        fileMonitor.start();
+        //fileMonitor.start();
     }
 
     /**

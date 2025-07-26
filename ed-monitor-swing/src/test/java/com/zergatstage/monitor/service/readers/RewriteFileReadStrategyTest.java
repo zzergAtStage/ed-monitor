@@ -31,8 +31,8 @@ class RewriteFileReadStrategyTest {
 
         FileReadStrategy.ReadResult result = strategy.readChanges(tempFile, previousState);
 
-        assertEquals(initialContent, result.newContent());
-        assertEquals(initialContent, result.newState());
+        assertEquals(initialContent, result.getNewContent());
+        assertEquals(initialContent, result.getNewState());
     }
 
     @Test
@@ -43,8 +43,8 @@ class RewriteFileReadStrategyTest {
 
         FileReadStrategy.ReadResult result = strategy.readChanges(tempFile, previousState);
 
-        assertEquals("", result.newContent());
-        assertEquals("NoChange", result.newState());
+        assertEquals("", result.getNewContent());
+        assertEquals("NoChange", result.getNewState());
     }
 
     @Test
@@ -54,8 +54,8 @@ class RewriteFileReadStrategyTest {
 
         FileReadStrategy.ReadResult result = strategy.readChanges(tempFile, null);
 
-        assertEquals(fileContent, result.newContent());
-        assertEquals(fileContent, result.newState());
+        assertEquals(fileContent, result.getNewContent());
+        assertEquals(fileContent, result.getNewState());
     }
 
     @Test
@@ -65,8 +65,8 @@ class RewriteFileReadStrategyTest {
 
         FileReadStrategy.ReadResult result = strategy.readChanges(tempFile, 1234); // Integer
 
-        assertEquals(fileContent, result.newContent());
-        assertEquals(fileContent, result.newState());
+        assertEquals(fileContent, result.getNewContent());
+        assertEquals(fileContent, result.getNewState());
     }
 
     @Test

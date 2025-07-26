@@ -65,6 +65,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 return false; // Make this table read-only
             }
         };
+
         siteProgressTable = new JTable(siteProgressTableModel);
         siteProgressTable.setAutoCreateRowSorter(true);
 
@@ -72,6 +73,18 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         siteProgressTable.getColumnModel().getColumn(1).setCellRenderer(new ProgressBarCellRenderer());
 
         JScrollPane siteProgressScroll = new JScrollPane(siteProgressTable);
+
+        siteProgressTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = siteProgressTable.getSelectedRow();
+                if (selectedRow != -1) {
+                    // Adjust for row sorting
+                    int modelRow = siteProgressTable.convertRowIndexToModel(selectedRow);
+                    String siteId = (String) siteProgressTableModel.getValueAt(modelRow, 0);
+                    refreshCommoditiesTableForSite(siteId);
+                }
+            }
+        });
 
         // ============= Commodities Table (Bottom) =============
         String[] commodityColumns = {"Site", "Material", "Required", "Delivered", "Remaining"};
@@ -104,6 +117,9 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         JButton addCommodityButton = new JButton("Add Commodity");
         addCommodityButton.addActionListener(this::handleAddCommodity);
         controlPanel.add(addCommodityButton);
+        JButton clearFilterButton = new JButton("Clear Filter");
+        clearFilterButton.addActionListener(e -> refreshCommoditiesTable());
+        controlPanel.add(clearFilterButton);
 
         add(controlPanel, BorderLayout.SOUTH);
 
@@ -145,6 +161,27 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         siteManager.addSite(newSite);
 
         refreshAll();
+    }
+    private void refreshCommoditiesTableForSite(String siteId) {
+        commoditiesTableModel.setRowCount(0);
+
+        ConstructionSite site = siteManager.getSites().values().stream()
+                .filter(s -> s.getSiteId().equals(siteId))
+                .findFirst()
+                .orElse(null);
+
+        if (site != null) {
+            for (MaterialRequirement req : site.getRequirements()) {
+                Object[] row = {
+                        site.getSiteId(),
+                        req.getMaterialName(),
+                        req.getRequiredQuantity(),
+                        req.getDeliveredQuantity(),
+                        req.getRemainingQuantity()
+                };
+                commoditiesTableModel.addRow(row);
+            }
+        }
     }
 
     /**

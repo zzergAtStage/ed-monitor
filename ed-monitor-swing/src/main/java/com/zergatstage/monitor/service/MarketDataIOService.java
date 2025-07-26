@@ -10,6 +10,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import com.zergatstage.monitor.config.LogMonitorConfig;
+import com.zergatstage.monitor.service.readers.FileReadStrategy;
+import com.zergatstage.monitor.service.readers.FileReadStrategy.ReadResult;
+import com.zergatstage.monitor.service.readers.RewriteFileReadStrategy;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,24 +22,35 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MarketDataIOService {
 
-
+    private Object previousState;
+    private final FileReadStrategy fileReadStrategy;
     private final Path marketFile;
-    private String lastContent;
     private final Consumer<MarketDataUpdateEvent> eventConsumer;
     private final ScheduledExecutorService scheduler;
 
     /**
-     * Constructs the MarketDataIOService.
-     * The file path is constructed based on the user's home directory.
+     * Constructs the service with a custom file‐reading strategy.
      *
-     * @param eventConsumer a consumer to handle market update events
+     * @param fileReadStrategy strategy to detect/return file changes
+     * @param eventConsumer    consumer to handle and publish update events
      */
-    public MarketDataIOService(Consumer<MarketDataUpdateEvent> eventConsumer) {
+    public MarketDataIOService(FileReadStrategy fileReadStrategy,
+            Consumer<MarketDataUpdateEvent> eventConsumer) {
+        this.fileReadStrategy = fileReadStrategy;
         Path logDirectory = LogMonitorConfig.logDirectory();
         this.marketFile = logDirectory.resolve("Market.json");
         this.eventConsumer = eventConsumer;
-        this.lastContent = "";
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
+    }
+    /**
+     * Convenience constructor that uses the default
+     * {@link com.zergatstage.monitor.service.readers.RewriteFileReadStrategy}.
+     *
+     * @param eventConsumer consumer to handle and publish update events
+     */
+    public MarketDataIOService(Consumer<MarketDataUpdateEvent> eventConsumer) {
+        this(new RewriteFileReadStrategy(),
+                eventConsumer);
     }
 
     /**
@@ -58,10 +72,13 @@ public class MarketDataIOService {
      */
     private void checkMarketFile() {
         try {
-            String content = new String(Files.readAllBytes(marketFile));
-            if (!content.equals(lastContent)) {
-                lastContent = content;
-                eventConsumer.accept(new MarketDataUpdateEvent(this, content));
+            ReadResult result = fileReadStrategy.readChanges(marketFile, previousState);
+            String newContent = result.getNewContent();
+            Object newState   = result.getNewState();
+            // Only proceed if the strategy detected new content
+            if (!newContent.isEmpty()) {
+                previousState = newState;  // update our “cursor”
+                eventConsumer.accept(new MarketDataUpdateEvent(this, newContent));
                 log.info("Published market data update event.");
             }
         } catch (IOException e) {
