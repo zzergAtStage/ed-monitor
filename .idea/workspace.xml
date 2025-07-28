@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="ed-monitor:jar" />
+    </artifacts-to-build>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <change afterPath="$PROJECT_DIR$/Docs/Cobra.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Docs/ConstructionSiteView-0.1.0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Docs/Dictionary-commodity-0.1.0.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/CargoInventoryManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/CargoInventoryManager.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="local" />
+        <option value="JUnit5 Test Class" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="MIXED" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;zzergAtStage&quot;
+  }
+}</component>
+  <component name="GithubDefaultAccount">
+    <option name="defaultAccountId" value="f098c4b5-e1fc-492d-9201-c59809d225ae" />
+  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/zzergAtStage/ed-monitor.git&quot;,
+    &quot;accountId&quot;: &quot;f098c4b5-e1fc-492d-9201-c59809d225ae&quot;
+  }
+}</component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="2" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2rXaOeCmAK5Bys6MEfcj4gV9dmh" />
+  <component name="ProjectViewState">
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.App.executor": "Run",
+    "Application.ClientApp.executor": "Run",
+    "Application.DemoApp.executor": "Run",
+    "Application.EDHaulingOptimizer.executor": "Run",
+    "Application.EliteLogMonitor.executor": "Run",
+    "Application.EliteLogMonitorFrame.executor": "Run",
+    "Application.Main.executor": "Run",
+    "JAR Application.ed-monitor.jar.executor": "Run",
+    "JUnit.AppendFileReadStrategyTest.executor": "Run",
+    "JUnit.AppendFileReadStrategyTest.testReadChanges_NewContentAppended.executor": "Debug",
+    "JUnit.DefaultLogMonitorServiceTest.executor": "Run",
+    "JUnit.DefaultStatusMonitorServiceTest.executor": "Run",
+    "JUnit.JournalLogMonitorTest.executor": "Debug",
+    "JUnit.MarketDataIOServiceTest.executor": "Debug",
+    "JUnit.MarketRepositoryTest.executor": "Run",
+    "JUnit.MarketRepositoryTest.testGetAllItems_WhenAddMarket.executor": "Run",
+    "JUnit.MarketRepositoryTest.testGetAllMarkets.executor": "Debug",
+    "JUnit.MarketRepositoryTest.testInsertMarket.executor": "Debug",
+    "JUnit.MarketRepositoryTest.testUpdateMarketItem_WhenMarketUpdated_ItemPersists.executor": "Debug",
+    "JUnit.RewriteFileReadStrategyTest.executor": "Run",
+    "Java Scratch.Main.executor": "Debug",
+    "Maven.ed-monitor [clean].executor": "Run",
+    "Maven.ed-monitor [install].executor": "Run",
+    "Maven.ed-monitor [package] without tests.executor": "Run",
+    "Maven.ed-monitor [package].executor": "Run",
+    "Maven.ed-monitor [test].executor": "Run",
+    "Maven.ed-monitor-core [install].executor": "Run",
+    "Maven.ed-monitor-server [clean].executor": "Run",
+    "Maven.ed-monitor-server [compile].executor": "Run",
+    "Maven.ed-monitor-server [install].executor": "Run",
+    "Maven.ed-monitor-server [validate].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary": "JUnit5",
+    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5": "",
+    "git-widget-placeholder": "feature/refactoring-core",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_directory_selection": "C:/App/ed-monitor/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service",
+    "last_opened_file_path": "C:/App/ed-monitor/ed-monitor-swing/src/main/resources",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.34712642",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File": [
+      "kotlin"
+    ]
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CreateClassDialog.RecentsKey">
+      <recent name="com.zergatstage.monitor.factory" />
+      <recent name="com.zergatstage.monitor.service" />
+      <recent name="com.zergatstage.monitor" />
+      <recent name="com.zergatstage.dto" />
+      <recent name="com.zergatstage.domain.commander" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\App\ed-monitor\ed-monitor-swing\src\main\resources" />
+    </key>
+    <key name="CreateTestDialog.Recents.Supers">
+      <recent name="" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\App\ed-monitor\Docs" />
+      <recent name="C:\App\ed-monitor\ed-monitor-server\src\main\resources" />
+    </key>
+    <key name="MoveInnerDialog.RECENTS_KEY">
+      <recent name="com.zergatstage.services.hauling" />
+      <recent name="com.zergatstage.services.readers" />
+      <recent name="com.zergatstage.domain" />
+    </key>
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="com.zergatstage.services" />
+      <recent name="com.zergatstage" />
+    </key>
+    <key name="CreateTestDialog.RecentsKey">
+      <recent name="com.zergatstage.monitor.service" />
+      <recent name="com.zergatstage.monitor.service.impl" />
+      <recent name="com.zergatstage.monitor.service.readers" />
+      <recent name="com.zergatstage.services" />
+      <recent name="com.zergatstage.domain" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="com.zergatstage.monitor.handlers" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Application.ClientApp">
+    <configuration name="ClientApp" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.ClientApp" />
+      <module name="ed-monitor-swing" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AppendFileReadStrategyTest.testReadChanges_NewContentAppended" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ed-monitor-swing" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.monitor.service.readers.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.zergatstage.monitor.service.readers" />
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.monitor.service.readers.AppendFileReadStrategyTest" />
+      <option name="METHOD_NAME" value="testReadChanges_NewContentAppended" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="JournalLogMonitorTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ed-monitor-swing" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.monitor.service.managers.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.zergatstage.monitor.service" />
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.monitor.service.JournalLogMonitorTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="RewriteFileReadStrategyTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ed-monitor-swing" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.zergatstage.monitor.service.readers.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.zergatstage.monitor.service.readers" />
+      <option name="MAIN_CLASS_NAME" value="com.zergatstage.monitor.service.readers.RewriteFileReadStrategyTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ed-monitor [package] without tests" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="cmdOptions" />
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list>
+                <option value="package" />
+                <option value="-Dmaven.test.skip" />
+              </list>
+            </option>
+            <option name="multimoduleDir" />
+            <option name="pomFileName" value="pom.xml" />
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="projectsCmdOptionValues">
+              <list />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Application.ClientApp" />
+      <item itemvalue="JUnit.JournalLogMonitorTest" />
+      <item itemvalue="JUnit.AppendFileReadStrategyTest.testReadChanges_NewContentAppended" />
+      <item itemvalue="JUnit.RewriteFileReadStrategyTest" />
+      <item itemvalue="Maven.ed-monitor [package] without tests" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.ClientApp" />
+        <item itemvalue="JUnit.JournalLogMonitorTest" />
+        <item itemvalue="JUnit.RewriteFileReadStrategyTest" />
+        <item itemvalue="JUnit.AppendFileReadStrategyTest.testReadChanges_NewContentAppended" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="" />
+      <created>1734955360859</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1734955360859</updated>
+      <workItem from="1736707843715" duration="11061000" />
+      <workItem from="1737300734876" duration="817000" />
+      <workItem from="1737410811927" duration="608000" />
+    </task>
+    <task id="LOCAL-00001" summary="dev: First version with simple tracking 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1736721863691</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1736721863691</updated>
+    </task>
+    <task id="LOCAL-00002" summary="dev: Routes optimizing 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741390755431</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1741390755431</updated>
+    </task>
+    <task id="LOCAL-00003" summary="dev: Market readings 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741607948061</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1741607948062</updated>
+    </task>
+    <task id="LOCAL-00004" summary="dev: Spring boot migration, Spring data  &#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741734152877</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1741734152877</updated>
+    </task>
+    <task id="LOCAL-00005" summary="dev: Spring boot migration, Spring data  &#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741750426003</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1741750426003</updated>
+    </task>
+    <task id="LOCAL-00006" summary="chores: License and README.md&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1741776993918</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1741776993918</updated>
+    </task>
+    <task id="LOCAL-00007" summary="dev: Updating repo and market information. remove #$%it from AI.&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1743108703489</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1743108703489</updated>
+    </task>
+    <task id="LOCAL-00008" summary="dev: CommodityManager form and graceful shutdown process&#10;- Main menu add&#10;- Dictionary support&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1743174922023</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1743174922023</updated>
+    </task>
+    <task id="LOCAL-00009" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1743182852297</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1743182852297</updated>
+    </task>
+    <task id="LOCAL-00010" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1752020225082</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1752020225082</updated>
+    </task>
+    <task id="LOCAL-00011" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1752024202607</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1752024202607</updated>
+    </task>
+    <task id="LOCAL-00012" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1752140053639</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1752140053639</updated>
+    </task>
+    <task id="LOCAL-00013" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753009052800</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1753009052800</updated>
+    </task>
+    <task id="LOCAL-00014" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753356275002</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1753356275002</updated>
+    </task>
+    <task id="LOCAL-00015" summary="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753373533237</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1753373533238</updated>
+    </task>
+    <task id="LOCAL-00016" summary="dev: refactoring and implementing.&#10;-moving to 0.1.0&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753535661484</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1753535661484</updated>
+    </task>
+    <task id="LOCAL-00017" summary="dev: unify read Strategy patterns, separate of concerns &#10;- reworked construction site panel&#10;- fixed bug with MaterialRequirementDTO&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753569543340</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1753569543340</updated>
+    </task>
+    <task id="LOCAL-00018" summary="dev: improving reliability of readers, handlers. Moving from name-based commodity search to unified approach.&#10;- clean dependencies&#10;- app icon support&#10;- optimize handlers with map and event checks&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753718526153</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1753718526154</updated>
+    </task>
+    <task id="LOCAL-00019" summary="dev: tracking required commodity&#10;- track commodity by current market&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753730613908</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1753730613909</updated>
+    </task>
+    <task id="LOCAL-00020" summary="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753735428471</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1753735428471</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="dev: First version with simple tracking 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Routes optimizing 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Market readings 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Spring boot migration, Spring data  &#10;&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="chores: License and README.md&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: Updating repo and market information. remove #$%it from AI.&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: CommodityManager form and graceful shutdown process&#10;- Main menu add&#10;- Dictionary support&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT" />
+    <MESSAGE value="dev: refactoring and implementing.&#10;-moving to 0.1.0&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <MESSAGE value="dev: unify read Strategy patterns, separate of concerns &#10;- reworked construction site panel&#10;- fixed bug with MaterialRequirementDTO&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <MESSAGE value="dev: improving reliability of readers, handlers. Moving from name-based commodity search to unified approach.&#10;- clean dependencies&#10;- app icon support&#10;- optimize handlers with map and event checks&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <MESSAGE value="dev: tracking required commodity&#10;- track commodity by current market&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <MESSAGE value="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <option name="LAST_COMMIT_MESSAGE" value="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint type="java-line">
+          <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateService.java</url>
+          <line>49</line>
+          <option name="timeStamp" value="108" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java</url>
+          <line>367</line>
+          <option name="timeStamp" value="112" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/ed_monitor$ClientApp.ic" NAME="ClientApp Coverage Results" MODIFIED="1753484305247" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="idea" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="true">
+      <FILTER>com.zergatstage.*</FILTER>
+    </SUITE>
+  </component>
+</project>

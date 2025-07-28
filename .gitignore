@@ -7,7 +7,6 @@ target/
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
-.idea/libraries/
 *.iws
 *.iml
 *.ipr
@@ -42,3 +41,5 @@ build/
 /out/artifacts/ed_monitor_jar/ed-monitor.jar
 /data/marketdb.trace.db
 /src/main/java/com/zergatstage/DemoApp.java
+.idea/jpa.xml
+ed-monitor-server/data/**

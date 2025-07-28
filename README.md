@@ -1,30 +1,41 @@
 # ed-monitor: Advanced Desktop Application for File Monitoring and User Notifications
-Overview
+![img.png](Docs/Cobra.png)
 
-ed-monitor is a sophisticated desktop application developed in Java that has evolved
+# Overview
+
+`ed-monitor` is a sophisticated desktop/server/api application developed in Java that has evolved
 from a simple Swing-based interface to a comprehensive solution incorporating 
 file monitoring, user notifications, and persistent market data management. 
-This project reflects the progressive enhancement of Java programming skills, 
+This project reflects the progressive enhancement of Java application and its capabilities, 
 integrating popular frameworks and adhering to established architectural patterns
 to ensure resilience and scalability.
 
 # Features
 
-* File Monitoring: Utilizes Java NIO's WatchService API to efficiently monitor directory and file changes, including creation, modification, and deletion events. This allows for real-time tracking of file system activities.
+* File Monitoring: Utilizes Java NIO's WatchService API to efficiently monitor directory and file changes, 
+including creation, modification, and deletion events. This allows for real-time tracking of log-files activities.
 
-* User Notifications: Implements a robust notification system that alerts users to specific events or changes within the application. This feature enhances user engagement and responsiveness to critical updates.
+* User Notifications: Implements a robust notification system that alerts users to specific events or
+changes within the application. This feature enhances user engagement and responsiveness to critical updates.
 
-* Persistent Market Data Management: Incorporates mechanisms for the persistent storage and retrieval of market data, ensuring data integrity and availability across sessions. This is particularly beneficial for applications requiring reliable data persistence.
+* Persistent Market Data Management: Incorporates mechanisms for the persistent storage and retrieval 
+of market data, ensuring data integrity and availability across sessions. This is particularly beneficial 
+for applications requiring reliable data persistence.
 
-* Modular Architecture: Designed with a modular approach, facilitating maintainability and extensibility. This architecture supports the seamless integration of additional features and components as the application evolves.
+* Modular Architecture: Designed with a modular approach, facilitating maintainability and extensibility. 
+This architecture supports the seamless integration of additional features and components as the application evolves.
   ### Screenshoots
-![Screenshot 2025-04-22 125423](https://github.com/user-attachments/assets/971c08bf-7c65-48ae-a3ac-df020952c78a)
-![Screenshot 2025-04-22 125450](https://github.com/user-attachments/assets/4e57c442-abc5-4422-aba3-d86d0032e5cd)
-![Screenshot 2025-04-22 125517](https://github.com/user-attachments/assets/13c86f5b-1b0e-494b-b534-3723fc188151)
-
-# Getting Started
-
-To run ed-monitor on your local machine, follow these steps:
+![img.png](Docs/ConstructionSiteView-0.1.0.png)
+![img.png](Docs/Dictionary-commodity-0.1.0.png)
+![img.png](Docs/Tracking_cargo-0.1.0.png)
+## Version updates
+* **0.1.0**:
+  - Reworked core systems, decoupled `ed-monitor-swing` from Spring, introduced 
+[FileReadStrategy.java](ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/readers/FileReadStrategy.java) for file monitoring,
+  - added commodity tracker, match with docked market data, highlight required and presented commodities
+  - added balanced ground of truth for cargo bay values tracking
+  - 👉 Server mode for `ed-monitor-swing` is currently not supported, but can be implemented in future releases.
+## To run ed-monitor on your local machine, follow these steps:
 
 1. Clone the Repository:
 
@@ -43,7 +54,7 @@ mvn clean install
 4. Run the Application: Execute the compiled JAR file to launch the application.  
 
 ```bash
-java -jar target/ed-monitor.jar
+mvn exec:java
 ```
 
 5. To run tests   
@@ -53,17 +64,18 @@ mvn clean test -Ptest
 
 ## Prerequisites
 
-* Java Development Kit (JDK): Ensure JDK 17 or higher is installed on your system.
+* Java Development Kit (JDK): Ensure JDK 17(22 for lastest releases) or higher is installed on your system.
 
-* Build Tool: Maven or Gradle is required for building the project.
+* Build Tool: Maven is required for building the project.
 ```bash
 mvn package -Dmaven.test.skip
-mvn spring-boot:run
+mvn spring-boot:run # for server mode
 ```
 
 # Usage
 
-Upon launching ed-monitor, users can configure monitoring parameters, set up notification preferences, and manage market data through an intuitive graphical user interface. Detailed user guides and documentation are available within the application under the 'Help' section.
+Upon launching ed-monitor, users can configure monitoring parameters, set up notification preferences, 
+and manage market data through an intuitive graphical user interface.
 
 ## Contributing
 
