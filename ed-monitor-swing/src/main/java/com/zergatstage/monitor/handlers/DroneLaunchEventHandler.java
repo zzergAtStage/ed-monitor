@@ -1,6 +1,6 @@
 package com.zergatstage.monitor.handlers;
 
-import com.zergatstage.monitor.service.DroneManager;
+import com.zergatstage.monitor.service.managers.DroneManager;
 import org.json.JSONObject;
 
 /**
@@ -16,9 +16,14 @@ public class DroneLaunchEventHandler implements LogEventHandler {
         this.droneManager = droneManager;
     }
 
+    /**
+     * Determines whether the handler can process the specified event type.
+     *
+     * @return string event type.
+     */
     @Override
-    public boolean canHandle(String eventType) {
-        return "LaunchDrone".equals(eventType);
+    public String getEventType() {
+        return "LaunchDrone";
     }
 
     @Override

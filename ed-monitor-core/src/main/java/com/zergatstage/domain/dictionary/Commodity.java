@@ -24,7 +24,7 @@ import lombok.*;
 public class Commodity {
 
     @Id
-    private String id;
+    private Long id;
 
     private String name;
     @Column(name = "Name_Localised")

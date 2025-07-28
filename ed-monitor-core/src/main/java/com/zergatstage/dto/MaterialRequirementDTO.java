@@ -15,12 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MaterialRequirementDTO {
 
-
-    private String name;
-    /**
-     * Name of the material/commodity.
-     */
-    private String materialName;
+    private long id;
+    private CommodityDTO commodity;
 
     /**
      * Quantity required in total.

@@ -1,12 +1,8 @@
 package com.zergatstage.monitor.handlers;
 
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
-import com.zergatstage.monitor.service.DroneManager;
 
-import javax.swing.JLabel;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class HandlerConfiguration {
     /**
@@ -14,16 +10,19 @@ public class HandlerConfiguration {
      * You can extend this method (or read from a file, DI container, etc.)
      * to add new handlers without touching the UI.
      */
-    public static List<LogEventHandler> getLogEventHandlers() {
-        List<LogEventHandler> handlers = new ArrayList<>();
-        handlers.add(new DroneLaunchEventHandler(DefaultManagerFactory.getInstance().getDroneManager()));
-        handlers.add(new AsteroidProspectEventHandler(DefaultManagerFactory.instance.getAsteroidManager()));
-        handlers.add(new CargoUpdateEventHandler());
-        handlers.add(new ColonisationConstructionDepot());
-        handlers.add(new DockedEventHandler());
+    public static Map<String, LogEventHandler> getLogEventHandlers() {
+        Map<String, LogEventHandler> handlerMap = new HashMap<>();
+        handlerMap.put("LaunchDrone",new DroneLaunchEventHandler(DefaultManagerFactory.getInstance().getDroneManager()));
+        handlerMap.put("ProspectedAsteroid",new AsteroidProspectEventHandler(DefaultManagerFactory.instance.getAsteroidManager()));
 
-        // if you need to load handlers from plugins or external modules:
-        // handlers.addAll(PluginLoader.load(LogEventHandler.class));
-        return handlers;
+        ServiceLoader<LogEventHandler> loader = ServiceLoader.load(LogEventHandler.class);
+        for (LogEventHandler handler : loader) {
+            String type = handler.getEventType();
+            if (handlerMap.containsKey(type)) {
+                System.err.println("Warning: Duplicate handler for event type: " + type);
+            }
+            handlerMap.put(type, handler);
+        }
+        return handlerMap;
     }
 }

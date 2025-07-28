@@ -2,10 +2,10 @@ package com.zergatstage.monitor.config;
 
 import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.domain.makret.Market;
-import com.zergatstage.domain.makret.MarketDataParser;
+import com.zergatstage.monitor.service.managers.MarketDataParser;
 import com.zergatstage.domain.makret.MarketItem;
 import lombok.extern.log4j.Log4j2;
-import org.json.simple.parser.ParseException;
+import org.json.JSONException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,15 +27,15 @@ public class InitCommodities {
             fetchCommodities(parsedMarkets);
         } catch (IOException e) {
             log.warn("Error reading market file: {}", e.getMessage());
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
+        } catch (JSONException e) {
+            log.error("Error commodities processing in Market.json file: {}", e.getMessage());
         }
     }
 
     private void fetchCommodities(List<Market> parsedMarkets) {
-        Map<String, MarketItem> marketItems = parsedMarkets.stream().findFirst().orElseThrow().getItems();
+        Map<Long, MarketItem> marketItems = parsedMarkets.stream().findFirst().orElseThrow().getItems();
         marketItems.forEach((key,item)  -> Commodity.builder()
-                .id(item.getId().toString())
+                .id(item.getId())
                 .name(item.getCommodity().getName())
         );
     }

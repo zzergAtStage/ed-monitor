@@ -8,13 +8,17 @@ import com.zergatstage.monitor.handlers.HandlerConfiguration;
 import com.zergatstage.monitor.handlers.LogEventHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.StatusMonitor;
+import lombok.extern.slf4j.Slf4j;
 
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Map;
 
+@Slf4j
 public class MonitorView {
     private final MonitorController controller;
     private final JFrame frame;
@@ -28,10 +32,18 @@ public class MonitorView {
         droneProvisionerPanel = new DroneProvisionerPanel();
         constructionSitePanel = new ConstructionSitePanel();
         // Status labels
+        Image icon = null;
+        try {
+            icon = ImageIO.read(
+                    getClass().getResourceAsStream("/app-logo.png"));
+            frame.setIconImage(icon);
+        } catch (IOException e) {
+            log.error("Failed to load application icon", e);
+        }
 
 
         // Initialize services TODO: WTF?
-        List<LogEventHandler> handlers = HandlerConfiguration.getLogEventHandlers();
+        Map<String, LogEventHandler> handlers = HandlerConfiguration.getLogEventHandlers();
         JournalLogMonitor logService = new JournalLogMonitor(logDirectory, handlers);
         StatusMonitor statusService = new StatusMonitor(
                 logDirectory.resolve("Status.json"),

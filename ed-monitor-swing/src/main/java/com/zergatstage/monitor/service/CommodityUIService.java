@@ -8,9 +8,13 @@ import java.util.*;
 public class CommodityUIService {
     public static CommodityUIService instance;
     private final Map<String, CommodityDTO> commodityMap;
+    private final CommodityRegistry commodityRegistry;
 
     private CommodityUIService() {
+
+        this.commodityRegistry = CommodityRegistry.getInstance();
         this.commodityMap = new HashMap<>();
+
     }
 
     public synchronized static CommodityUIService getInstance() {
@@ -40,7 +44,7 @@ public class CommodityUIService {
      */
     public CommodityDTO getCommodity(String id) {
         return commodityMap.values().stream()
-                .filter( commodity -> commodity.getId().equalsIgnoreCase(id))
+                .filter( commodity -> commodity.getId() == Long.getLong(id))
                 .findFirst().orElseThrow();
     }
 
@@ -67,7 +71,7 @@ public class CommodityUIService {
      * @return Existing or newly created Commodity.
      */
 
-    public CommodityDTO getOrAddCommodity(String id, String name, String category) {
+    public CommodityDTO getOrAddCommodity(long id, String name, String category) {
         return commodityMap.computeIfAbsent(name, key ->
                 CommodityDTO.builder().id(id).name(name).category(category).build()
         );

@@ -4,9 +4,9 @@ import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
 import com.zergatstage.dto.ConstructionSiteDTO;
 import com.zergatstage.dto.ConstructionSiteMapper;
+import com.zergatstage.tools.CommodityHelper;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,9 +25,11 @@ public class ConstructionSiteManager {
     private static volatile  ConstructionSiteManager instance;
     private final Map<Long, ConstructionSite> sites = new HashMap<>();
     private final Set<ConstructionSiteUpdateListener> listeners = new HashSet<>();
+    private final CommodityRegistry commodityRegistry;
 
-
-    private ConstructionSiteManager() {}
+    private ConstructionSiteManager() {
+        commodityRegistry = CommodityRegistry.getInstance();
+    }
 
     public static synchronized ConstructionSiteManager getInstance() {
         if (instance == null) {
@@ -59,8 +61,9 @@ public class ConstructionSiteManager {
      */
     //todo: rework it - this is a GPT a result of hallucination.
     public void updateSitesWithCargo(String material, int deliveredQuantity) {
+        long commodityId = commodityRegistry.findCommodityId(material, null);
         for (ConstructionSite site : sites.values()) {
-            site.updateDeliveredQuantity(material, deliveredQuantity);
+            site.updateDeliveredQuantity(commodityId, deliveredQuantity);
             notifyListeners();
         }
     }
@@ -93,7 +96,7 @@ public class ConstructionSiteManager {
 
 
     //TODO: WIP
-    @SneakyThrows
+
     public void updateSite(long marketId, JSONObject event) {
         ConstructionSite currentSite = sites.get(marketId);
 
@@ -104,32 +107,40 @@ public class ConstructionSiteManager {
             log.warn("No required materials found!");
             return;
         }
-        JSONArray commodityRequirements =  event.getJSONArray("ResourcesRequired");
-        // Find matching commodity
-        List<MaterialRequirement> requirementList = currentSite.getRequirements();
+        try {
+            JSONArray commodityRequirements = event.getJSONArray("ResourcesRequired");
+            // Find matching commodity
+            List<MaterialRequirement> requirementList = currentSite.getRequirements();
 
-        for (int i = 0; i < commodityRequirements.length(); i++) {
-            JSONObject resource = commodityRequirements.getJSONObject(i);
-            String name = resource.getString("Name");
-            String nameLocalised = resource.getString("Name_Localised");
-            int requiredAmount = resource.getInt("RequiredAmount");
-            int providedAmount = resource.getInt("ProvidedAmount");
+            for (int i = 0; i < commodityRequirements.length(); i++) {
+                JSONObject resource = commodityRequirements.getJSONObject(i);
+                String name = resource.getString("Name");
+                String nameLocalised = resource.optString("Name_Localised", null);
+                String commodityKey = CommodityHelper.normalizeSystemName(name);
+                long commodityId = commodityRegistry.findCommodityId(commodityKey, nameLocalised);
+                int requiredAmount = resource.getInt("RequiredAmount");
+                int providedAmount = resource.getInt("ProvidedAmount");
+                Optional<MaterialRequirement> first = Optional.empty();
+                if (!requirementList.isEmpty()) {
+                    first = requirementList.stream()
+                            .filter(c -> c.getCommodity().getId() == commodityId)
+                            .findFirst();
+                }
+                if (first.isEmpty()) {
+                    MaterialRequirement requirement = MaterialRequirement.builder().build();
+                    requirement.setCommodity(commodityRegistry.getCommodityById(commodityId));
 
-            Optional<MaterialRequirement> first = requirementList.stream()
-                    .filter(c -> c.getName().equalsIgnoreCase(name) || c.getName().equalsIgnoreCase(nameLocalised))
-                    .findFirst();
-            if (first.isEmpty()) {
-                MaterialRequirement requirement = MaterialRequirement.builder().build();
-                requirement.setName(name);
-                requirement.setMaterialName(nameLocalised);
-                requirement.setRequiredQuantity(requiredAmount);
-                requirement.setDeliveredQuantity(providedAmount);
+                    requirement.setRequiredQuantity(requiredAmount);
+                    requirement.setDeliveredQuantity(providedAmount);
 
-                requirementList.add(requirement);
-            } else {
-                first.get().setRequiredQuantity(requiredAmount);
-                first.get().setDeliveredQuantity(providedAmount);
+                    requirementList.add(requirement);
+                } else {
+                    first.get().setRequiredQuantity(requiredAmount);
+                    first.get().setDeliveredQuantity(providedAmount);
+                }
             }
+        }catch (JSONException e) {
+            log.error("Dropped NPE or something else: {}",e.getMessage());
         }
         notifyListeners();
     }

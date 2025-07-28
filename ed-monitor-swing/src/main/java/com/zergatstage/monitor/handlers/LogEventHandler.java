@@ -12,11 +12,9 @@ public interface LogEventHandler {
 
     /**
      * Determines whether the handler can process the specified event type.
-     *
-     * @param eventType the type of event (e.g., "LaunchDrone", "ProspectedAsteroid").
-     * @return true if this handler can process the event; false otherwise.
+     * @return string event type.
      */
-    boolean canHandle(String eventType);
+    String getEventType();
 
     /**
      * Processes the given log event.

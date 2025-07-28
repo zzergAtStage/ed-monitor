@@ -1,6 +1,5 @@
 package com.zergatstage.domain;
 
-import com.zergatstage.domain.makret.Market;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -8,6 +7,7 @@ import jakarta.persistence.OneToMany;
 import lombok.*;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a construction site with a list of material requirements.
@@ -54,7 +54,7 @@ public class ConstructionSite{
      */
     public void updateRequirement(MaterialRequirement materialRequirement) {
         for (MaterialRequirement req : requirements) {
-            if (req.getMaterialName().equalsIgnoreCase(materialRequirement.getMaterialName())) {
+            if (Objects.equals(req.getCommodity().getId(), materialRequirement.getCommodity().getId())) {
                 req.addDeliveredQuantity(materialRequirement.getDeliveredQuantity());
                 req.setRequiredQuantity(materialRequirement.getRequiredQuantity());
             }
@@ -63,12 +63,12 @@ public class ConstructionSite{
 
     /**
      * Update delivered quantity
-     * @parameter Commodity name
-     * @parameter Delivered quality
+     * @param commodityId Commodity id
+     * @param delivered Delivered quantity
      */
-    public void updateDeliveredQuantity(String commodityName, int delivered){
+    public void updateDeliveredQuantity(long commodityId , int delivered){
         for (MaterialRequirement req : requirements) {
-            if (req.getMaterialName().equalsIgnoreCase(commodityName)) {
+            if (req.getCommodity().getId() == commodityId) {
                 req.addDeliveredQuantity(delivered);//TODO: check negative values
                }
         }

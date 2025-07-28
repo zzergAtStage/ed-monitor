@@ -1,10 +1,14 @@
 package com.zergatstage.monitor;
 
-import com.zergatstage.domain.makret.MarketDataUpdateEvent;
+import com.zergatstage.monitor.factory.DefaultManagerFactory;
+import com.zergatstage.monitor.service.CommodityRegistry;
+import com.zergatstage.monitor.service.managers.MarketDataParser;
+import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
 import com.zergatstage.monitor.handlers.ExitHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.MarketDataIOService;
 import com.zergatstage.monitor.service.StatusMonitor;
+import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
 
 import java.awt.event.ActionEvent;
 import java.util.concurrent.Executors;
@@ -67,8 +71,12 @@ public class MonitorController {
      * @param event the event carrying the fresh market-data content
      */
     private void onMarketDataUpdate(MarketDataUpdateEvent event) {
-        //String jsonPayload = event.getPayload();
-        // TODO: parse JSON and update Swing UI components
-//        System.out.println("Received market update: " + jsonPayload);
+        // TODO: replace with factory
+        MarketDataUpdateService marketDataUpdateService = new MarketDataUpdateService(
+                DefaultManagerFactory.getInstance().getCommodityRegistry(),
+                DefaultManagerFactory.getInstance().getMarketDataParser());
+        marketDataUpdateService.onMarketDataUpdate(event);
+
+
     }
 }

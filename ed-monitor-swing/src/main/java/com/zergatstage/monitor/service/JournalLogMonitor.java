@@ -3,19 +3,16 @@ package com.zergatstage.monitor.service;
 import com.zergatstage.monitor.handlers.LogEventHandler;
 import com.zergatstage.monitor.service.readers.AppendFileReadStrategy;
 import lombok.extern.log4j.Log4j2;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.file.*;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The JournalLogMonitor class is responsible for monitoring the Elite Dangerous log directory
@@ -34,7 +31,7 @@ public class JournalLogMonitor {
      * @param eventHandlers      the list of event handlers to dispatch incoming events to
      */
     public JournalLogMonitor(Path logDirectoryPath,
-                      List<LogEventHandler> eventHandlers) {
+                             Map<String, LogEventHandler> eventHandlers) {
 
         // Process lastest log file in the directory
         List<Path> logFiles = findLogFiles(logDirectoryPath);
@@ -75,7 +72,7 @@ public class JournalLogMonitor {
     private List<Path> findLogFiles(Path directory){
         List<Path> logFiles = new ArrayList<>();
         if (Files.exists(directory) && Files.isDirectory(directory)) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*.log")) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*.log")) {//*.log
                 stream.forEach(logFiles::add);
             } catch (IOException e) {
                 log.error("Error reading log directory: {}", e.getMessage());
@@ -111,7 +108,7 @@ public class JournalLogMonitor {
      * @param newContent     the raw text newly appended to Journal.log
      * @param handlers       the registered list of LogEventHandler implementations
      */
-    private void processAppendedLines(String newContent, List<LogEventHandler> handlers) {
+    private void processAppendedLines(String newContent, Map<String, LogEventHandler> handlers) {
         // Split into lines on both Unix and Windows line endings
         String[] lines = newContent.split("\\r?\\n");
         for (String line : lines) {
@@ -122,16 +119,16 @@ public class JournalLogMonitor {
         }
     }
 
-    private void processLine(List<LogEventHandler> handlers, String line) {
+    private void processLine(Map<String, LogEventHandler> handlers, String line) {
         try {
             JSONObject json = new JSONObject(new JSONTokener(line));
             String eventType = json.getString("event");
             // Dispatch to all handlers that claim they can handle this event
-            for (LogEventHandler handler : handlers) {
-                if (handler.canHandle(eventType)) {
-                    handler.handleEvent(json);
-                }
+            LogEventHandler logEventHandler = handlers.get(eventType);
+            if (logEventHandler != null) {
+                logEventHandler.handleEvent(json);
             }
+
         } catch (Exception e) {
             System.err.println("Error parsing or handling line: " + line + " – " + e.getMessage());
             e.printStackTrace();

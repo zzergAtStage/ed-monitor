@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommodityDTO {
-    private String id;
+    private Long id;
     private String name;
     private String nameLocalised;
     private String category;

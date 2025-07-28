@@ -9,24 +9,62 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: refactoring and implementing.&#10;-moving to 0.1.0&#10;&#10;version: 0.1.0-SNAPSHOT">
+    <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: unify read Strategy patterns, separate of concerns &#10;- reworked construction site panel&#10;- fixed bug with MaterialRequirementDTO&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <change afterPath="$PROJECT_DIR$/assets/app-logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/dictionary/CargoItem.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/CargoInventoryEventHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/LoadoutEventHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/MarketBuyEventHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/CargoInventoryManager.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/CommodityRegistry.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/tools/CommodityHelper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/resources/META-INF/services/com.zergatstage.monitor.handlers.LogEventHandler" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/resources/app-logo.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/ConstructionSite.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/ConstructionSite.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/MaterialRequirement.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/MaterialRequirement.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/Ship.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/Ship.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/dictionary/Commodity.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/dictionary/Commodity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/dictionary/CommodityRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/dictionary/CommodityRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/Market.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/Market.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/MarketDataParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/MarketDataUpdateEvent.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateEvent.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/MarketDataUpdateService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/MarketItem.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/MarketItem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/domain/makret/MarketRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/dto/CommodityDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/dto/CommodityDTO.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/dto/MaterialRequirementDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/dto/MaterialRequirementDTO.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/dto/MaterialRequirementMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/dto/MaterialRequirementMapper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/EliteLogMonitorFrame.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/EliteLogMonitorFrame.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/services/CommodityService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/services/hauling/RIP_EDHaulingOptimizer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-core/src/main/java/com/zergatstage/services/hauling/RouteOptimizationService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/ClientApp.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/ClientApp.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/CommodityManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/CommodityManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorController.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorView.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorView.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/DroneProvisionerPanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/DroneProvisionerPanel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/config/InitCommodities.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/config/InitCommodities.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/DefaultManagerFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/DefaultManagerFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/ManagerFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/ManagerFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/MonitorServiceFactoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/MonitorServiceFactoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/AsteroidProspectEventHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/AsteroidProspectEventHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/CargoUpdateEventHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/CargoUpdateEventHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/ColonisationConstructionDepot.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/ColonisationConstructionDepot.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/ColonisationContributionEventHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/ColonisationContributionEventHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/DockedEventHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/DockedEventHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/DroneLaunchEventHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/DroneLaunchEventHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/HandlerConfiguration.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/HandlerConfiguration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/LogEventHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/LogEventHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/BaseManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/BaseManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/CommodityUIService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/CommodityUIService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/ConstructionSiteManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/ConstructionSiteManager.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/EventParser.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/GenericFileMonitor.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/GenericFileMonitor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/DroneManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/DroneManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/JournalLogMonitor.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/JournalLogMonitor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/MarketDataIOService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/MarketDataIOService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/StatusMonitor.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/StatusMonitor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/readers/FileReadStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/readers/FileReadStrategy.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/test/java/com/zergatstage/monitor/service/readers/AppendFileReadStrategyTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/test/java/com/zergatstage/monitor/service/readers/AppendFileReadStrategyTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/test/java/com/zergatstage/monitor/service/readers/RewriteFileReadStrategyTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/test/java/com/zergatstage/monitor/service/readers/RewriteFileReadStrategyTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/refactoring.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,9 +75,9 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Interface" />
-        <option value="Class" />
         <option value="local" />
         <option value="JUnit5 Test Class" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -125,14 +163,14 @@
     "git-widget-placeholder": "feature/refactoring-core",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_directory_selection": "C:/App/ed-monitor/ed-monitor-core/src/main/java/com/zergatstage",
-    "last_opened_file_path": "C:/App/ed-monitor",
+    "last_directory_selection": "C:/App/ed-monitor/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service",
+    "last_opened_file_path": "C:/App/ed-monitor/ed-monitor-swing/src/main/resources",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Project",
+    "project.structure.last.edited": "Modules",
     "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.34712642",
     "settings.editor.selected.configurable": "preferences.pluginManager",
@@ -151,6 +189,9 @@
       <recent name="com.zergatstage.monitor" />
       <recent name="com.zergatstage.dto" />
       <recent name="com.zergatstage.domain.commander" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\App\ed-monitor\ed-monitor-swing\src\main\resources" />
     </key>
     <key name="CreateTestDialog.Recents.Supers">
       <recent name="" />
@@ -404,7 +445,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753535661484</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="dev: unify read Strategy patterns, separate of concerns &#10;- reworked construction site panel&#10;- fixed bug with MaterialRequirementDTO&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753569543340</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1753569543340</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -431,15 +480,21 @@
     <MESSAGE value="dev: CommodityManager form and graceful shutdown process&#10;- Main menu add&#10;- Dictionary support&#10;version: 0.0.1-SNAPSHOT" />
     <MESSAGE value="dev: build chores&#10;&#10;version: 0.0.1-SNAPSHOT" />
     <MESSAGE value="dev: refactoring and implementing.&#10;-moving to 0.1.0&#10;&#10;version: 0.1.0-SNAPSHOT" />
-    <option name="LAST_COMMIT_MESSAGE" value="dev: refactoring and implementing.&#10;-moving to 0.1.0&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <MESSAGE value="dev: unify read Strategy patterns, separate of concerns &#10;- reworked construction site panel&#10;- fixed bug with MaterialRequirementDTO&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <option name="LAST_COMMIT_MESSAGE" value="dev: unify read Strategy patterns, separate of concerns &#10;- reworked construction site panel&#10;- fixed bug with MaterialRequirementDTO&#10;&#10;version: 0.1.0-SNAPSHOT" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java</url>
-          <line>98</line>
-          <option name="timeStamp" value="81" />
+          <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/ColonisationContributionEventHandler.java</url>
+          <line>37</line>
+          <option name="timeStamp" value="105" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/JournalLogMonitor.java</url>
+          <line>126</line>
+          <option name="timeStamp" value="106" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

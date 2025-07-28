@@ -22,8 +22,8 @@ public class AsteroidProspectEventHandler implements LogEventHandler {
     }
 
     @Override
-    public boolean canHandle(String eventType) {
-        return "ProspectedAsteroid".equals(eventType);
+    public String getEventType() {
+        return "ProspectedAsteroid";
     }
 
     @Override

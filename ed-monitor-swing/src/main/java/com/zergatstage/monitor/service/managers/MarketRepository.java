@@ -1,5 +1,6 @@
-package com.zergatstage.domain.makret;
+package com.zergatstage.monitor.service.managers;
 
+import com.zergatstage.domain.makret.Market;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

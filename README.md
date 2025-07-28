@@ -4,7 +4,7 @@ Overview
 ed-monitor is a sophisticated desktop application developed in Java that has evolved
 from a simple Swing-based interface to a comprehensive solution incorporating 
 file monitoring, user notifications, and persistent market data management. 
-This project reflects the progressive enhancement of Java programming skills, 
+This project reflects the progressive enhancement of Java application and its capabilities, 
 integrating popular frameworks and adhering to established architectural patterns
 to ensure resilience and scalability.
 
@@ -53,9 +53,9 @@ mvn clean test -Ptest
 
 ## Prerequisites
 
-* Java Development Kit (JDK): Ensure JDK 17 or higher is installed on your system.
+* Java Development Kit (JDK): Ensure JDK 17(22 for lastest releases) or higher is installed on your system.
 
-* Build Tool: Maven or Gradle is required for building the project.
+* Build Tool: Maven is required for building the project.
 ```bash
 mvn package -Dmaven.test.skip
 mvn spring-boot:run

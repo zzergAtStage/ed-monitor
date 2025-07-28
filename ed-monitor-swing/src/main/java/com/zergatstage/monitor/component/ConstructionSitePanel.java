@@ -2,7 +2,9 @@ package com.zergatstage.monitor.component;
 
 import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
+import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.dto.ConstructionSiteDTO;
+import com.zergatstage.monitor.service.CargoInventoryManager;
 import com.zergatstage.monitor.service.CommodityUIService;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.ConstructionSiteUpdateListener;
@@ -16,7 +18,6 @@ import java.util.ArrayList;
 /**
  * The ConstructionSitePanel class provides a UI panel for managing
  * construction sites and tracking their material requirements.
- *
  * It has two main tables:
  *  1) A "Site Progress Table" at the top: columns for "Site" and "Progress" (with a progress bar).
  *  2) A "Commodities Table" at the bottom: columns for "Site", "Material", "Required", "Delivered", "Remaining".
@@ -27,14 +28,10 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private final JTable siteProgressTable;
     private final DefaultTableModel siteProgressTableModel;
 
-    // Bottom table: commodities
-    private final JTable commoditiesTable;
     private final DefaultTableModel commoditiesTableModel;
 
     private final ConstructionSiteManager siteManager;
-
-
-    private final CommodityUIService commodityUIService;
+    private final CargoInventoryManager cargoInventoryManager;
 
     /**
      * A sample list of available commodities to choose from when adding materials.
@@ -55,7 +52,9 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
         setLayout(new BorderLayout());
         siteManager = ConstructionSiteManager.getInstance();
-        commodityUIService = CommodityUIService.getInstance();
+
+        cargoInventoryManager = CargoInventoryManager.getInstance();
+        CommodityUIService commodityUIService = CommodityUIService.getInstance();
         AVAILABLE_COMMODITIES = commodityUIService.getAllNames();
         // ============= Site Progress Table (Top) =============
         String[] siteProgressColumns = {"Site", "Progress"};
@@ -87,14 +86,15 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         });
 
         // ============= Commodities Table (Bottom) =============
-        String[] commodityColumns = {"Site", "Material", "Required", "Delivered", "Remaining"};
+        String[] commodityColumns = {"Site", "Material", "Required", "InCargo", "Delivered", "Remaining"};
         commoditiesTableModel = new DefaultTableModel(commodityColumns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // read-only as well
             }
         };
-        commoditiesTable = new JTable(commoditiesTableModel);
+        // Bottom table: commodities
+        JTable commoditiesTable = new JTable(commoditiesTableModel);
         commoditiesTable.setAutoCreateRowSorter(true);
         JScrollPane commoditiesScroll = new JScrollPane(commoditiesTable);
 
@@ -118,13 +118,14 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         addCommodityButton.addActionListener(this::handleAddCommodity);
         controlPanel.add(addCommodityButton);
         JButton clearFilterButton = new JButton("Clear Filter");
-        clearFilterButton.addActionListener(e -> refreshCommoditiesTable());
+        clearFilterButton.addActionListener(_ -> refreshCommoditiesTable());
         controlPanel.add(clearFilterButton);
 
         add(controlPanel, BorderLayout.SOUTH);
 
         // Register as a listener so that the panel updates when the siteManager data changes.
         siteManager.addListener(() -> SwingUtilities.invokeLater(this::refreshAll));
+        cargoInventoryManager.addListener(this::refreshAll);
     }
 
     /**
@@ -174,7 +175,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
                         site.getSiteId(),
-                        req.getMaterialName(),
+                        req.getCommodity().getNameLocalised(),
                         req.getRequiredQuantity(),
                         req.getDeliveredQuantity(),
                         req.getRemainingQuantity()
@@ -257,7 +258,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             return;
         }
 
-        // Find the selected site with StringID - manually added enteties
+        // Find the selected site with StringID - manually added entities
         ConstructionSite selectedSite = siteManager.getSites().values().stream()
                 .filter(s -> s.getSiteId().equals(selectedSiteId))
                 .findFirst()
@@ -276,7 +277,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         // Add the new requirement
         selectedSite.getRequirements().add(
                MaterialRequirement.builder()
-                       .materialName(selectedCommodity)
+                       .commodity(Commodity.builder().build()) //TODO: Replace with real choice
                        .requiredQuantity(requiredQuantity)
                        .build()
         );
@@ -312,13 +313,14 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
      */
     private void refreshCommoditiesTable() {
         commoditiesTableModel.setRowCount(0);
-
+         // Placeholder for "In Cargo" column, not used in this context
         for (ConstructionSite site : siteManager.getSites().values()) {
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
                         site.getSiteId(),
-                        req.getMaterialName(),
+                        req.getCommodity().getNameLocalised(),
                         req.getRequiredQuantity(),
+                        cargoInventoryManager.getInCargo(req.getCommodity().getId()), // Get in cargo from inventory
                         req.getDeliveredQuantity(),
                         req.getRemainingQuantity()
                 };

@@ -1,5 +1,6 @@
-package com.zergatstage.monitor.service;
+package com.zergatstage.monitor.service.managers;
 
+import com.zergatstage.monitor.service.BaseManager;
 import lombok.Getter;
 
 @Getter

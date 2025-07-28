@@ -2,6 +2,7 @@ package com.zergatstage;
 
 import com.zergatstage.monitor.MonitorController;
 import com.zergatstage.monitor.MonitorView;
+import com.zergatstage.monitor.config.InitCommodities;
 import com.zergatstage.monitor.config.LogMonitorConfig;
 import com.zergatstage.monitor.factory.MonitorServiceFactoryImpl;
 import com.zergatstage.monitor.handlers.DefaultExitHandler;
@@ -19,6 +20,7 @@ import java.nio.file.Path;
 public class ClientApp {
 
     public static void main(String[] args) {
+        System.out.println("Starting Log Monitor Application...");
         MonitorServiceFactoryImpl monitorServiceFactory = new MonitorServiceFactoryImpl();
         Path logFilePath = LogMonitorConfig.logDirectory();
         MonitorView view = new MonitorView(

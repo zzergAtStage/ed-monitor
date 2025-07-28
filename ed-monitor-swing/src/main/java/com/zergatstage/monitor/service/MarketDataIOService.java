@@ -1,6 +1,6 @@
 package com.zergatstage.monitor.service;
 
-import com.zergatstage.domain.makret.MarketDataUpdateEvent;
+import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
 
 import java.io.IOException;
 import java.nio.file.*;

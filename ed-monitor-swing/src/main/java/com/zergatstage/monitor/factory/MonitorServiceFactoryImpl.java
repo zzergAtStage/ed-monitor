@@ -6,12 +6,12 @@ import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.StatusMonitor;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Map;
 
 public class MonitorServiceFactoryImpl implements MonitorServiceFactory {
     @Override
     public JournalLogMonitor createLogService(Path logDirectory) {
-        List<LogEventHandler> handlers = HandlerConfiguration.getLogEventHandlers();
+        Map<String, LogEventHandler> handlers = HandlerConfiguration.getLogEventHandlers();
         return new JournalLogMonitor(logDirectory, handlers);
     }
 

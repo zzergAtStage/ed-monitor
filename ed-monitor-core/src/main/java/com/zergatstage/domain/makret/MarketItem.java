@@ -16,7 +16,7 @@ public class MarketItem {
 
     @Id
     @GeneratedValue
-    private UUID id;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "commodity_id", nullable = false)

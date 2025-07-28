@@ -1,13 +1,12 @@
-package com.zergatstage.domain.makret;
+package com.zergatstage.monitor.service.managers;
 
 import lombok.Getter;
-import org.springframework.context.ApplicationEvent;
 
 /**
  * Event representing an update in market data.
  */
 @Getter
-public class MarketDataUpdateEvent extends ApplicationEvent {
+public class MarketDataUpdateEvent {
 
     private final String jsonData;
 
@@ -18,8 +17,6 @@ public class MarketDataUpdateEvent extends ApplicationEvent {
      * @param jsonData the JSON data from the market file
      */
     public MarketDataUpdateEvent(Object source, String jsonData) {
-        super(source);
         this.jsonData = jsonData;
     }
-
 }

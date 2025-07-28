@@ -1,13 +1,11 @@
-package com.zergatstage.domain.makret;
+package com.zergatstage.monitor.service.managers;
 
 import com.zergatstage.domain.makret.Market;
-import com.zergatstage.domain.makret.MarketDataParser;
-import com.zergatstage.domain.makret.MarketDataUpdateEvent;
-import com.zergatstage.domain.makret.MarketRepository;
+import com.zergatstage.monitor.service.CommodityRegistry;
 import lombok.extern.log4j.Log4j2;
-import org.json.simple.parser.ParseException;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.util.List;
 
@@ -22,17 +20,17 @@ import java.util.List;
 @Log4j2
 public class MarketDataUpdateService {
 
-    private final MarketRepository repository;
+    private final CommodityRegistry commodityRegistry;
     private final MarketDataParser marketDataParser;
 
     /**
      * Constructs the MarketDataUpdateService with required dependencies.
      *
-     * @param repository      the repository used to persist market data.
+     * @param commodityRegistry     the repository used to persist market and Commodity data.
      * @param marketDataParser the parser for converting JSON market data into Market objects.
      */
-    public MarketDataUpdateService(MarketRepository repository, MarketDataParser marketDataParser) {
-        this.repository = repository;
+    public MarketDataUpdateService(CommodityRegistry commodityRegistry, MarketDataParser marketDataParser) {
+        this.commodityRegistry = commodityRegistry;
         this.marketDataParser = marketDataParser;
     }
 
@@ -44,35 +42,23 @@ public class MarketDataUpdateService {
      *
      * @param event the market data update event containing JSON data.
      */
-    @EventListener
+
     public void onMarketDataUpdate(MarketDataUpdateEvent event) {
         try {
             String jsonData = event.getJsonData();
             // Parse market data from JSON
             List<Market> parsedMarkets = marketDataParser.parseMarketData(jsonData);
+            JSONObject json = new JSONObject(new JSONTokener(jsonData));
+            commodityRegistry.loadMarketData(json);
             if (parsedMarkets.isEmpty()) {
                 // Log a message when no data is found
                 log.warn("No market data found from file update. (It's okay)");
                 return;
             }
-
-            // Save or update each parsed market in the repository
-            parsedMarkets.forEach(repository::save);
             log.info("Market data updated successfully.");
-        } catch (ParseException e) {
+        } catch (JSONException e) {
             // Log the parsing error; consider using a logging framework in production
             log.error("Error parsing market data: {}", e.getMessage());
         }
     }
-
-    /**
-     * (Optional) Scheduled method to refresh market data periodically.
-     * <p>
-     * Uncomment and configure the scheduling annotation if a periodic update is desired.
-     * </p>
-     */
-    // @Scheduled(fixedDelay = 60000)
-    // public void scheduledMarketDataUpdate() {
-    //     // Retrieve JSON data from external source and update repository
-    // }
 }

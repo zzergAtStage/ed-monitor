@@ -20,6 +20,7 @@ public class CommodityManager extends JPanel {
     private final DefaultTableModel tableModel;
     private final JTable table;
 
+
     public CommodityManager() {
         this.commodityUIService = CommodityUIService.getInstance();
         setLayout(new BorderLayout());
@@ -75,7 +76,7 @@ public class CommodityManager extends JPanel {
             return;
         }
 
-        String id = (String) tableModel.getValueAt(row, 0);
+        long id = (Long) tableModel.getValueAt(row, 0);
         String oldCategory = (String) tableModel.getValueAt(row, 1);
         String oldName = (String) tableModel.getValueAt(row, 2);
 
@@ -112,7 +113,6 @@ public class CommodityManager extends JPanel {
             String name = (String) results.get(1);
 
             CommodityDTO newCommodity = CommodityDTO.builder()
-                    .id(UUID.randomUUID().toString())
                     .name(name)
                     .category(category)
                     .build();

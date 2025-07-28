@@ -20,7 +20,7 @@ import java.util.Map;
 public class Market {
 
     @Id
-    private String marketId;
+    private Long marketId;
 
     private String stationName;
     private String stationType;
@@ -28,7 +28,7 @@ public class Market {
 
     @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
-    private Map<String, MarketItem> items = new HashMap<>();
+    private Map<Long, MarketItem> items = new HashMap<>();
 
     /**
      * Adds a market item to the market.
@@ -47,7 +47,7 @@ public class Market {
      *
      * @return An unmodifiable map of market items.
      */
-    public Map<String, MarketItem> getItems() {
+    public Map<Long, MarketItem> getItems() {
         return Collections.unmodifiableMap(items);
     }
 

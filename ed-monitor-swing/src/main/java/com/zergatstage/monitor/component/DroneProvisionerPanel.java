@@ -2,7 +2,7 @@ package com.zergatstage.monitor.component;
 
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
 import com.zergatstage.monitor.service.AsteroidManager;
-import com.zergatstage.monitor.service.DroneManager;
+import com.zergatstage.monitor.service.managers.DroneManager;
 
 import javax.swing.*;
 import java.awt.*;

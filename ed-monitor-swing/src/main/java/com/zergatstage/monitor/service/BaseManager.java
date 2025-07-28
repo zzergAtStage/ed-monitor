@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-abstract class BaseManager implements Observable {
+public abstract class BaseManager implements Observable {
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
     @Override
