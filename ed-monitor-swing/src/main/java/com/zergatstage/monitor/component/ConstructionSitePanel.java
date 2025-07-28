@@ -40,7 +40,6 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private final MarketDataUpdateService marketDataService;
 
     // zero-based column indices in commoditiesTable:
-    private static final int SITE_COL      = 0;
     private static final int MATERIAL_COL  = 1;
     private static final int REMAINING_COL = 5;  // adjust if your column order differs
 
@@ -368,7 +367,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 // lookup stock from your registry for this site & commodity
                 int stock = marketDataService.getStockForSite(material);
 
-                if (remaining != 0 && stock > 0) {
+                if (remaining != null && remaining != 0 && stock > 0) {
                     setBackground(new Color(144, 238, 144)); // light green
                 } else {
                     setBackground(Color.WHITE);

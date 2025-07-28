@@ -7,3 +7,4 @@ com.zergatstage.monitor.handlers.ColonisationContributionEventHandler
 com.zergatstage.monitor.handlers.DockedEventHandler
 com.zergatstage.monitor.handlers.LoadoutEventHandler
 com.zergatstage.monitor.handlers.MarketBuyEventHandler
+com.zergatstage.monitor.handlers.MarketSellEventHandler

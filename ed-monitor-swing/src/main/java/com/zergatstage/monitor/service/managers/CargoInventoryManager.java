@@ -170,4 +170,16 @@ public class CargoInventoryManager extends BaseManager {
                 .build();
         shipVariant.getCommodities().put(commodity.getId(), item);
     }
+
+    public void removeCommodity(Commodity commodity, int i) {
+        shipVariant.getCommodities().computeIfPresent(commodity.getId(), (_, cargoItem) -> {
+            int newCount = cargoItem.getCount() + i;
+            if (newCount <= 0) {
+                return null; // Remove the item if count is zero or less
+            } else {
+                cargoItem.setCount(newCount);
+                return cargoItem; // Update the count
+            }
+        });
+    }
 }
