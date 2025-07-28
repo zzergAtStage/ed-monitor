@@ -1,4 +1,5 @@
 # ed-monitor: Advanced Desktop Application for File Monitoring and User Notifications
+[![Java CI with Maven](https://github.com/zzergAtStage/ed-monitor/actions/workflows/maven.yml/badge.svg)](https://github.com/zzergAtStage/ed-monitor/actions/workflows/maven.yml)
 ![img.png](Docs/Cobra.png)
 
 # Overview
