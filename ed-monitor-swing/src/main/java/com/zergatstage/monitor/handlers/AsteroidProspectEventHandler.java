@@ -1,12 +1,8 @@
 package com.zergatstage.monitor.handlers;
 
-import com.zergatstage.monitor.config.DisplayConfig;
-import com.zergatstage.monitor.service.AsteroidManager;
+import com.zergatstage.monitor.service.managers.AsteroidManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import javax.swing.*;
-import java.awt.*;
 
 /**
  * The AsteroidProspectEventHandler handles "ProspectedAsteroid" events by extracting material information

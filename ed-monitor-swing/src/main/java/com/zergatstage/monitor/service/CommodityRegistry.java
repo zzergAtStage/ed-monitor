@@ -1,22 +1,24 @@
 package com.zergatstage.monitor.service;
 
 import com.zergatstage.domain.dictionary.Commodity;
+import com.zergatstage.domain.makret.Market;
+import com.zergatstage.domain.makret.MarketItem;
 import com.zergatstage.dto.CommodityDTO;
 import com.zergatstage.dto.CommodityMapper;
-import com.zergatstage.dto.CommodityMapperImpl;
 import com.zergatstage.tools.CommodityHelper;
-import org.json.JSONArray;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class CommodityRegistry {
 
-    private static volatile  CommodityRegistry instance;
+    private static volatile CommodityRegistry instance;
     // Multiple maps for fast lookups using different keys
     private final Map<Long, Commodity> lookupById = new HashMap<>();
     private final Map<String, Commodity> lookupByLocalisedName = new HashMap<>();
@@ -24,7 +26,7 @@ public class CommodityRegistry {
 
     public static synchronized CommodityRegistry getInstance() {
         if (instance == null) {
-            synchronized(ConstructionSiteManager.class) {
+            synchronized (ConstructionSiteManager.class) {
                 if (instance == null) {
                     instance = new CommodityRegistry();
                 }
@@ -33,32 +35,32 @@ public class CommodityRegistry {
         return instance;
     }
 
-    public void loadMarketData(JSONObject marketJson) throws JSONException {
-        JSONArray items = marketJson.getJSONArray("Items");
-        for (int i = 0; i < items.length(); i++) {
-            JSONObject itemJson = items.getJSONObject(i);
-
-            // Create your Commodity object
-            Commodity commodity = Commodity.builder()
-                    .id(itemJson.getLong("id"))
-                    .name( itemJson.getString("Name"))
-                    .nameLocalised(itemJson.getString("Name_Localised"))
-                    .category(itemJson.getString("Category"))
-                    .categoryLocalised(itemJson.getString("Category_Localised"))
-                    .build();
-
-            // Populate all lookup maps
-            lookupById.put(commodity.getId(), commodity);
-            lookupByLocalisedName.put(commodity.getNameLocalised().toLowerCase(), commodity);
-
-            String normalizedKey = CommodityHelper.normalizeSystemName(commodity.getName());
-            lookupByNormalizedSystemName.put(normalizedKey, commodity);
+    public void loadMarketData(Map<Long, Market> markets) throws JSONException {
+        if (markets == null || markets.isEmpty()) {
+            log.debug("Markets are empty, return without processing");
+            return;
         }
+        for (Market market: markets.values()){
+            processCommodities(market.getItems());
+        }
+    }
+
+    private void processCommodities(Map<Long, MarketItem> items) {
+        if (items.isEmpty()) return;
+        items.values()
+                .forEach( marketItem -> {
+                    Commodity commodity =  marketItem.getCommodity();
+                    lookupById.put(commodity.getId(), commodity);//not null safe!
+                    lookupByLocalisedName.put(commodity.getNameLocalised().toLowerCase(), commodity);
+                    String normalizedKey = CommodityHelper.normalizeSystemName(commodity.getName());
+                    lookupByNormalizedSystemName.put(normalizedKey, commodity);
+                });
     }
 
     /**
      * Finds a commodity's canonical ID using the best available information.
-     * @param systemName The raw system name (from "Type" or "Name" field).
+     *
+     * @param systemName    The raw system name (from "Type" or "Name" field).
      * @param localisedName The localised name (from "Type_Localised" or "Name_Localised"). Can be null.
      * @return The commodity ID, or a default/error ID if not found.
      */
@@ -81,13 +83,23 @@ public class CommodityRegistry {
         return -1; // Not found
     }
 
-    public Commodity getCommodityById(long id){
+    public Commodity getCommodityById(long id) {
         return lookupById.get(id);
     }
 
-    public Map<Long, CommodityDTO> getAllCommodityDTO(){
-        return  lookupById.values().stream()
+    /**
+     * Used commonly in the UI to get all commodities as DTOs.
+     * This method converts all commodities to DTOs and returns them in a map.
+     * @return Map[Long, CommodityDTO]
+     */
+    public Map<Long, CommodityDTO> getAllCommodityDTO() {
+        return lookupById.values().stream()
                 .map(CommodityMapper.INSTANCE::commodityToDTO)
                 .collect(Collectors.toMap(CommodityDTO::getId, Function.identity()));
     }
+
+    public String[] getAllNames() {
+        return lookupByLocalisedName.keySet().toArray(new String[0]);
+    }
+
 }

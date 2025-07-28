@@ -1,27 +1,25 @@
-package com.zergatstage.monitor;
+package com.zergatstage.monitor.component;
 
 import com.zergatstage.dto.CommodityDTO;
-import com.zergatstage.monitor.component.StepNamePanel;
 import com.zergatstage.monitor.service.CommodityUIService;
-import com.zergatstage.monitor.component.StepCategoryPanel;
-import com.zergatstage.monitor.component.StepPanel;
-import com.zergatstage.monitor.component.StepWizardDialog;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 
-public class CommodityManager extends JPanel {
+public class CommodityManagerComponent extends JPanel {
 
     private final CommodityUIService commodityUIService;
     private final DefaultTableModel tableModel;
     private final JTable table;
 
 
-    public CommodityManager() {
+    public CommodityManagerComponent() {
         this.commodityUIService = CommodityUIService.getInstance();
         setLayout(new BorderLayout());
 
@@ -31,8 +29,19 @@ public class CommodityManager extends JPanel {
             public boolean isCellEditable(int row, int column) {
                 return false; // Prevent inline editing
             }
+            // Important: Override getColumnClass for proper sorting
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) {
+                    return Integer.class; // ID column
+                } else {
+                    return String.class; // Category and Name columns
+                }
+            }
+
         };
         table = new JTable(tableModel);
+        table.setAutoCreateRowSorter(true);
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
 
@@ -53,6 +62,23 @@ public class CommodityManager extends JPanel {
         deleteButton.addActionListener(_ -> onDeleteCommodity());
 
         loadCommodities();
+        // Get the TableRowSorter
+        TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) table.getRowSorter();
+
+        // Define the sort keys
+        List<RowSorter.SortKey> sortKeys = new ArrayList<>();
+
+        // Sort by Category (column index 1) first, ascending
+        sortKeys.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
+
+        // Then by Name (column index 2) within each Category, ascending
+        sortKeys.add(new RowSorter.SortKey(2, SortOrder.ASCENDING));
+
+        // Apply the sort keys to the sorter
+        sorter.setSortKeys(sortKeys);
+
+        // To immediately apply the sort
+        sorter.sort();
     }
 
     /**
@@ -62,7 +88,7 @@ public class CommodityManager extends JPanel {
         tableModel.setRowCount(0); // Clear existing data
         List<CommodityDTO> commodities = commodityUIService.getAll();
         for (CommodityDTO c : commodities) {
-            tableModel.addRow(new Object[]{c.getId(), c.getCategory(), c.getName()});
+            tableModel.addRow(new Object[]{c.getId(), c.getCategoryLocalised(), c.getNameLocalised()});
         }
     }
 

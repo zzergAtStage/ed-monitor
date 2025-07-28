@@ -1,8 +1,6 @@
 package com.zergatstage.monitor;
 
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
-import com.zergatstage.monitor.service.CommodityRegistry;
-import com.zergatstage.monitor.service.managers.MarketDataParser;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
 import com.zergatstage.monitor.handlers.ExitHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
@@ -72,9 +70,7 @@ public class MonitorController {
      */
     private void onMarketDataUpdate(MarketDataUpdateEvent event) {
         // TODO: replace with factory
-        MarketDataUpdateService marketDataUpdateService = new MarketDataUpdateService(
-                DefaultManagerFactory.getInstance().getCommodityRegistry(),
-                DefaultManagerFactory.getInstance().getMarketDataParser());
+        MarketDataUpdateService marketDataUpdateService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
         marketDataUpdateService.onMarketDataUpdate(event);
 
 

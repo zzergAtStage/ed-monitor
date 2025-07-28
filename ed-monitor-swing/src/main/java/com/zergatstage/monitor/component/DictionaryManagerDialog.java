@@ -1,7 +1,5 @@
 package com.zergatstage.monitor.component;
 
-import com.zergatstage.monitor.CommodityManager;
-
 import javax.swing.*;
 import java.awt.*;
 import java.util.LinkedHashMap;
@@ -66,7 +64,7 @@ public class DictionaryManagerDialog extends JDialog {
     }
 
     private JPanel createCommodityManagerPanel() {
-        return new CommodityManager();
+        return new CommodityManagerComponent();
     }
 
     /**
@@ -87,7 +85,7 @@ public class DictionaryManagerDialog extends JDialog {
      */
     private JPanel createStationRequirementsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(new JLabel("Station Requirements Management (TODO)"), BorderLayout.NORTH);
+        panel.add(new JLabel("Station Requirements Management (WIP)"), BorderLayout.NORTH);
 
         // Placeholder content: future table, form, etc.
         JTextArea textArea = new JTextArea("Define fuel, services, repairs, etc...");

@@ -15,8 +15,8 @@ import java.util.List;
 public class MarketDataParser {
 
 
-    public List<Market> parseMarketData(String jsonData) throws JSONException {
-        List<Market> markets = new ArrayList<>();
+    public Market parseMarketData(String jsonData) throws JSONException {
+
 
         JSONObject marketJSONObject = new JSONObject(jsonData);
 
@@ -68,7 +68,6 @@ public class MarketDataParser {
             market.addItem(marketItem);
         }
 
-        markets.add(market);
-        return markets;
+        return market;
     }
 }

@@ -4,23 +4,28 @@ import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
 import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.dto.ConstructionSiteDTO;
-import com.zergatstage.monitor.service.CargoInventoryManager;
-import com.zergatstage.monitor.service.CommodityUIService;
+import com.zergatstage.monitor.factory.DefaultManagerFactory;
+import com.zergatstage.monitor.service.CommodityRegistry;
+import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.ConstructionSiteUpdateListener;
+import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.Color;
+import java.awt.Component;
 
 /**
  * The ConstructionSitePanel class provides a UI panel for managing
  * construction sites and tracking their material requirements.
  * It has two main tables:
- *  1) A "Site Progress Table" at the top: columns for "Site" and "Progress" (with a progress bar).
- *  2) A "Commodities Table" at the bottom: columns for "Site", "Material", "Required", "Delivered", "Remaining".
+ * 1) A "Site Progress Table" at the top: columns for "Site" and "Progress" (with a progress bar).
+ * 2) A "Commodities Table" at the bottom: columns for "Site", "Material", "Required", "Delivered", "Remaining".
  */
 public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpdateListener {
 
@@ -29,21 +34,15 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private final DefaultTableModel siteProgressTableModel;
 
     private final DefaultTableModel commoditiesTableModel;
-
+    private final CommodityRegistry commodityRegistry;
     private final ConstructionSiteManager siteManager;
     private final CargoInventoryManager cargoInventoryManager;
+    private final MarketDataUpdateService marketDataService;
 
-    /**
-     * A sample list of available commodities to choose from when adding materials.
-     */
-    private final String[] AVAILABLE_COMMODITIES;
-//            {
-//            "Biowaste", "Building Fabricators", "Ceramic Composites",
-//            "Computer Components", "Copper", "Crop Harvesters",
-//            "Evacuation Shelter", "Food Cartridges", "Fruit and Vegetables",
-//            "Grain", "Liquid Oxygen", "Pesticides", "Steel",
-//            "Survival Equipment", "Land Enrichment Systems" , "gold"
-//    };
+    // zero-based column indices in commoditiesTable:
+    private static final int SITE_COL      = 0;
+    private static final int MATERIAL_COL  = 1;
+    private static final int REMAINING_COL = 5;  // adjust if your column order differs
 
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
@@ -54,8 +53,8 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         siteManager = ConstructionSiteManager.getInstance();
 
         cargoInventoryManager = CargoInventoryManager.getInstance();
-        CommodityUIService commodityUIService = CommodityUIService.getInstance();
-        AVAILABLE_COMMODITIES = commodityUIService.getAllNames();
+        commodityRegistry = CommodityRegistry.getInstance();
+        marketDataService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
         // ============= Site Progress Table (Top) =============
         String[] siteProgressColumns = {"Site", "Progress"};
         siteProgressTableModel = new DefaultTableModel(siteProgressColumns, 0) {
@@ -96,8 +95,12 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         // Bottom table: commodities
         JTable commoditiesTable = new JTable(commoditiesTableModel);
         commoditiesTable.setAutoCreateRowSorter(true);
+        // apply our highlighter
+        commoditiesTable.getColumnModel().getColumn(MATERIAL_COL)
+                .setCellRenderer(new HighlightRenderer());
+        commoditiesTable.getColumnModel().getColumn(REMAINING_COL)
+                .setCellRenderer(new HighlightRenderer());
         JScrollPane commoditiesScroll = new JScrollPane(commoditiesTable);
-
         // ============= Split Pane for top/bottom layout =============
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
@@ -126,6 +129,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         // Register as a listener so that the panel updates when the siteManager data changes.
         siteManager.addListener(() -> SwingUtilities.invokeLater(this::refreshAll));
         cargoInventoryManager.addListener(this::refreshAll);
+
     }
 
     /**
@@ -158,11 +162,12 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         }
 
         // Create the new site with 0 marketId. The not zero ID means site is imported.
-        ConstructionSiteDTO newSite = new ConstructionSiteDTO( 0, siteId, new ArrayList<>());
+        ConstructionSiteDTO newSite = new ConstructionSiteDTO(0, siteId, new ArrayList<>());
         siteManager.addSite(newSite);
 
         refreshAll();
     }
+
     private void refreshCommoditiesTableForSite(String siteId) {
         commoditiesTableModel.setRowCount(0);
 
@@ -198,7 +203,10 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             );
             return;
         }
-
+        /*
+         * A sample list of available commodities to choose from when adding materials.
+         */
+        String[] AVAILABLE_COMMODITIES = commodityRegistry.getAllNames();
         // 1) Select the target site
         String[] siteIds = siteManager.getSites().values().stream()
                 .map(ConstructionSite::getSiteId)
@@ -276,10 +284,10 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
         // Add the new requirement
         selectedSite.getRequirements().add(
-               MaterialRequirement.builder()
-                       .commodity(Commodity.builder().build()) //TODO: Replace with real choice
-                       .requiredQuantity(requiredQuantity)
-                       .build()
+                MaterialRequirement.builder()
+                        .commodity(Commodity.builder().build()) //TODO: Replace with real choice
+                        .requiredQuantity(requiredQuantity)
+                        .build()
         );
 
         refreshAll();
@@ -313,7 +321,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
      */
     private void refreshCommoditiesTable() {
         commoditiesTableModel.setRowCount(0);
-         // Placeholder for "In Cargo" column, not used in this context
+        // Placeholder for "In Cargo" column, not used in this context
         for (ConstructionSite site : siteManager.getSites().values()) {
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
@@ -336,4 +344,44 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     public void onConstructionSiteUpdated() {
         refreshAll();
     }
+
+    private class HighlightRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table,
+                                                       Object value,
+                                                       boolean isSelected,
+                                                       boolean hasFocus,
+                                                       int row,
+                                                       int column)
+        {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            // only care about Material or Remaining columns
+            if (column == MATERIAL_COL || column == REMAINING_COL) {
+                // convert to model row in case of sorting
+                int modelRow = table.convertRowIndexToModel(row);
+
+
+                String material = (String) table.getModel().getValueAt(modelRow, MATERIAL_COL);
+                Integer remaining = (Integer) table.getModel().getValueAt(modelRow, REMAINING_COL);
+
+                // lookup stock from your registry for this site & commodity
+                int stock = marketDataService.getStockForSite(material);
+
+                if (remaining != 0 && stock > 0) {
+                    setBackground(new Color(144, 238, 144)); // light green
+                } else {
+                    setBackground(Color.WHITE);
+                }
+            } else {
+                setBackground(Color.WHITE);
+            }
+
+            return this;
+        }
+    }
+
+
 }
+
+

@@ -2,7 +2,7 @@ package com.zergatstage.monitor.handlers;
 
 import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
-import com.zergatstage.monitor.service.CargoInventoryManager;
+import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.tools.CommodityHelper;
 import lombok.extern.slf4j.Slf4j;

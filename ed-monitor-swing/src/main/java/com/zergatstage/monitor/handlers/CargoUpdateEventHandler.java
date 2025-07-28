@@ -1,6 +1,6 @@
 package com.zergatstage.monitor.handlers;
 
-import com.zergatstage.monitor.service.CargoInventoryManager;
+import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONArray;

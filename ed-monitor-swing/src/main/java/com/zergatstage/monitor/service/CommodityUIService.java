@@ -7,13 +7,12 @@ import java.util.*;
 
 public class CommodityUIService {
     public static CommodityUIService instance;
-    private final Map<String, CommodityDTO> commodityMap;
-    private final CommodityRegistry commodityRegistry;
+    private final Map<Long, CommodityDTO> commodityMap;
 
     private CommodityUIService() {
 
-        this.commodityRegistry = CommodityRegistry.getInstance();
-        this.commodityMap = new HashMap<>();
+        CommodityRegistry commodityRegistry = CommodityRegistry.getInstance();
+        this.commodityMap = commodityRegistry.getAllCommodityDTO();
 
     }
 
@@ -22,30 +21,6 @@ public class CommodityUIService {
             return new CommodityUIService();
         }
         return instance;
-    }
-
-    /**
-     * Retrieves a commodity by ID. Throws if not found.
-     *
-     * @param name The commodity name.
-     * @return The commodity.
-     * @throws NoSuchElementException If not found.
-     */
-    public CommodityDTO getCommodityByName(String name) {
-        return commodityMap.getOrDefault(name, CommodityDTO.builder().build());
-    }
-
-    /**
-     * Retrieves a commodity by ID. Throws if not found.
-     *
-     * @param id The commodity ID.
-     * @return The commodity.
-     * @throws NoSuchElementException If not found.
-     */
-    public CommodityDTO getCommodity(String id) {
-        return commodityMap.values().stream()
-                .filter( commodity -> commodity.getId() == Long.getLong(id))
-                .findFirst().orElseThrow();
     }
 
     /**
@@ -58,27 +33,30 @@ public class CommodityUIService {
 
     public String[] getAllNames(){
         return commodityMap.values().stream()
-                .map(CommodityDTO::getName)
+                .map(CommodityDTO::getNameLocalised)
                 .toArray(String[]::new);
     }
 
     /**
-     * Retrieves a commodity by ID or creates it if not found.
+     * Retrieves a commodity by ID or creates it if not found. Used by UI
      *
      * @param id       The unique ID of the commodity.
      * @param name     The name of the commodity (used only if new).
      * @param category The category of the commodity (used only if new).
-     * @return Existing or newly created Commodity.
      */
 
-    public CommodityDTO getOrAddCommodity(long id, String name, String category) {
-        return commodityMap.computeIfAbsent(name, key ->
-                CommodityDTO.builder().id(id).name(name).category(category).build()
+    public void getOrAddCommodity(long id, String name, String category) {
+        commodityMap.computeIfAbsent(id, key ->
+                CommodityDTO.builder()
+                        .id(id)
+                        .name(name)
+                        .category(category)
+                        .build()
         );
     }
 
     public void updateCommodity(CommodityDTO updated) {
-        commodityMap.replace(updated.getName(), updated);
+        commodityMap.replace(updated.getId(), updated);
     }
 
     public void deleteCommodity(String id) {

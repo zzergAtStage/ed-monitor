@@ -1,5 +1,6 @@
-package com.zergatstage.monitor.service;
+package com.zergatstage.monitor.service.managers;
 
+import com.zergatstage.monitor.service.BaseManager;
 import org.json.JSONObject;
 
 public class AsteroidManager extends BaseManager {

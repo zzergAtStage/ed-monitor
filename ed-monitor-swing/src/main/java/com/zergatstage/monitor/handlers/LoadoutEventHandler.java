@@ -1,6 +1,6 @@
 package com.zergatstage.monitor.handlers;
 
-import com.zergatstage.monitor.service.CargoInventoryManager;
+import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import org.json.JSONObject;
 
 public class LoadoutEventHandler implements LogEventHandler {

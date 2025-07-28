@@ -23,8 +23,8 @@ public class InitCommodities {
         Path marketFile = Paths.get("Market.json");
         try {
             String content = new String(Files.readAllBytes(marketFile));
-            List<Market> parsedMarkets = marketDataParser.parseMarketData(content);
-            fetchCommodities(parsedMarkets);
+            Market parsedMarket = marketDataParser.parseMarketData(content);
+            fetchCommodities(parsedMarket);
         } catch (IOException e) {
             log.warn("Error reading market file: {}", e.getMessage());
         } catch (JSONException e) {
@@ -32,8 +32,8 @@ public class InitCommodities {
         }
     }
 
-    private void fetchCommodities(List<Market> parsedMarkets) {
-        Map<Long, MarketItem> marketItems = parsedMarkets.stream().findFirst().orElseThrow().getItems();
+    private void fetchCommodities(Market parsedMarket) {
+        Map<Long, MarketItem> marketItems = parsedMarket.getItems();
         marketItems.forEach((key,item)  -> Commodity.builder()
                 .id(item.getId())
                 .name(item.getCommodity().getName())

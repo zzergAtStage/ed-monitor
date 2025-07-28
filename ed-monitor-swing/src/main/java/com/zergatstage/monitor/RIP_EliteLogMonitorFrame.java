@@ -14,7 +14,6 @@ import java.awt.*;
 import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static com.zergatstage.monitor.config.UiConstants.*;
 
@@ -27,7 +26,7 @@ import static com.zergatstage.monitor.config.UiConstants.*;
  * the StatusMonitor service.
  */
 @Slf4j
-public class EliteLogMonitorFrame extends JFrame {
+public class RIP_EliteLogMonitorFrame extends JFrame {
 
     private final JLabel asteroidProspectedLabel;
     private final JLabel droneLaunchedLabel;
@@ -45,7 +44,7 @@ public class EliteLogMonitorFrame extends JFrame {
      * Constructs the EliteLogMonitorFrame, initializes UI components,
      * sets up the log monitoring service, and integrates the runner panel.
      */
-    public EliteLogMonitorFrame() {
+    public RIP_EliteLogMonitorFrame() {
         super("Elite Dangerous Log Monitor");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600, 500);
