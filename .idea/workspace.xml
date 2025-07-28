@@ -10,11 +10,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
-      <change afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/handlers/MarketSellEventHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Docs/Cobra.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Docs/ConstructionSiteView-0.1.0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Docs/Dictionary-commodity-0.1.0.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/CargoInventoryManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/CargoInventoryManager.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/resources/META-INF/services/com.zergatstage.monitor.handlers.LogEventHandler" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/resources/META-INF/services/com.zergatstage.monitor.handlers.LogEventHandler" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -148,6 +149,7 @@
       <recent name="" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\App\ed-monitor\Docs" />
       <recent name="C:\App\ed-monitor\ed-monitor-server\src\main\resources" />
     </key>
     <key name="MoveInnerDialog.RECENTS_KEY">
@@ -441,7 +443,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753730613909</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753735428471</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1753735428471</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -484,7 +494,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java</url>
-          <line>368</line>
+          <line>367</line>
           <option name="timeStamp" value="112" />
         </line-breakpoint>
       </breakpoints>

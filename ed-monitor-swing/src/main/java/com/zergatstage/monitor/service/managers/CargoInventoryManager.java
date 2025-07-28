@@ -32,6 +32,7 @@ public class CargoInventoryManager extends BaseManager {
     private CargoInventoryManager() {
         this.commodityRegistry = DefaultManagerFactory.getInstance().getCommodityRegistry();
     }
+
     public static CargoInventoryManager getInstance() {
         if (instance == null) {
             synchronized (CargoInventoryManager.class) {
@@ -47,6 +48,7 @@ public class CargoInventoryManager extends BaseManager {
     /**
      * Initializes or updates the current ship based on the "Loadout" event.
      * This resets the cargo state to unknown.
+     *
      * @param event JSON object from a "Loadout" event.
      */
     public void initShip(JSONObject event) {
@@ -68,6 +70,7 @@ public class CargoInventoryManager extends BaseManager {
         }
         notifyListeners();
     }
+
     /**
      * Modifies the quantity of a specific commodity in the cargo hold.
      * Use positive amounts to add, negative amounts to remove.
@@ -94,7 +97,7 @@ public class CargoInventoryManager extends BaseManager {
         } else if (amountDelta > 0) {
             // Item is not in cargo, so add it.
             Commodity commodity = commodityRegistry.getCommodityById(commodityId);
-            if(commodity != null) {
+            if (commodity != null) {
                 CargoItem newItem = new CargoItem(commodityId, amountDelta, 0);
                 commodities.put(commodityId, newItem);
             } else {
@@ -107,21 +110,21 @@ public class CargoInventoryManager extends BaseManager {
     /**
      * Replaces the entire cargo inventory based on a "Cargo" event snapshot.
      * This is the primary method for synchronizing state.
-      *
+     *
      * @param event JSON object from a "Cargo" event.
      */
     public void setCargoFromSnapshot(JSONObject event) {
-            if (shipVariant == null) {
+        if (shipVariant == null) {
             log.error("Ship is not initialized. Cannot process Cargo event.");
-                return;
-            }
+            return;
+        }
 
         shipVariant.clearCargo(); // Always start fresh from a snapshot
 
         try {
             if (event.has("Inventory")) {
-            JSONArray cargoInventory = event.getJSONArray("Inventory");
-            for (int i = 0; i < cargoInventory.length(); i++) {
+                JSONArray cargoInventory = event.getJSONArray("Inventory");
+                for (int i = 0; i < cargoInventory.length(); i++) {
                     JSONObject itemJson = cargoInventory.getJSONObject(i);
                     String systemName = itemJson.getString("Name");
                     String localisedName = itemJson.optString("Name_Localised");
@@ -148,6 +151,7 @@ public class CargoInventoryManager extends BaseManager {
         log.info("Cargo state synchronized. Current cargo count: {}", shipVariant.getCurrentCargoCount());
         notifyListeners();
     }
+
     /**
      * Gets the current count of a commodity in cargo by its ID.
      *
@@ -163,12 +167,23 @@ public class CargoInventoryManager extends BaseManager {
     }
 
     public void addCommodityToCargo(Commodity commodity, int amount) {
-        CargoItem item = CargoItem.builder()
-                .id(commodity.getId())
-                .count(amount)
-                .stolen(0)
-                .build();
-        shipVariant.getCommodities().put(commodity.getId(), item);
+
+        Map<Long, CargoItem> commoditiesInCargo = shipVariant.getCommodities();
+
+        commoditiesInCargo.compute(commodity.getId(), (_, existingItem) -> {
+            if (existingItem == null) {
+                // If the commodity does not exist, create a new CargoItem
+                return CargoItem.builder()
+                        .id(commodity.getId()) // Use commodity.getId() for the new item's ID
+                        .count(amount)
+                        .stolen(0)
+                        .build();
+            } else {
+                // If it exists, update its count
+                existingItem.setCount(existingItem.getCount() + amount);
+                return existingItem; // Return the updated existing item
+            }
+        });
     }
 
     public void removeCommodity(Commodity commodity, int i) {
