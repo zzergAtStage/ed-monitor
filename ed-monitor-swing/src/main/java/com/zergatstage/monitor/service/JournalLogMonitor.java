@@ -2,6 +2,7 @@ package com.zergatstage.monitor.service;
 
 import com.zergatstage.monitor.handlers.LogEventHandler;
 import com.zergatstage.monitor.service.readers.AppendFileReadStrategy;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * The JournalLogMonitor class is responsible for monitoring the Elite Dangerous log directory
@@ -24,7 +26,7 @@ import java.util.Map;
 public class JournalLogMonitor {
 
     private final GenericFileMonitor fileMonitor;
-
+    private final Executor executor;
     /**
      * Constructs a LogMonitor.
      *
@@ -32,7 +34,8 @@ public class JournalLogMonitor {
      * @param eventHandlers      the list of event handlers to dispatch incoming events to
      */
     public JournalLogMonitor(Path logDirectoryPath,
-                             Map<String, LogEventHandler> eventHandlers) {
+                             Map<String, LogEventHandler> eventHandlers, Executor executor) {
+        this.executor = executor;
 
         // Process lastest log file in the directory
         List<Path> logFiles = findLogFiles(logDirectoryPath);
@@ -127,7 +130,7 @@ public class JournalLogMonitor {
             // Dispatch to all handlers that claim they can handle this event
             LogEventHandler logEventHandler = handlers.get(eventType);
             if (logEventHandler != null) {
-                logEventHandler.handleEvent(json);
+                executor.execute(() -> logEventHandler.handleEvent(json));
             }
 
         } catch (Exception e) {

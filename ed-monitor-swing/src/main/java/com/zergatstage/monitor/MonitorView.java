@@ -41,15 +41,6 @@ public class MonitorView {
             log.error("Failed to load application icon", e);
         }
 
-
-        // Initialize services TODO: WTF?
-        Map<String, LogEventHandler> handlers = HandlerConfiguration.getLogEventHandlers();
-        JournalLogMonitor logService = new JournalLogMonitor(logDirectory, handlers);
-        StatusMonitor statusService = new StatusMonitor(
-                logDirectory.resolve("Status.json"),
-                logDirectory.resolve("Journal.log")
-        );
-
         buildUI();
         controller.startAll();
     }

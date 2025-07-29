@@ -10,9 +10,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: testing github build&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/ClientApp.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/ClientApp.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorController.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorView.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/MonitorView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/RIP_EliteLogMonitorFrame.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/MonitorServiceFactoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/factory/MonitorServiceFactoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/JournalLogMonitor.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/JournalLogMonitor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/test/java/com/zergatstage/monitor/service/JournalLogMonitorTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/test/java/com/zergatstage/monitor/service/JournalLogMonitorTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,7 +64,7 @@
   &quot;isMigrated&quot;: true
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectCodeStyleSettingsMigration">
     <option name="version" value="2" />
@@ -70,67 +76,67 @@
   <component name="ProjectViewState">
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.App.executor&quot;: &quot;Run&quot;,
-    &quot;Application.ClientApp.executor&quot;: &quot;Debug&quot;,
-    &quot;Application.DemoApp.executor&quot;: &quot;Run&quot;,
-    &quot;Application.EDHaulingOptimizer.executor&quot;: &quot;Run&quot;,
-    &quot;Application.EliteLogMonitor.executor&quot;: &quot;Run&quot;,
-    &quot;Application.EliteLogMonitorFrame.executor&quot;: &quot;Run&quot;,
-    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
-    &quot;JAR Application.ed-monitor.jar.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.AppendFileReadStrategyTest.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.AppendFileReadStrategyTest.testReadChanges_NewContentAppended.executor&quot;: &quot;Debug&quot;,
-    &quot;JUnit.DefaultLogMonitorServiceTest.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.DefaultStatusMonitorServiceTest.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.JournalLogMonitorTest.executor&quot;: &quot;Debug&quot;,
-    &quot;JUnit.MarketDataIOServiceTest.executor&quot;: &quot;Debug&quot;,
-    &quot;JUnit.MarketRepositoryTest.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.MarketRepositoryTest.testGetAllItems_WhenAddMarket.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.MarketRepositoryTest.testGetAllMarkets.executor&quot;: &quot;Debug&quot;,
-    &quot;JUnit.MarketRepositoryTest.testInsertMarket.executor&quot;: &quot;Debug&quot;,
-    &quot;JUnit.MarketRepositoryTest.testUpdateMarketItem_WhenMarketUpdated_ItemPersists.executor&quot;: &quot;Debug&quot;,
-    &quot;JUnit.RewriteFileReadStrategyTest.executor&quot;: &quot;Run&quot;,
-    &quot;Java Scratch.Main.executor&quot;: &quot;Debug&quot;,
-    &quot;Maven.ed-monitor [clean].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor [install].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor [package] without tests.executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor [package].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor [test].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor-core [install].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor-server [clean].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor-server [compile].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor-server [install].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ed-monitor-server [validate].executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary&quot;: &quot;JUnit5&quot;,
-    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5&quot;: &quot;&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/refactoring-core&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_directory_selection&quot;: &quot;C:/App/ed-monitor/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/App/ed-monitor/ed-monitor-swing/src/main/resources&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.34712642&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.App.executor": "Run",
+    "Application.ClientApp.executor": "Run",
+    "Application.DemoApp.executor": "Run",
+    "Application.EDHaulingOptimizer.executor": "Run",
+    "Application.EliteLogMonitor.executor": "Run",
+    "Application.EliteLogMonitorFrame.executor": "Run",
+    "Application.Main.executor": "Run",
+    "JAR Application.ed-monitor.jar.executor": "Run",
+    "JUnit.AppendFileReadStrategyTest.executor": "Run",
+    "JUnit.AppendFileReadStrategyTest.testReadChanges_NewContentAppended.executor": "Debug",
+    "JUnit.DefaultLogMonitorServiceTest.executor": "Run",
+    "JUnit.DefaultStatusMonitorServiceTest.executor": "Run",
+    "JUnit.JournalLogMonitorTest.executor": "Run",
+    "JUnit.MarketDataIOServiceTest.executor": "Debug",
+    "JUnit.MarketRepositoryTest.executor": "Run",
+    "JUnit.MarketRepositoryTest.testGetAllItems_WhenAddMarket.executor": "Run",
+    "JUnit.MarketRepositoryTest.testGetAllMarkets.executor": "Debug",
+    "JUnit.MarketRepositoryTest.testInsertMarket.executor": "Debug",
+    "JUnit.MarketRepositoryTest.testUpdateMarketItem_WhenMarketUpdated_ItemPersists.executor": "Debug",
+    "JUnit.RewriteFileReadStrategyTest.executor": "Run",
+    "Java Scratch.Main.executor": "Debug",
+    "Maven.ed-monitor [clean].executor": "Run",
+    "Maven.ed-monitor [install].executor": "Run",
+    "Maven.ed-monitor [package] without tests.executor": "Run",
+    "Maven.ed-monitor [package].executor": "Run",
+    "Maven.ed-monitor [test].executor": "Run",
+    "Maven.ed-monitor-core [install].executor": "Run",
+    "Maven.ed-monitor-server [clean].executor": "Run",
+    "Maven.ed-monitor-server [compile].executor": "Run",
+    "Maven.ed-monitor-server [install].executor": "Run",
+    "Maven.ed-monitor-server [validate].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary": "JUnit5",
+    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5": "",
+    "git-widget-placeholder": "feature/refactoring-core",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_directory_selection": "C:/App/ed-monitor/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service",
+    "last_opened_file_path": "C:/App/ed-monitor/ed-monitor-swing/src/main/resources",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.34712642",
+    "settings.editor.selected.configurable": "MavenSettings",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
-      &quot;kotlin&quot;
+  "keyToStringList": {
+    "com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File": [
+      "kotlin"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
       <recent name="com.zergatstage.monitor.factory" />
@@ -229,6 +235,17 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="ed-monitor" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="ed-monitor" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
     <configuration name="ed-monitor [package] without tests" type="MavenRunConfiguration" factoryName="Maven">
       <MavenSettings>
         <option name="myGeneralSettings" />
@@ -273,6 +290,7 @@
         <item itemvalue="JUnit.JournalLogMonitorTest" />
         <item itemvalue="JUnit.RewriteFileReadStrategyTest" />
         <item itemvalue="JUnit.AppendFileReadStrategyTest.testReadChanges_NewContentAppended" />
+        <item itemvalue="Application.ClientApp" />
       </list>
     </recent_temporary>
   </component>
@@ -464,7 +482,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753740807686</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="dev: testing github build&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753786651174</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1753786651174</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
