@@ -3,22 +3,22 @@ package com.zergatstage.monitor.component;
 import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
 import com.zergatstage.domain.dictionary.Commodity;
+import com.zergatstage.domain.makret.Market;
 import com.zergatstage.dto.ConstructionSiteDTO;
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
 import com.zergatstage.monitor.service.CommodityRegistry;
-import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.ConstructionSiteUpdateListener;
+import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
-import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.Color;
-import java.awt.Component;
+import java.util.Arrays;
 
 /**
  * The ConstructionSitePanel class provides a UI panel for managing
@@ -29,19 +29,18 @@ import java.awt.Component;
  */
 public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpdateListener {
 
+    // zero-based column indices in commoditiesTable:
+    private static final int MATERIAL_COL = 1;
+    private static final int REMAINING_COL = 5;  // adjust if your column order differs
     // Top table: site progress
     private final JTable siteProgressTable;
     private final DefaultTableModel siteProgressTableModel;
-
     private final DefaultTableModel commoditiesTableModel;
     private final CommodityRegistry commodityRegistry;
     private final ConstructionSiteManager siteManager;
     private final CargoInventoryManager cargoInventoryManager;
     private final MarketDataUpdateService marketDataService;
-
-    // zero-based column indices in commoditiesTable:
-    private static final int MATERIAL_COL  = 1;
-    private static final int REMAINING_COL = 5;  // adjust if your column order differs
+    private final JComboBox<MarketComboItem> marketComboBox;
 
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
@@ -54,6 +53,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         cargoInventoryManager = CargoInventoryManager.getInstance();
         commodityRegistry = CommodityRegistry.getInstance();
         marketDataService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
+        marketDataService.addListener(this::populateMarketComboBox);
         // ============= Site Progress Table (Top) =============
         String[] siteProgressColumns = {"Site", "Progress"};
         siteProgressTableModel = new DefaultTableModel(siteProgressColumns, 0) {
@@ -110,8 +110,42 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         add(splitPane, BorderLayout.CENTER);
 
         // ============= Control Panel (Add Site, Add Commodity) =============
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
+        marketComboBox = new JComboBox<>();
+        for (Market m : marketDataService.getAllMarkets()) {
+            marketComboBox.addItem(new MarketComboItem(m.getMarketId(), m.getStationName()));
+        }
+        marketComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected,
+                                                          boolean cellHasFocus)
+            {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Market) {
+                    setText(((Market) value).getStationName());
+                }
+                return this;
+            }
+        });
+        marketComboBox.addActionListener(e -> {
+            int sel = siteProgressTable.getSelectedRow();
+            if (sel >= 0) {
+                String siteId = (String)
+                        siteProgressTableModel.getValueAt(
+                                siteProgressTable.convertRowIndexToModel(sel), 0);
+                refreshCommoditiesTableForSite(siteId);
+            } else if (siteProgressTable.getRowCount() > 0) {
+                String siteId = (String)
+                        siteProgressTableModel.getValueAt(
+                                siteProgressTable.convertRowIndexToModel(0), 0);
+                refreshCommoditiesTableForSite(siteId);
+            }
+        });
+
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        controlPanel.add(new JLabel("Market:"));
+        controlPanel.add(marketComboBox);
         JButton addSiteButton = new JButton("Add Site");
         addSiteButton.addActionListener(this::handleAddSite);
         controlPanel.add(addSiteButton);
@@ -127,7 +161,8 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
         // Register as a listener so that the panel updates when the siteManager data changes.
         siteManager.addListener(() -> SwingUtilities.invokeLater(this::refreshAll));
-        cargoInventoryManager.addListener(this::refreshAll);
+        cargoInventoryManager.addListener(() -> SwingUtilities.invokeLater(this::refreshAll));
+        marketDataService.addListener(() -> SwingUtilities.invokeLater(this::refreshAll));
 
     }
 
@@ -179,8 +214,9 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
                         site.getSiteId(),
-                        req.getCommodity().getNameLocalised(),
+                        new RequiredCommodityItem(req.getCommodity().getId(), req.getCommodity().getNameLocalised()),
                         req.getRequiredQuantity(),
+                        cargoInventoryManager.getInCargo(req.getCommodity().getId()), // Get in cargo from inventory
                         req.getDeliveredQuantity(),
                         req.getRemainingQuantity()
                 };
@@ -325,7 +361,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
                         site.getSiteId(),
-                        req.getCommodity().getNameLocalised(),
+                        new RequiredCommodityItem(req.getCommodity().getId(), req.getCommodity().getNameLocalised()),
                         req.getRequiredQuantity(),
                         cargoInventoryManager.getInCargo(req.getCommodity().getId()), // Get in cargo from inventory
                         req.getDeliveredQuantity(),
@@ -344,6 +380,14 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         refreshAll();
     }
 
+    private void populateMarketComboBox() {
+        marketComboBox.removeAllItems();
+        Arrays.stream(marketDataService.getAllMarkets()).toList()
+                .forEach(market -> {
+                    marketComboBox.addItem(new MarketComboItem(market.getMarketId(), market.getStationName()));
+                });
+    }
+
     private class HighlightRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table,
@@ -351,8 +395,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                                                        boolean isSelected,
                                                        boolean hasFocus,
                                                        int row,
-                                                       int column)
-        {
+                                                       int column) {
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
             // only care about Material or Remaining columns
@@ -361,11 +404,17 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 int modelRow = table.convertRowIndexToModel(row);
 
 
-                String material = (String) table.getModel().getValueAt(modelRow, MATERIAL_COL);
+                RequiredCommodityItem material = (RequiredCommodityItem) table.getModel().getValueAt(modelRow, MATERIAL_COL);
                 Integer remaining = (Integer) table.getModel().getValueAt(modelRow, REMAINING_COL);
-
+                MarketComboItem selected = (MarketComboItem) marketComboBox.getSelectedItem();
+                long marketId = (selected == null) ? 0 : selected.getId();
+                int stock=0;
                 // lookup stock from your registry for this site & commodity
-                int stock = marketDataService.getStockForSite(material);
+                if (marketId == 0) {
+                    stock = marketDataService.getStockForSite(material.getId());
+                } else {
+                    stock = marketDataService.getStockForSite(material.getId(), marketId);
+                }
 
                 if (remaining != null && remaining != 0 && stock > 0) {
                     setBackground(new Color(144, 238, 144)); // light green
@@ -380,7 +429,31 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         }
     }
 
+/** Simple wrapper so combo returns ID but shows name. */
+	private static class MarketComboItem {
+	    private final long id;
+	    private final String name;
+	    public MarketComboItem(long id, String name) {
+    	    this.id = id; this.name = name;
+    	}
+	    public long getId() { return id; }
+	    @Override public String toString() { return name; }
+	}
+    private static class RequiredCommodityItem {
+        private final long id;
+        private final String name;
 
+        public RequiredCommodityItem(long id, String name) {
+            this.name = name;
+            this.id = id;
+        }
+
+        public long getId() {
+            return this.id;
+        }
+
+        @Override public String toString() { return name; }
+    }
 }
 
 

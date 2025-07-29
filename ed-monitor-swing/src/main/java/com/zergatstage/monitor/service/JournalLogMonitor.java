@@ -24,6 +24,7 @@ import java.util.Map;
 public class JournalLogMonitor {
 
     private final GenericFileMonitor fileMonitor;
+
     /**
      * Constructs a LogMonitor.
      *

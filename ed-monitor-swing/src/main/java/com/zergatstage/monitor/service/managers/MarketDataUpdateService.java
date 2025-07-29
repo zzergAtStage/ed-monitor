@@ -1,8 +1,11 @@
 package com.zergatstage.monitor.service.managers;
 
+import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.domain.makret.Market;
 import com.zergatstage.domain.makret.MarketItem;
+import com.zergatstage.monitor.service.BaseManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
+import com.zergatstage.tools.CommodityHelper;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONException;
 
@@ -17,7 +20,7 @@ import java.util.LinkedHashMap;
  */
 
 @Log4j2
-public class MarketDataUpdateService {
+public class MarketDataUpdateService extends BaseManager{
 
     private final CommodityRegistry commodityRegistry;
     private final MarketDataParser marketDataParser;
@@ -56,6 +59,7 @@ public class MarketDataUpdateService {
             }
             marketCache.putFirst(parsedMarket.getMarketId(), parsedMarket);
             commodityRegistry.loadMarketData(marketCache);
+            notifyListeners();
             log.info("Market data updated successfully.");
         } catch (JSONException e) {
             // Log the parsing error; consider using a logging framework in production
@@ -67,17 +71,32 @@ public class MarketDataUpdateService {
      * Returns the current stock of the given commodity at the market identified by siteId.
      * If parsing fails, market or commodity is missing, returns 0.
      */
-    public int getStockForSite(String materialName) {
+    public int getStockForSite(long materialId) {
         Market market = marketCache.sequencedValues().getFirst();
         if (market == null || market.getItems() == null) {
             return 0;
         }
-        for (MarketItem item : market.getItems().values()) {
-            // compare against the domain Commodity name
-            if (item.getCommodity().getNameLocalised().equals(materialName)) {
-                return item.getStock();
-            }
+
+        return market.getItems().get(materialId).getStock();
+    }
+
+    /**
+     * Returns the current stock of the given commodity at the market identified by siteId.
+     * If parsing fails, market or commodity is missing, returns 0.
+     *
+     * @param materialId the name of the commodity to check stock for
+     * @param siteId       the ID of the site to check stock at
+     * @return the stock of the commodity at the specified site, or 0 if not found
+     */
+    public int getStockForSite(long materialId, long siteId) {
+        Market market = marketCache.get(siteId);
+        if (market == null || market.getItems() == null) {
+            return 0;
         }
-        return 0;
+        return market.getItems().get(materialId).getStock();
+    }
+
+    public Market[] getAllMarkets() {
+        return this.marketCache.values().toArray(new Market[0]);
     }
 }

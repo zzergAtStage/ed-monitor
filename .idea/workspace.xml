@@ -9,13 +9,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
-      <change afterPath="$PROJECT_DIR$/Docs/Cobra.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Docs/ConstructionSiteView-0.1.0.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Docs/Dictionary-commodity-0.1.0.png" afterDir="false" />
+    <list default="true" id="f7c55f34-31dc-478d-895d-68ab6481f771" name="Changes" comment="dev: testing github build&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/CargoInventoryManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/CargoInventoryManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,7 +73,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Application.App.executor": "Run",
-    "Application.ClientApp.executor": "Run",
+    "Application.ClientApp.executor": "Debug",
     "Application.DemoApp.executor": "Run",
     "Application.EDHaulingOptimizer.executor": "Run",
     "Application.EliteLogMonitor.executor": "Run",
@@ -451,7 +448,23 @@
       <option name="project" value="LOCAL" />
       <updated>1753735428471</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;- updated README.md&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753738596546</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1753738596546</updated>
+    </task>
+    <task id="LOCAL-00022" summary="dev: testing github build&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT">
+      <option name="closed" value="true" />
+      <created>1753740807686</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1753740807686</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -482,20 +495,22 @@
     <MESSAGE value="dev: improving reliability of readers, handlers. Moving from name-based commodity search to unified approach.&#10;- clean dependencies&#10;- app icon support&#10;- optimize handlers with map and event checks&#10;&#10;version: 0.1.0-SNAPSHOT" />
     <MESSAGE value="dev: tracking required commodity&#10;- track commodity by current market&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
     <MESSAGE value="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
-    <option name="LAST_COMMIT_MESSAGE" value="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <MESSAGE value="dev: tracking required commodity&#10;- fixed MarketSell missed event&#10;- updated README.md&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <MESSAGE value="dev: testing github build&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
+    <option name="LAST_COMMIT_MESSAGE" value="dev: testing github build&#10;&#10;&#10;&#10;version: 0.1.0-SNAPSHOT" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint type="java-line">
           <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/managers/MarketDataUpdateService.java</url>
-          <line>49</line>
+          <line>52</line>
           <option name="timeStamp" value="108" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/ed-monitor-swing/src/main/java/com/zergatstage/monitor/component/ConstructionSitePanel.java</url>
-          <line>367</line>
-          <option name="timeStamp" value="112" />
+          <line>131</line>
+          <option name="timeStamp" value="118" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
