@@ -7,6 +7,7 @@ import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.MarketDataIOService;
 import com.zergatstage.monitor.service.StatusMonitor;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
+import lombok.Getter;
 
 import java.awt.event.ActionEvent;
 import java.util.concurrent.Executors;
@@ -17,6 +18,7 @@ public class MonitorController {
     private final JournalLogMonitor logService;
     private final StatusMonitor statusService;
     private final MarketDataIOService marketDataIOService;
+    @Getter
     private final ScheduledExecutorService scheduler;
     private final ExitHandler exitHandler;
 
