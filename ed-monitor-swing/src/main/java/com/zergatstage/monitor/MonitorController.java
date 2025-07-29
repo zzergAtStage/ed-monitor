@@ -29,7 +29,7 @@ public class MonitorController {
         this.logService = logService;
         this.statusService = statusService;
         this.exitHandler = exitHandler;
-        this.scheduler = Executors.newScheduledThreadPool(1);
+        this.scheduler = Executors.newScheduledThreadPool(4);
 
         Consumer<MarketDataUpdateEvent> marketConsumer = this::onMarketDataUpdate;
         this.marketDataIOService = new MarketDataIOService(marketConsumer);
@@ -73,8 +73,9 @@ public class MonitorController {
     private void onMarketDataUpdate(MarketDataUpdateEvent event) {
         // TODO: replace with factory
         MarketDataUpdateService marketDataUpdateService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
-        marketDataUpdateService.onMarketDataUpdate(event);
-
+        //marketDataUpdateService.onMarketDataUpdate(event);
+        scheduler.schedule(() -> marketDataUpdateService.onMarketDataUpdate(event)
+                , 0, java.util.concurrent.TimeUnit.SECONDS);
 
     }
 }

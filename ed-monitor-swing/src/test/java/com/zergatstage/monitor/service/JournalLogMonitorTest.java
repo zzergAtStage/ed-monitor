@@ -3,16 +3,23 @@ package com.zergatstage.monitor.service;
 import com.zergatstage.monitor.handlers.LogEventHandler;
 import org.json.JSONObject;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.*;
-import java.nio.file.attribute.FileTime;
 import java.util.*;
+import java.util.concurrent.Executor;
 
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class JournalLogMonitorTest {
+
+    @Mock
+    private Executor mockExecutor;
 
     @Mock
     private GenericFileMonitor mockFileMonitor;
@@ -24,11 +31,24 @@ class JournalLogMonitorTest {
     private LogEventHandler mockHandlerBar;
 
     private Path tempDir;
+    private Map<String, LogEventHandler> handlers;
+    private JournalLogMonitor monitor;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() throws IOException, NoSuchFieldException, IllegalAccessException {
         MockitoAnnotations.openMocks(this);
         tempDir = Files.createTempDirectory("journallogmonitor-test");
+        handlers = new LinkedHashMap<>();
+        handlers.put("FooEvent", mockHandlerFoo);
+        handlers.put("BarEvent", mockHandlerBar);
+
+        // Create instance with mock executor and handlers map
+        monitor = new JournalLogMonitor(tempDir, handlers, mockExecutor);
+
+        // Inject mock fileMonitor into monitor
+        Field fileMonitorField = JournalLogMonitor.class.getDeclaredField("fileMonitor");
+        fileMonitorField.setAccessible(true);
+        fileMonitorField.set(monitor, mockFileMonitor);
     }
 
     @AfterEach
@@ -41,48 +61,8 @@ class JournalLogMonitorTest {
         }
     }
 
-    // Helper: create log files and return list of paths
-    private List<Path> createLogFilesWithTimestamps(Map<String, Long> fileNamesAndEpochMillis) throws IOException {
-        List<Path> files = new ArrayList<>();
-        for (var entry : fileNamesAndEpochMillis.entrySet()) {
-            Path file = tempDir.resolve(entry.getKey());
-            Files.writeString(file, "dummy");
-            Files.setLastModifiedTime(file, FileTime.fromMillis(entry.getValue()));
-            files.add(file);
-        }
-        return files;
-    }
-
     @Test
-    void constructsWithLatestLogFile() throws IOException {
-        long now = System.currentTimeMillis();
-        // Simulate several .log files
-        Map<String, Long> logs = Map.of(
-                "Journal.1.log", now - 10000,
-                "Journal.2.log", now - 5000,
-                "Journal.3.log", now
-        );
-        createLogFilesWithTimestamps(logs);
-
-        // Map with dummy handlers (not used here)
-        Map<String, LogEventHandler> handlers = Map.of();
-
-        // We want to spy so we can check which file was picked
-        JournalLogMonitor monitor = Mockito.spy(new JournalLogMonitor(tempDir, handlers));
-
-        // Use reflection to get fileMonitor and check its target file (optional, for deep test)
-        // You can skip this and just assert that construction doesn't throw for valid dir/files
-        // or add a getter for test purposes.
-    }
-
-    @Test
-    void startMonitoring_callsFileMonitorStart() throws Exception {
-        // Arrange
-        JournalLogMonitor monitor = new JournalLogMonitor(tempDir, Map.of());
-        var fileMonitorField = JournalLogMonitor.class.getDeclaredField("fileMonitor");
-        fileMonitorField.setAccessible(true);
-        fileMonitorField.set(monitor, mockFileMonitor);
-
+    void startMonitoring_callsFileMonitorStart() {
         // Act
         monitor.startMonitoring();
 
@@ -91,54 +71,61 @@ class JournalLogMonitorTest {
     }
 
     @Test
-    void stopMonitoring_callsFileMonitorStop() throws Exception {
-        JournalLogMonitor monitor = new JournalLogMonitor(tempDir, Map.of());
-        var fileMonitorField = JournalLogMonitor.class.getDeclaredField("fileMonitor");
-        fileMonitorField.setAccessible(true);
-        fileMonitorField.set(monitor, mockFileMonitor);
-
+    void stopMonitoring_callsFileMonitorStop() {
+        // Act
         monitor.stopMonitoring();
 
+        // Assert
         verify(mockFileMonitor).stop();
     }
 
     @Test
-    void processAppendedLines_dispatchesToCorrectHandler() throws Exception {
-        // Arrange
-        Map<String, LogEventHandler> handlers = new HashMap<>();
-        handlers.put("FooEvent", mockHandlerFoo);
-        handlers.put("BarEvent", mockHandlerBar);
-
-        JournalLogMonitor monitor = new JournalLogMonitor(tempDir, handlers);
-
-        // Access private processAppendedLines for direct test
-        var method = JournalLogMonitor.class.getDeclaredMethod("processAppendedLines", String.class, Map.class);
+    void processAppendedLines_submitsTasksToExecutor() throws Exception {
+        // Reflectively access private processAppendedLines now expecting a Map
+        var method = JournalLogMonitor.class.getDeclaredMethod(
+                "processAppendedLines", String.class, Map.class);
         method.setAccessible(true);
 
-        String logLine1 = "{\"event\":\"FooEvent\",\"value\":1}";
-        String logLine2 = "{\"event\":\"BarEvent\",\"value\":2}";
-        String logLineInvalid = "Not a JSON";
+        // Prepare input with two valid JSON lines and one invalid
+        String line1 = "{\"event\":\"FooEvent\",\"value\":1}";
+        String line2 = "{\"event\":\"BarEvent\",\"value\":2}";
+        String invalid = "Not a JSON";
+        String content = String.join("\n", line1, line2, invalid, "");
 
-        // Act
-        method.invoke(monitor, logLine1 + "\n" + logLine2 + "\n" + logLineInvalid + "\n", handlers);
+        // Act: pass the handlers map directly
+        method.invoke(monitor, content, handlers);
 
-        // Assert
-        verify(mockHandlerFoo).handleEvent(any(JSONObject.class));
-        verify(mockHandlerBar).handleEvent(any(JSONObject.class));
+        // Assert: executor.execute called twice, once per valid JSON line
+        verify(mockExecutor, times(2)).execute(any(Runnable.class));
     }
 
     @Test
-    void processAppendedLines_skipsBlankLinesAndInvalidJson() throws Exception {
-        Map<String, LogEventHandler> handlers = Map.of("FooEvent", mockHandlerFoo);
-        JournalLogMonitor monitor = new JournalLogMonitor(tempDir, handlers);
+    void processAppendedLines_executesHandlerOnDirectExecutor() throws Exception {
+        // Use a direct executor (runs tasks immediately)
+        Executor directExec = Runnable::run;
+        JournalLogMonitor directMonitor =
+                new JournalLogMonitor(tempDir, handlers, directExec);
 
-        var method = JournalLogMonitor.class.getDeclaredMethod("processAppendedLines", String.class, Map.class);
+        // Inject mock fileMonitor to satisfy start/stop
+        Field fmField = JournalLogMonitor.class.getDeclaredField("fileMonitor");
+        fmField.setAccessible(true);
+        fmField.set(directMonitor, mockFileMonitor);
+
+        // Reflectively access updated processAppendedLines signature
+        var method = JournalLogMonitor.class.getDeclaredMethod(
+                "processAppendedLines", String.class, Map.class);
         method.setAccessible(true);
 
-        // Only first line is valid
-        String content = "{\"event\":\"FooEvent\",\"value\":1}\n\n \nNot a JSON\n";
-        method.invoke(monitor, content, handlers);
+        // Prepare valid content
+        String line1 = "{\"event\":\"FooEvent\",\"value\":1}";
+        String line2 = "{\"event\":\"BarEvent\",\"value\":2}";
+        String content = String.join("\n", line1, line2, "");
 
+        // Act: pass the handlers map directly
+        method.invoke(directMonitor, content, handlers);
+
+        // Assert: each handler.handleEvent called once
         verify(mockHandlerFoo, times(1)).handleEvent(any(JSONObject.class));
+        verify(mockHandlerBar, times(1)).handleEvent(any(JSONObject.class));
     }
 }
