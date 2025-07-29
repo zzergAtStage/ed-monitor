@@ -76,7 +76,7 @@ public class JournalLogMonitor {
     private List<Path> findLogFiles(Path directory){
         List<Path> logFiles = new ArrayList<>();
         if (Files.exists(directory) && Files.isDirectory(directory)) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "Journal.2025-07-29T110113.01.log")) {//*.log
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*.log")) {//*.log
                 stream.forEach(logFiles::add);
             } catch (IOException e) {
                 log.error("Error reading log directory: {}", e.getMessage());
