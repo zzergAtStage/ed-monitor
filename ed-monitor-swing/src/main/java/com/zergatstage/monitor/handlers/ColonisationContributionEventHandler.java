@@ -18,6 +18,11 @@ public class ColonisationContributionEventHandler implements LogEventHandler {
         commodityRegistry = DefaultManagerFactory.getInstance().getCommodityRegistry();
     }
 
+    @Override
+    public boolean isCargoRelated() {
+        return true;
+    }
+
     /**
      * Determines whether the handler can process the specified event type.
      *

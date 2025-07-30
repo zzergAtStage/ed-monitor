@@ -15,7 +15,6 @@ import java.util.zip.CRC32;
 @Log4j2
 public class ColonisationConstructionDepot implements LogEventHandler {
     private final ConstructionSiteManager siteManager;
-    private int previousStateEventHa;
     private final Map<Long, Long> lastFingerprints = new HashMap<>();
     public ColonisationConstructionDepot() {
         siteManager =  ConstructionSiteManager.getInstance();

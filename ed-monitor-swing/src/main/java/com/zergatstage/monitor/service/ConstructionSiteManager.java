@@ -13,6 +13,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Manages construction sites and their material requirements.
@@ -150,7 +151,7 @@ public class ConstructionSiteManager {
             ConstructionSite site = ConstructionSite.builder()
                     .marketId(event.getLong("MarketID"))
                     .siteId("STUB_" + event.getLong("MarketID")) //TODO: Generate a unique site ID
-                    .requirements(new ArrayList<>())
+                    .requirements(new CopyOnWriteArrayList<>())
                     .build();
             sites.put(site.getMarketId(), site);
             return site;

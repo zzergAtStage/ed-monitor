@@ -11,6 +11,11 @@ public class LoadoutEventHandler implements LogEventHandler {
         cargoInventoryManager = CargoInventoryManager.getInstance();
     }
 
+    @Override
+    public boolean isCargoRelated() {
+        return true;
+    }
+
     /**
      * Determines whether the handler can process the specified event type.
      * @return "Loadout"

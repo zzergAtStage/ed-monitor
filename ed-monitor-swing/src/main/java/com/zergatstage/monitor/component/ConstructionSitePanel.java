@@ -19,6 +19,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * The ConstructionSitePanel class provides a UI panel for managing
@@ -196,7 +197,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         }
 
         // Create the new site with 0 marketId. The not zero ID means site is imported.
-        ConstructionSiteDTO newSite = new ConstructionSiteDTO(0, siteId, new ArrayList<>());
+        ConstructionSiteDTO newSite = new ConstructionSiteDTO(0, siteId, new CopyOnWriteArrayList<>());
         siteManager.addSite(newSite);
 
         refreshAll();

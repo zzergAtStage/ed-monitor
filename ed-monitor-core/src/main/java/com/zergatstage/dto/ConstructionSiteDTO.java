@@ -4,6 +4,7 @@ import com.zergatstage.domain.makret.Market;
 import lombok.*;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * DTO representing {@code ConstructionSite}.
@@ -29,6 +30,6 @@ public class ConstructionSiteDTO{
     /**
      * List of material requirements for the site.
      */
-    private List<MaterialRequirementDTO> requirements;
+    private CopyOnWriteArrayList<MaterialRequirementDTO> requirements;
 }
 

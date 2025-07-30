@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Represents a construction site with a list of material requirements.
@@ -24,7 +25,7 @@ public class ConstructionSite{
     private long marketId;
     private String siteId;
     @OneToMany(fetch = FetchType.LAZY)
-    private List<MaterialRequirement> requirements;
+    private CopyOnWriteArrayList<MaterialRequirement> requirements;
 
     /**
      * Calculates the overall construction progress in percentage (0–100).
@@ -45,6 +46,11 @@ public class ConstructionSite{
         }
         double ratio = (double) totalDelivered / totalRequired;
         return (int) Math.min(ratio * 100, 100);
+    }
+
+    @Synchronized
+    public CopyOnWriteArrayList<MaterialRequirement> getRequirements() {
+        return requirements;
     }
 
     /**

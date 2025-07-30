@@ -9,7 +9,7 @@ import org.json.JSONObject;
  * and provide the logic for processing those events.
  */
 public interface LogEventHandler {
-
+    default boolean isCargoRelated(){return false;}
     /**
      * Determines whether the handler can process the specified event type.
      * @return string event type.

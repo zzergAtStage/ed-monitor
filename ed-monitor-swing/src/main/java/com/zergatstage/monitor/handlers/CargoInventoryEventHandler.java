@@ -25,6 +25,11 @@ public class CargoInventoryEventHandler implements LogEventHandler{
         return "Cargo";
     }
 
+    @Override
+    public boolean isCargoRelated() {
+        return true;
+    }
+
     /**
      * Processes the given log event.
      * "event":"Cargo", "Vessel":"Ship", "Count":1232, "Inventory":[]

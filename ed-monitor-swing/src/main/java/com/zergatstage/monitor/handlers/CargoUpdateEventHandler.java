@@ -20,6 +20,11 @@ public class CargoUpdateEventHandler implements LogEventHandler {
         cargoInventoryManager = CargoInventoryManager.getInstance();
     }
 
+    @Override
+    public boolean isCargoRelated() {
+        return true;
+    }
+
     /**
      * Determines whether the handler can process the specified event type.
      *

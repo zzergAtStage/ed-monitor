@@ -2,7 +2,6 @@ package com.zergatstage.monitor.service;
 
 import com.zergatstage.monitor.handlers.LogEventHandler;
 import com.zergatstage.monitor.service.readers.AppendFileReadStrategy;
-import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -24,9 +23,11 @@ import java.util.concurrent.Executor;
  */
 @Log4j2
 public class JournalLogMonitor {
-
+    public interface Dispatcher {
+        void dispatch(JSONObject eventJson, LogEventHandler handler);
+    }
     private final GenericFileMonitor fileMonitor;
-    private final Executor executor;
+    private final Dispatcher dispatcher;
     /**
      * Constructs a LogMonitor.
      *
@@ -34,8 +35,8 @@ public class JournalLogMonitor {
      * @param eventHandlers      the list of event handlers to dispatch incoming events to
      */
     public JournalLogMonitor(Path logDirectoryPath,
-                             Map<String, LogEventHandler> eventHandlers, Executor executor) {
-        this.executor = executor;
+                             Map<String, LogEventHandler> eventHandlers, Dispatcher dispatcher) {
+        this.dispatcher = dispatcher;
 
         // Process lastest log file in the directory
         List<Path> logFiles = findLogFiles(logDirectoryPath);
@@ -130,7 +131,7 @@ public class JournalLogMonitor {
             // Dispatch to all handlers that claim they can handle this event
             LogEventHandler logEventHandler = handlers.get(eventType);
             if (logEventHandler != null) {
-                executor.execute(() -> logEventHandler.handleEvent(json));
+                dispatcher.dispatch(json, logEventHandler);
             }
 
         } catch (Exception e) {
