@@ -7,6 +7,7 @@ import com.zergatstage.dto.ConstructionSiteMapper;
 import com.zergatstage.tools.CommodityHelper;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Synchronized;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -97,7 +98,7 @@ public class ConstructionSiteManager {
 
 
     //TODO: WIP
-
+    @Synchronized
     public void updateSite(long marketId, JSONObject event) {
         ConstructionSite currentSite = sites.get(marketId);
 

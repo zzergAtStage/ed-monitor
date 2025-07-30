@@ -1,7 +1,10 @@
 package com.zergatstage.monitor.handlers;
 
+import com.zergatstage.dto.CommodityMapper;
+import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
+import com.zergatstage.tools.CommodityHelper;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,9 +18,11 @@ public class CargoUpdateEventHandler implements LogEventHandler {
 
     private final ConstructionSiteManager siteManager;
     private final CargoInventoryManager cargoInventoryManager;
+    private final CommodityRegistry commodityRegistry;
     public CargoUpdateEventHandler(){
         siteManager = ConstructionSiteManager.getInstance();
         cargoInventoryManager = CargoInventoryManager.getInstance();
+        commodityRegistry = CommodityRegistry.getInstance();
     }
 
     @Override
@@ -44,6 +49,7 @@ public class CargoUpdateEventHandler implements LogEventHandler {
             return;
         }
         String material;
+        long commodityId;
         int quantity;
         CargoTransferDirection direction;
         try {
@@ -54,14 +60,19 @@ public class CargoUpdateEventHandler implements LogEventHandler {
             JSONObject transfer = transfers.getJSONObject(0);
 
             material = transfer.getString("Type");
-
+            String materialName = CommodityHelper.normalizeSystemName(material);
+            commodityId = commodityRegistry.findCommodityId(materialName, null);
             quantity = transfer.getInt("Count");
             direction = transfer.getString("Direction")
                     .equalsIgnoreCase("tocarrier") ? CargoTransferDirection.TO_CARRIER
                                                                 : CargoTransferDirection.TO_SHIP;
             //cargoInventoryManager.modifyCargoAmount();
             log.info("Trying to update site commodities list...");
-            siteManager.updateSitesWithCargo(material, quantity);
+            if (direction == CargoTransferDirection.TO_SHIP) {
+                cargoInventoryManager.modifyCargoAmount(commodityId, quantity);
+            } else {
+                cargoInventoryManager.modifyCargoAmount(commodityId, -quantity);
+            }
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
