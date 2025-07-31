@@ -42,7 +42,12 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private final CargoInventoryManager cargoInventoryManager;
     private final MarketDataUpdateService marketDataService;
     private final JComboBox<MarketComboItem> marketComboBox;
-
+    // Summary fields
+    private JPanel summaryPanel;
+    private JLabel deliveredLabel;
+    private JLabel remainingLabel;
+    private JLabel estimatedRunsLabel;
+    private static final int DEFAULT_CARGO_CAPACITY = 1232;
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
      */
@@ -84,6 +89,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             }
         });
 
+
         // ============= Commodities Table (Bottom) =============
         String[] commodityColumns = {"Site", "Material", "Required", "InCargo", "Delivered", "Remaining"};
         commoditiesTableModel = new DefaultTableModel(commodityColumns, 0) {
@@ -102,12 +108,16 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 .setCellRenderer(new HighlightRenderer());
         JScrollPane commoditiesScroll = new JScrollPane(commoditiesTable);
         // ============= Split Pane for top/bottom layout =============
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(siteProgressScroll, BorderLayout.CENTER);
+        topPanel.add(createSummaryPanel(), BorderLayout.SOUTH);
+
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                siteProgressScroll,
+                topPanel,
                 commoditiesScroll
         );
-        splitPane.setResizeWeight(0.3); // Give 30% space to top, 70% to bottom
+        splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
 
         // ============= Control Panel (Add Site, Add Commodity) =============
@@ -167,6 +177,56 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
     }
 
+    private JPanel createSummaryPanel() {
+        summaryPanel = new JPanel(new GridBagLayout());
+        summaryPanel.setBorder(BorderFactory.createTitledBorder("Delivery Summary"));
+        summaryPanel.setBackground(new Color(240, 248, 255)); // Light blue background
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // Delivered commodities section
+        gbc.gridx = 0; gbc.gridy = 0;
+        summaryPanel.add(new JLabel("Total Delivered:"), gbc);
+
+        gbc.gridx = 1;
+        deliveredLabel = new JLabel("0 t");
+        deliveredLabel.setFont(deliveredLabel.getFont().deriveFont(Font.BOLD, 14f));
+        deliveredLabel.setForeground(new Color(34, 139, 34)); // Forest green
+        summaryPanel.add(deliveredLabel, gbc);
+
+        // Remaining commodities section
+        gbc.gridx = 2; gbc.gridy = 0;
+        summaryPanel.add(new JLabel("Total Remaining:"), gbc);
+
+        gbc.gridx = 3;
+        remainingLabel = new JLabel("0 t");
+        remainingLabel.setFont(remainingLabel.getFont().deriveFont(Font.BOLD, 14f));
+        remainingLabel.setForeground(new Color(220, 20, 60)); // Crimson
+        summaryPanel.add(remainingLabel, gbc);
+
+        // Estimated runs section
+        gbc.gridx = 4; gbc.gridy = 0;
+        summaryPanel.add(new JLabel("Estimated Runs:"), gbc);
+
+        gbc.gridx = 5;
+        estimatedRunsLabel = new JLabel("0");
+        estimatedRunsLabel.setFont(estimatedRunsLabel.getFont().deriveFont(Font.BOLD, 14f));
+        estimatedRunsLabel.setForeground(new Color(30, 144, 255)); // Dodger blue
+        summaryPanel.add(estimatedRunsLabel, gbc);
+
+        // Add cargo capacity info
+        gbc.gridx = 6; gbc.gridy = 0;
+        JLabel capacityLabel = new JLabel("(Capacity: " + DEFAULT_CARGO_CAPACITY + "t)");
+        capacityLabel.setFont(capacityLabel.getFont().deriveFont(Font.ITALIC, 11f));
+        capacityLabel.setForeground(Color.GRAY);
+        summaryPanel.add(capacityLabel, gbc);
+
+        return summaryPanel;
+    }
+
+
     /**
      * Handles the action event of adding a new construction site.
      * Prompts the user to enter a unique site ID.
@@ -224,6 +284,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 commoditiesTableModel.addRow(row);
             }
         }
+        updateSummaryPanel();
     }
 
     /**
@@ -335,6 +396,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private void refreshAll() {
         refreshSiteProgressTable();
         refreshCommoditiesTable();
+        updateSummaryPanel();
     }
 
     /**
@@ -429,7 +491,54 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             return this;
         }
     }
+    private void updateSummaryPanel() {
+        int totalDelivered = 0;
+        int totalRemaining = 0;
 
+        // Calculate totals based on current filter (selected site or all sites)
+        int selectedRow = siteProgressTable.getSelectedRow();
+        if (selectedRow != -1) {
+            // Show summary for selected site only
+            int modelRow = siteProgressTable.convertRowIndexToModel(selectedRow);
+            String siteId = (String) siteProgressTableModel.getValueAt(modelRow, 0);
+
+            ConstructionSite site = siteManager.getSites().values().stream()
+                    .filter(s -> s.getSiteId().equals(siteId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (site != null) {
+                for (MaterialRequirement req : site.getRequirements()) {
+                    totalDelivered += req.getDeliveredQuantity();
+                    totalRemaining += req.getRemainingQuantity();
+                }
+            }
+        } else {
+            // Show summary for all sites
+            for (ConstructionSite site : siteManager.getSites().values()) {
+                for (MaterialRequirement req : site.getRequirements()) {
+                    totalDelivered += req.getDeliveredQuantity();
+                    totalRemaining += req.getRemainingQuantity();
+                }
+            }
+        }
+
+        // Calculate estimated runs needed
+        int estimatedRuns = (totalRemaining > 0) ?
+                (int) Math.ceil((double) totalRemaining / DEFAULT_CARGO_CAPACITY) : 0;
+
+        // Update labels
+        deliveredLabel.setText(String.format("%,d t", totalDelivered));
+        remainingLabel.setText(String.format("%,d t", totalRemaining));
+        estimatedRunsLabel.setText(String.valueOf(estimatedRuns));
+
+        // Update colors based on progress
+        if (totalRemaining == 0 && totalDelivered > 0) {
+            remainingLabel.setForeground(new Color(34, 139, 34)); // Green when complete
+        } else {
+            remainingLabel.setForeground(new Color(220, 20, 60)); // Red when incomplete
+        }
+    }
 /** Simple wrapper so combo returns ID but shows name. */
 	private static class MarketComboItem {
 	    private final long id;
