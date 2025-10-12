@@ -9,6 +9,8 @@ target/
 .idea/misc.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
+.idea/shelf
+.idea/**
 *.iws
 *.iml
 *.ipr
@@ -45,3 +47,5 @@ build/
 /src/main/java/com/zergatstage/DemoApp.java
 .idea/jpa.xml
 ed-monitor-server/data/**
+/slim-runtime/
+/ed-monitor-swing/.idea/
