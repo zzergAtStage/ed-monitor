@@ -24,22 +24,13 @@ public class AsteroidProspectEventHandler implements LogEventHandler {
 
     @Override
     public void handleEvent(JSONObject event) {
-        double tritiumProportion = 0.0;
         try {
             if (event.has("Materials")) {
-                JSONArray materials = event.getJSONArray("Materials");
-                for (int i = 0; i < materials.length(); i++) {
-                    JSONObject material = materials.getJSONObject(i);
-                    if ("Tritium".equalsIgnoreCase(material.getString("Name"))) {
-                        tritiumProportion = material.getDouble("Proportion");
-                        break;
-                    }
-                }
+                asteroidManager.updateProspectingLabel(event);
             }
         } catch (Exception e) {
             System.err.println("Error processing asteroid prospect event: " + e.getMessage());
         }
-        final double finalTritium = tritiumProportion;
-        asteroidManager.updateProspectingLabel(event, finalTritium);
+
     }
 }

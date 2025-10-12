@@ -4,8 +4,8 @@
       "uuid": "021fbad6-031f-40c9-805a-139aeecfeb22",
       "text": "# LogReadedrs\n   Because our app based on files, we will  \n   implement some readers and parsing logic  \n    double click(SHIFT click) to create new Node  \n    TAB to complete suggestions  \n    SHIFT to select items  \n    Z to zoom selected  \n    A to unzoom  \n",
       "hasBorder": false,
-      "x": 207,
-      "y": 155,
+      "x": 210,
+      "y": 150,
       "lineStyle": "SOLID",
       "isMarkdown": true
     },
@@ -58,8 +58,8 @@
       "uuid": "cdbfceb4-c88e-452a-b255-9d7e80861c5b",
       "text": "Arrow",
       "hasBorder": true,
-      "x": 362,
-      "y": 552,
+      "x": 370,
+      "y": 550,
       "lineStyle": "DASHED",
       "isMarkdown": true
     },
@@ -67,8 +67,8 @@
       "uuid": "05aa5d0a-492f-4ecd-88b6-e14f97fde880",
       "text": "to edit",
       "hasBorder": true,
-      "x": 620,
-      "y": 552,
+      "x": 630,
+      "y": 550,
       "lineStyle": "DOTTED",
       "isMarkdown": true
     }

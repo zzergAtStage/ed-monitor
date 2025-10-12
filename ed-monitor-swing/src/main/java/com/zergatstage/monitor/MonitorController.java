@@ -1,5 +1,6 @@
 package com.zergatstage.monitor;
 
+import com.zergatstage.ClientApp;
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
 import com.zergatstage.monitor.handlers.ExitHandler;
@@ -8,16 +9,28 @@ import com.zergatstage.monitor.service.MarketDataIOService;
 import com.zergatstage.monitor.service.StatusMonitor;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
+import org.json.JSONTokener;
 
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
+@Slf4j
 public class MonitorController {
     private final JournalLogMonitor logService;
     private final StatusMonitor statusService;
     private final MarketDataIOService marketDataIOService;
+    private final MarketDataUpdateService marketDataUpdateService;
     @Getter
     private final ScheduledExecutorService scheduler;
     private final ExitHandler exitHandler;
@@ -33,6 +46,22 @@ public class MonitorController {
 
         Consumer<MarketDataUpdateEvent> marketConsumer = this::onMarketDataUpdate;
         this.marketDataIOService = new MarketDataIOService(marketConsumer);
+        marketDataUpdateService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
+        initCommodityRegisrtyOverMarketDataIOService();
+    }
+
+    private void initCommodityRegisrtyOverMarketDataIOService() {
+        try (InputStream in = ClientApp.class
+                .getClassLoader()
+                .getResourceAsStream("Market-default.json")) {
+            if (in == null) {
+                throw new IllegalStateException("Could not find Market.json on classpath");
+            }
+            BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(in));
+            marketDataUpdateService.onMarketDataUpdate(new MarketDataUpdateEvent(this,  reader.lines().collect(Collectors.joining())));
+        } catch (IOException e) {
+            log.error("Error reading Market.json: {}", e.getMessage());
+        }
     }
 
     public void startAll() {
@@ -72,10 +101,11 @@ public class MonitorController {
      */
     private void onMarketDataUpdate(MarketDataUpdateEvent event) {
         // TODO: replace with factory
-        MarketDataUpdateService marketDataUpdateService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
+
+
         //marketDataUpdateService.onMarketDataUpdate(event);
         scheduler.schedule(() -> marketDataUpdateService.onMarketDataUpdate(event)
-                , 0, java.util.concurrent.TimeUnit.SECONDS);
+                , 0, TimeUnit.SECONDS);
 
     }
 }

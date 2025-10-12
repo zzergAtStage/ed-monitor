@@ -9,14 +9,15 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.CRC32;
 
 
 @Log4j2
 public class ColonisationConstructionDepot implements LogEventHandler {
     private final ConstructionSiteManager siteManager;
-    private int previousStateEventHa;
-    private final Map<Long, Long> lastFingerprints = new HashMap<>();
+    private volatile long currFingerprint;
+    private final Map<Long, Long> lastFingerprints = new ConcurrentHashMap<>();
     public ColonisationConstructionDepot() {
         siteManager =  ConstructionSiteManager.getInstance();
     }
@@ -45,12 +46,12 @@ public class ColonisationConstructionDepot implements LogEventHandler {
                 return;
             }
             long marketId = event.getLong("MarketID");
-            long currFingerprint = computeFingerprint(event);
+            currFingerprint = computeFingerprint(event);
             if (currFingerprint == lastFingerprints.getOrDefault(marketId, -1L)) {
                 return;
             }
 
-            log.info("Event: ColonisationConstructionDepot -> MarketId: {}", marketId);
+            log.info("Event: ColonisationConstructionDepot -> MarketId: {}, fingerprint: {}", marketId, currFingerprint);
             siteManager.updateSite(marketId, event);
             lastFingerprints.put(marketId, currFingerprint);
         }catch (JSONException e) {

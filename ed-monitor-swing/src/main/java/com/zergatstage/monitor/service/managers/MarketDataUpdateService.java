@@ -1,11 +1,9 @@
 package com.zergatstage.monitor.service.managers;
 
-import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.domain.makret.Market;
 import com.zergatstage.domain.makret.MarketItem;
 import com.zergatstage.monitor.service.BaseManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
-import com.zergatstage.tools.CommodityHelper;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONException;
 
@@ -93,7 +91,8 @@ public class MarketDataUpdateService extends BaseManager{
         if (market == null || market.getItems() == null) {
             return 0;
         }
-        return market.getItems().get(materialId).getStock();
+        //if we inspect our carrier, some of the materials are not in list
+        return market.getItems().getOrDefault(materialId, new MarketItem()).getStock() ;
     }
 
     public Market[] getAllMarkets() {

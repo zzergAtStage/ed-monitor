@@ -23,17 +23,47 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.4.1</version>
-                <configuration>
-                    <mainClass>com.zergatstage.ClientApp</mainClass>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+<build>
+  <!-- 1) Controls the name of your main artifact -->
+  <finalName>ed-monitor-swing-0.1.0</finalName>
+
+  <!-- 2) All your build plugins go in a single <plugins> block -->
+  <plugins>
+    <!-- Shade plugin to produce a fat JAR named ed-monitor-swing-0.1.0.jar -->
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-shade-plugin</artifactId>
+      <version>3.5.1</version>
+      <executions>
+        <execution>
+          <phase>package</phase>
+          <goals>
+            <goal>shade</goal>
+          </goals>
+          <configuration>
+            <!-- Don’t produce a reduced POM -->
+            <createDependencyReducedPom>false</createDependencyReducedPom>
+            <!-- Inject your Main-Class into the manifest -->
+            <transformers>
+              <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <mainClass>com.zergatstage.ClientApp</mainClass>
+              </transformer>
+            </transformers>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
+
+    <!-- (Optional) exec-maven-plugin if you still need to run mvn exec:java -->
+    <plugin>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>exec-maven-plugin</artifactId>
+      <version>3.4.1</version>
+      <configuration>
+        <mainClass>com.zergatstage.ClientApp</mainClass>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
 
 </project>

@@ -1,8 +1,10 @@
 package com.zergatstage;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import com.zergatstage.monitor.MonitorController;
 import com.zergatstage.monitor.MonitorView;
-import com.zergatstage.monitor.config.InitCommodities;
 import com.zergatstage.monitor.config.LogMonitorConfig;
 import com.zergatstage.monitor.factory.MonitorServiceFactory;
 import com.zergatstage.monitor.factory.MonitorServiceFactoryImpl;
@@ -10,10 +12,10 @@ import com.zergatstage.monitor.handlers.DefaultExitHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.StatusMonitor;
 import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author S.Brusentsov
@@ -23,16 +25,16 @@ import java.util.concurrent.ScheduledExecutorService;
 
 @Log4j2
 public class ClientApp {
+
     public static void main(String[] args) {
         System.out.println("Starting Log Monitor Application…");
 
-        // 1) build your scheduler once
-        ScheduledExecutorService scheduler =
-                Executors.newScheduledThreadPool(4);
+        log.info("Debug enabled? {}", log.isDebugEnabled());
+
 
         // 2) hand it to the factory
         MonitorServiceFactory factory =
-                new MonitorServiceFactoryImpl(scheduler);
+                new MonitorServiceFactoryImpl();
 
         Path logDir = LogMonitorConfig.logDirectory();
 

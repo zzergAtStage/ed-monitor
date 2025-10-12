@@ -8,6 +8,7 @@ import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Log4j2
 public class DockedEventHandler implements LogEventHandler {
@@ -54,7 +55,7 @@ public class DockedEventHandler implements LogEventHandler {
         if (constructionSite == null) {
             constructionSite = ConstructionSiteDTO.builder()
                     .marketId(marketId)
-                    .requirements(new ArrayList<>())
+                    .requirements(new CopyOnWriteArrayList<>())
                     .build();
             constructionSite.setSiteId(stationName);
         }

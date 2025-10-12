@@ -1,12 +1,11 @@
 package com.zergatstage.domain;
 
 import com.zergatstage.domain.dictionary.CargoItem;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Data
 @Builder
@@ -17,11 +16,21 @@ public class Ship {
     String ship;
     int cargoCapacity;
     String shipName;
-    Map<Long, CargoItem> commodities; //id, Cargo
-    boolean isCargoStateKnown;
+    private final ConcurrentMap<Long, CargoItem> commodities = new ConcurrentHashMap<>(); //id, Cargo
+    @Synchronized
+    public boolean isCargoStateKnown() {
+        return isCargoStateKnown;
+    }
+    @Synchronized
+    public void setCargoStateKnown(boolean cargoStateKnown) {
+        isCargoStateKnown = cargoStateKnown;
+    }
+
+    volatile boolean isCargoStateKnown;
+
 
     public void clearCargo() {
-        if (commodities != null) {
+        if (!commodities.isEmpty()) {
             commodities.clear();
         }
     }

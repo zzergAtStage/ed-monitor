@@ -2,19 +2,21 @@ package com.zergatstage.monitor.service;
 
 import com.zergatstage.monitor.handlers.LogEventHandler;
 import com.zergatstage.monitor.service.readers.AppendFileReadStrategy;
-import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * The JournalLogMonitor class is responsible for monitoring the Elite Dangerous log directory
@@ -24,9 +26,12 @@ import java.util.concurrent.Executor;
  */
 @Log4j2
 public class JournalLogMonitor {
-
+    public interface Dispatcher {
+        void dispatch(JSONObject eventJson, LogEventHandler handler);
+    }
     private final GenericFileMonitor fileMonitor;
-    private final Executor executor;
+    private final Dispatcher dispatcher;
+    private final ExecutorService parsingPool;
     /**
      * Constructs a LogMonitor.
      *
@@ -34,8 +39,8 @@ public class JournalLogMonitor {
      * @param eventHandlers      the list of event handlers to dispatch incoming events to
      */
     public JournalLogMonitor(Path logDirectoryPath,
-                             Map<String, LogEventHandler> eventHandlers, Executor executor) {
-        this.executor = executor;
+                             Map<String, LogEventHandler> eventHandlers, Dispatcher dispatcher) {
+        this.dispatcher = dispatcher;
 
         // Process lastest log file in the directory
         List<Path> logFiles = findLogFiles(logDirectoryPath);
@@ -48,6 +53,7 @@ public class JournalLogMonitor {
                 newContent ->
                     processAppendedLines(newContent, eventHandlers)
         );
+        this.parsingPool = Executors.newFixedThreadPool(1);
     }
 
     /**
@@ -65,6 +71,7 @@ public class JournalLogMonitor {
      */
     public void stopMonitoring() {
        this.fileMonitor.stop();
+       this.parsingPool.shutdown();
         log.info("Log monitoring ({}) stopped at: {}",this, Instant.now());
     }
     /**
@@ -113,13 +120,14 @@ public class JournalLogMonitor {
      * @param handlers       the registered list of LogEventHandler implementations
      */
     private void processAppendedLines(String newContent, Map<String, LogEventHandler> handlers) {
-        // Split into lines on both Unix and Windows line endings
-        String[] lines = newContent.split("\\r?\\n");
-        for (String line : lines) {
-            if (line.isBlank()) {
-                continue;  // skip empty lines
-            }
-            processLine(handlers, line);
+        // instead of split() → array, stream each line:
+        try (BufferedReader reader = new BufferedReader(new StringReader(newContent))) {
+            log.debug("processAppendedLines: processing new content of length {}", newContent.length());
+            reader.lines().forEach(line ->
+                    parsingPool.submit(() -> processLine(handlers, line))
+            );
+        } catch (IOException e) {
+            log.error("Error reading appended lines stream", e);
         }
     }
 
@@ -130,7 +138,8 @@ public class JournalLogMonitor {
             // Dispatch to all handlers that claim they can handle this event
             LogEventHandler logEventHandler = handlers.get(eventType);
             if (logEventHandler != null) {
-                executor.execute(() -> logEventHandler.handleEvent(json));
+                log.debug("Dispatching event '{}' to handler: {}", eventType, logEventHandler.getClass().getName());
+                dispatcher.dispatch(json, logEventHandler);
             }
 
         } catch (Exception e) {

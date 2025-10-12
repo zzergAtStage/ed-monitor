@@ -30,6 +30,7 @@ public class CargoInventoryManager extends BaseManager {
     private Ship shipVariant;
 
     private CargoInventoryManager() {
+        this.shipVariant = Ship.builder().build();
         this.commodityRegistry = DefaultManagerFactory.getInstance().getCommodityRegistry();
     }
 
@@ -55,7 +56,7 @@ public class CargoInventoryManager extends BaseManager {
         try {
             if (shipVariant == null) {
                 shipVariant = new Ship();
-                shipVariant.setCommodities(new HashMap<>()); // Initialize with the correct Map type
+                //shipVariant.setCommodities(new HashMap<>()); // Initialize with the correct Map type
             }
             shipVariant.setShipId(event.getInt("ShipID"));
             shipVariant.setShip(event.getString("Ship"));
