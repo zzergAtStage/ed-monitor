@@ -27,6 +27,7 @@ for applications requiring reliable data persistence.
 This architecture supports the seamless integration of additional features and components as the application evolves.
   ### Screenshoots
 ![img.png](Docs/ConstructionSiteView-0.1.0.png)
+![img.png](Docs/ConstructionSiteView-0.1.1.png)
 ![img.png](Docs/Dictionary-commodity-0.1.0.png)
 ![img.png](Docs/Tracking_cargo-0.1.0.png)
 ## Version updates
@@ -35,7 +36,12 @@ This architecture supports the seamless integration of additional features and c
 [FileReadStrategy.java](ed-monitor-swing/src/main/java/com/zergatstage/monitor/service/readers/FileReadStrategy.java) for file monitoring,
   - added commodity tracker, match with docked market data, highlight required and presented commodities
   - added balanced ground of truth for cargo bay values tracking
-  - 👉 Server mode for `ed-monitor-swing` is currently not supported, but can be implemented in future releases.
+  - 👉 Server mode for `ed-monitor-swing` is currently not supported, but can be implemented in future releases.  
+
+* **0.1.1**:
+   - Added asteroid provisor: Track most valuable metals for mining
+    - Displays metal proportions with color-coded highlighting (orange, violet, gray)
+    
 ## To run ed-monitor on your local machine, follow these steps:
 
 1. Clone the Repository:
