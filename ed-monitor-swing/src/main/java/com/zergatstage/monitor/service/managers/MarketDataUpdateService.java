@@ -3,6 +3,8 @@ package com.zergatstage.monitor.service.managers;
 import com.zergatstage.domain.makret.Market;
 import com.zergatstage.domain.makret.MarketItem;
 import com.zergatstage.monitor.service.BaseManager;
+import com.zergatstage.monitor.http.MarketDtoMapper;
+import com.zergatstage.monitor.service.MarketDataHttpService;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONException;
@@ -23,6 +25,7 @@ public class MarketDataUpdateService extends BaseManager{
     private final CommodityRegistry commodityRegistry;
     private final MarketDataParser marketDataParser;
     private final LinkedHashMap<Long, Market> marketCache = new LinkedHashMap<>();
+    private MarketDataHttpService httpService;
 
     /**
      * Constructs the MarketDataUpdateService with required dependencies.
@@ -33,6 +36,10 @@ public class MarketDataUpdateService extends BaseManager{
     public MarketDataUpdateService(CommodityRegistry commodityRegistry, MarketDataParser marketDataParser) {
         this.commodityRegistry = commodityRegistry;
         this.marketDataParser = marketDataParser;
+    }
+
+    public void setHttpService(MarketDataHttpService httpService) {
+        this.httpService = httpService;
     }
 
     /**
@@ -57,6 +64,13 @@ public class MarketDataUpdateService extends BaseManager{
             }
             marketCache.putFirst(parsedMarket.getMarketId(), parsedMarket);
             commodityRegistry.loadMarketData(marketCache);
+            try {
+                if (httpService != null) {
+                    httpService.postMarkets(java.util.List.of(MarketDtoMapper.toDto(parsedMarket)));
+                }
+            } catch (Exception e) {
+                log.warn("Server sync failed: {}", e.getMessage());
+            }
             notifyListeners();
             log.info("Market data updated successfully.");
         } catch (JSONException e) {

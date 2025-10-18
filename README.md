@@ -71,7 +71,7 @@ mvn clean test -Ptest
 
 ## Prerequisites
 
-* Java Development Kit (JDK): Ensure JDK 17(22 for lastest releases) or higher is installed on your system.
+* Java Development Kit (JDK): Ensure JDK 17 (22 for latest releases) or higher is installed on your system.
 
 * Build Tool: Maven is required for building the project.
 ```bash
@@ -83,6 +83,64 @@ mvn spring-boot:run # for server mode
 
 Upon launching ed-monitor, users can configure monitoring parameters, set up notification preferences, 
 and manage market data through an intuitive graphical user interface.
+
+## Market Data API (Server)
+
+The server persists market data in H2 and exposes a minimal REST API:
+
+- `POST /api/markets` — accepts an array of market objects, upserts by `marketId` and commodity `id`.
+- `GET /api/markets` — returns all stored markets.
+- `GET /api/markets/{id}` — returns a single market by `marketId`.
+- `PUT /api/markets/{id}` — replaces a market by `marketId`.
+
+Example H2 configuration is pre-set (H2 console enabled in prod profile). Default port is `8080`.
+
+### Quick start
+
+Run the server:
+
+```
+cd ed-monitor-server
+mvn spring-boot:run -Dspring-boot.run.profiles=prod
+```
+
+Load sample market data:
+
+```
+curl -X POST http://localhost:8080/api/markets \
+     -H "Content-Type: application/json" \
+     -d @ed-monitor-server/src/main/resources/Market.json
+```
+
+List markets:
+
+```
+curl http://localhost:8080/api/markets
+```
+
+Update a market:
+
+```
+curl -X PUT http://localhost:8080/api/markets/3516841984 \
+     -H "Content-Type: application/json" \
+     -d '{"marketId":3516841984,"stationName":"Updated Station","stationType":"CraterPort","systemName":"Col 285 Sector LH-L c8-9","items":[]}'
+```
+
+## Swing client HTTP sync
+
+The Swing client reads `Market.json` from the Elite Dangerous log directory and, on updates, posts parsed market data to the server using OkHttp.
+
+- Configure server URL via `-Ded.server.baseUrl=http://localhost:8080` (or `ED_SERVER_BASE_URL` env var).
+- On each file update, the client sends the parsed market to `POST /api/markets`.
+- A lightweight `MarketDataHttpService` provides `postMarkets`, `getMarkets`, and `getMarket`.
+
+Run Swing client fat jar:
+
+```
+cd ed-monitor-swing
+mvn -q -DskipTests package
+java -Ded.server.baseUrl=http://localhost:8080 -jar target/ed-monitor-swing-0.1.0.jar
+```
 
 ## Contributing
 
