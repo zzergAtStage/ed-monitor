@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @ComponentScan("com.zergatstage.server")
-@EntityScan(basePackages = {"com.zergatstage.domain"})
+@EntityScan(basePackages = {"com.zergatstage.domain", "com.zergatstage.server"})
 @EnableJpaRepositories(basePackages = {"com.zergatstage.server.repository", "com.zergatstage.domain"})
 public class App {
     public static void main(String[] args) {
