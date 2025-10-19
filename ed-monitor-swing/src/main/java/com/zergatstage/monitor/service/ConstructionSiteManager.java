@@ -28,6 +28,8 @@ public class ConstructionSiteManager {
     private final Map<Long, ConstructionSite> sites = new HashMap<>();
     private final Set<ConstructionSiteUpdateListener> listeners = new HashSet<>();
     private final CommodityRegistry commodityRegistry;
+    private com.zergatstage.monitor.service.ConstructionSitesHttpService httpService;
+    private java.util.concurrent.ScheduledExecutorService scheduler;
 
     private ConstructionSiteManager() {
         commodityRegistry = CommodityRegistry.getInstance();
@@ -85,6 +87,47 @@ public class ConstructionSiteManager {
     private void notifyListeners() {
         for (ConstructionSiteUpdateListener listener : listeners) {
             listener.onConstructionSiteUpdated();
+        }
+    }
+
+    public void setHttpService(com.zergatstage.monitor.service.ConstructionSitesHttpService httpService) {
+        this.httpService = httpService;
+        startAutoSync();
+    }
+
+    private void startAutoSync() {
+        if (scheduler != null) return;
+        scheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "construction-sync");
+            t.setDaemon(true);
+            return t;
+        });
+        scheduler.scheduleAtFixedRate(() -> {
+            try { syncWithServer(); } catch (Exception ignored) {}
+        }, 5, 10, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
+    private void syncWithServer() {
+        if (httpService == null) return;
+        try {
+            // Push local state (best-effort)
+            var dtos = sites.values().stream()
+                    .map(com.zergatstage.monitor.http.ConstructionSiteDtoMapper::toDto)
+                    .toList();
+            if (!dtos.isEmpty()) {
+                httpService.postSites(dtos);
+            }
+            // Pull from server and merge, keeping uniqueness by marketId
+            var remote = httpService.getSites(false);
+            if (remote != null) {
+                for (var dto : remote) {
+                    ConstructionSite site = com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(dto);
+                    sites.put(site.getMarketId(), site);
+                }
+                notifyListeners();
+            }
+        } catch (Exception e) {
+            // swallow periodic sync errors to avoid UI noise
         }
     }
 

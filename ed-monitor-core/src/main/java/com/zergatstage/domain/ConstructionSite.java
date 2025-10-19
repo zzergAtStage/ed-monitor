@@ -1,14 +1,11 @@
 package com.zergatstage.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Represents a construction site with a list of material requirements.
@@ -24,8 +21,8 @@ public class ConstructionSite{
     @Id
     private long marketId;
     private String siteId;
-    @OneToMany(fetch = FetchType.LAZY)
-    private CopyOnWriteArrayList<MaterialRequirement> requirements;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<MaterialRequirement> requirements;
 
     /**
      * Calculates the overall construction progress in percentage (0–100).
@@ -48,7 +45,10 @@ public class ConstructionSite{
         return (int) Math.min(ratio * 100, 100);
     }
 
-    public synchronized CopyOnWriteArrayList<MaterialRequirement> getRequirements() {
+    public synchronized List<MaterialRequirement> getRequirements() {
+        if (requirements == null) {
+            requirements = new ArrayList<>();
+        }
         return requirements;
     }
 

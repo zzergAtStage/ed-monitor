@@ -404,6 +404,8 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private void refreshSiteProgressTable() {
         siteProgressTableModel.setRowCount(0);
 
+        // TODO(UI): Later, hide completed depots here when includeCompleted=false
+        // Definition (same as server): completed if sum(max(required - delivered, 0)) == 0
         for (ConstructionSite site : siteManager.getSites().values()) {
             Object[] row = {
                     site.getSiteId(),
@@ -419,6 +421,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private void refreshCommoditiesTable() {
         commoditiesTableModel.setRowCount(0);
         // Placeholder for "In Cargo" column, not used in this context
+        // TODO(UI): Later, skip completed depots unless includeCompleted=true
         for (ConstructionSite site : siteManager.getSites().values()) {
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
