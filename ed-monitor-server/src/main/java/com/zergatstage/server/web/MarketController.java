@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/markets")
+@RequestMapping("/api/v1/markets")
 public class MarketController {
 
     private final MarketService service;

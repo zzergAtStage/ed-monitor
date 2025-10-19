@@ -45,6 +45,8 @@ public class DefaultManagerFactory implements ManagerFactory {
         String baseUrl = System.getProperty("ed.server.baseUrl", System.getenv().getOrDefault("ED_SERVER_BASE_URL", "http://localhost:8080"));
         try {
             this.marketDataUpdateService.setHttpService(new MarketDataHttpService(baseUrl));
+            // Initial pull from server to populate cache after restart (best-effort)
+            this.marketDataUpdateService.refreshFromServer();
         } catch (IllegalArgumentException ignored) {
             // Invalid base URL provided; proceed without HTTP sync.
         }

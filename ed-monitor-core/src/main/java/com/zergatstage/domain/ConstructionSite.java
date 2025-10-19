@@ -48,8 +48,7 @@ public class ConstructionSite{
         return (int) Math.min(ratio * 100, 100);
     }
 
-    @Synchronized
-    public CopyOnWriteArrayList<MaterialRequirement> getRequirements() {
+    public synchronized CopyOnWriteArrayList<MaterialRequirement> getRequirements() {
         return requirements;
     }
 

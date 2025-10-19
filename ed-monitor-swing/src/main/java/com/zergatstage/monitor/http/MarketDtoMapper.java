@@ -33,5 +33,34 @@ public class MarketDtoMapper {
         );
         return new MarketItemDto(c, item.getBuyPrice(), item.getSellPrice(), item.getStock(), item.getDemand());
     }
-}
 
+    public static Market fromDto(MarketDto dto) {
+        Market market = Market.builder()
+                .marketId(dto.getMarketId())
+                .stationName(dto.getStationName())
+                .stationType(dto.getStationType())
+                .systemName(dto.getSystemName())
+                .items(new java.util.HashMap<>())
+                .build();
+        for (MarketItemDto itemDto : dto.getItems()) {
+            var c = itemDto.getCommodity();
+            var commodity = com.zergatstage.domain.dictionary.Commodity.builder()
+                    .id(c.getId())
+                    .name(c.getName())
+                    .nameLocalised(c.getNameLocalised())
+                    .category(c.getCategory())
+                    .categoryLocalised(c.getCategoryLocalised())
+                    .build();
+            var item = MarketItem.builder()
+                    .commodity(commodity)
+                    .market(market)
+                    .buyPrice(itemDto.getBuyPrice())
+                    .sellPrice(itemDto.getSellPrice())
+                    .stock(itemDto.getStock())
+                    .demand(itemDto.getDemand())
+                    .build();
+            market.addItem(item);
+        }
+        return market;
+    }
+}

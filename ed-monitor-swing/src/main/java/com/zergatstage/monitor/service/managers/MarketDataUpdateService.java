@@ -43,6 +43,27 @@ public class MarketDataUpdateService extends BaseManager{
     }
 
     /**
+     * Loads markets from the server (if configured) and populates local cache.
+     */
+    public void refreshFromServer() {
+        if (httpService == null) return;
+        try {
+            var dtos = httpService.getMarkets();
+            if (dtos == null || dtos.isEmpty()) return;
+            this.marketCache.clear();
+            for (var dto : dtos) {
+                Market m = MarketDtoMapper.fromDto(dto);
+                this.marketCache.put(m.getMarketId(), m);
+            }
+            commodityRegistry.loadMarketData(marketCache);
+            notifyListeners();
+            log.info("Market cache refreshed from server: {} entries", marketCache.size());
+        } catch (Exception e) {
+            log.warn("Refresh from server failed: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Handles market data update events by parsing the JSON data and updating the repository.
      * <p>
      * This method follows the Single Responsibility Principle by only focusing on data ingestion.
