@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Log4j2
 public class ConstructionSiteManager {
 
-    private static volatile  ConstructionSiteManager instance;
+    private static volatile ConstructionSiteManager instance;
     private final Map<Long, ConstructionSite> sites = new HashMap<>();
     private final Set<ConstructionSiteUpdateListener> listeners = new HashSet<>();
     private final CommodityRegistry commodityRegistry;
@@ -37,7 +37,7 @@ public class ConstructionSiteManager {
 
     public static synchronized ConstructionSiteManager getInstance() {
         if (instance == null) {
-            synchronized(ConstructionSiteManager.class) {
+            synchronized (ConstructionSiteManager.class) {
                 if (instance == null) {
                     instance = new ConstructionSiteManager();
                 }
@@ -60,10 +60,10 @@ public class ConstructionSiteManager {
     /**
      * Updates all construction sites with the delivered cargo.
      *
-     * @param material the material name.
+     * @param material          the material name.
      * @param deliveredQuantity the delivered quantity.
      */
-    //todo: rework it - this is a GPT a result of hallucination.
+    // todo: rework it - this is a GPT a result of hallucination.
     public void updateSitesWithCargo(String material, int deliveredQuantity) {
         long commodityId = commodityRegistry.findCommodityId(material, null);
         for (ConstructionSite site : sites.values()) {
@@ -96,36 +96,93 @@ public class ConstructionSiteManager {
     }
 
     private void startAutoSync() {
-        if (scheduler != null) return;
+        if (scheduler != null)
+            return;
         scheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "construction-sync");
             t.setDaemon(true);
             return t;
         });
         scheduler.scheduleAtFixedRate(() -> {
-            try { syncWithServer(); } catch (Exception ignored) {}
+            try {
+                syncWithServer();
+            } catch (Exception ignored) {
+            }
         }, 5, 10, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     private void syncWithServer() {
-        if (httpService == null) return;
+        if (httpService == null)
+            return;
+        boolean changed = false;
         try {
-            // Push local state (best-effort)
-            var dtos = sites.values().stream()
-                    .map(com.zergatstage.monitor.http.ConstructionSiteDtoMapper::toDto)
-                    .toList();
-            if (!dtos.isEmpty()) {
-                httpService.postSites(dtos);
-            }
-            // Pull from server and merge, keeping uniqueness by marketId
-            var remote = httpService.getSites(false);
-            if (remote != null) {
-                for (var dto : remote) {
-                    ConstructionSite site = com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(dto);
-                    sites.put(site.getMarketId(), site);
+            // Pull first: get authoritative snapshot
+            var remoteList = httpService.getSites(false);
+            Map<Long, ConstructionSiteDto> remoteMap = new HashMap<>();
+            if (remoteList != null) {
+                for (var dto : remoteList) {
+                    remoteMap.put(dto.getMarketId(), dto);
                 }
-                notifyListeners();
             }
+
+            // Reconcile with local cache
+            for (var entry : remoteMap.entrySet()) {
+                long id = entry.getKey();
+                var serverDto = entry.getValue();
+                ConstructionSite local = sites.get(id);
+                if (local == null) {
+                    // Not present locally → adopt server
+                    sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(serverDto));
+                    changed = true;
+                    continue;
+                }
+                Long lv = local.getVersion();
+                Long sv = serverDto.getVersion();
+                lv = lv == null ? 0L : lv;
+                sv = sv == null ? 0L : sv;
+                if (lv < sv) {
+                    // Server newer → replace local
+                    sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(serverDto));
+                    changed = true;
+                } else if (lv > sv) {
+                    // Local ahead (e.g., offline change) → resend local via PUT
+                    try {
+                        var updated = httpService
+                                .putSite(com.zergatstage.monitor.http.ConstructionSiteDtoMapper.toDto(local));
+                        sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(updated));
+                        changed = true;
+                    } catch (com.zergatstage.monitor.service.ConstructionSitesHttpService.VersionConflictException cf) {
+                        var latest = cf.getLatest();
+                        if (latest != null) {
+                            sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(latest));
+                            changed = true; // TODO: manual merge if needed
+                        }
+                    }
+                }
+            }
+
+            // Handle local sites missing on server → push them (insert)
+            for (ConstructionSite local : new java.util.ArrayList<>(sites.values())) {
+                if (!remoteMap.containsKey(local.getMarketId())) {
+                    try {
+                        var updated = httpService
+                                .putSite(com.zergatstage.monitor.http.ConstructionSiteDtoMapper.toDto(local));
+                        sites.put(local.getMarketId(),
+                                com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(updated));
+                        changed = true;
+                    } catch (com.zergatstage.monitor.service.ConstructionSitesHttpService.VersionConflictException cf) {
+                        var latest = cf.getLatest();
+                        if (latest != null) {
+                            sites.put(local.getMarketId(),
+                                    com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(latest));
+                            changed = true; // TODO: manual merge if needed
+                        }
+                    }
+                }
+            }
+
+            if (changed)
+                notifyListeners();
         } catch (Exception e) {
             // swallow periodic sync errors to avoid UI noise
         }
@@ -139,8 +196,7 @@ public class ConstructionSiteManager {
         notifyListeners();
     }
 
-
-    //TODO: WIP
+    // TODO: WIP
     @Synchronized
     public void updateSite(long marketId, JSONObject event) {
         ConstructionSite currentSite = sites.get(marketId);
@@ -184,8 +240,8 @@ public class ConstructionSiteManager {
                     first.get().setDeliveredQuantity(providedAmount);
                 }
             }
-        }catch (JSONException e) {
-            log.error("Dropped NPE or something else: {}",e.getMessage());
+        } catch (JSONException e) {
+            log.error("Dropped NPE or something else: {}", e.getMessage());
         }
         notifyListeners();
     }
@@ -194,13 +250,14 @@ public class ConstructionSiteManager {
         try {
             ConstructionSite site = ConstructionSite.builder()
                     .marketId(event.getLong("MarketID"))
-                    .siteId("STUB_" + event.getLong("MarketID")) //TODO: Generate a unique site ID
+                    .siteId("STUB_" + event.getLong("MarketID")) // TODO: Generate a unique site ID
                     .requirements(new CopyOnWriteArrayList<>())
                     .build();
             sites.put(site.getMarketId(), site);
             return site;
         } catch (JSONException e) {
-            throw new IllegalArgumentException("Invalid event data for creating construction site: " + e.getMessage(), e);
+            throw new IllegalArgumentException("Invalid event data for creating construction site: " + e.getMessage(),
+                    e);
         }
     }
 

@@ -30,8 +30,15 @@ public class ConstructionSiteController {
         return service.findAllDto(includeCompleted);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ConstructionSiteDto> one(@PathVariable("id") Long id) {
+        return service.findDtoById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<ConstructionSiteDto> update(@PathVariable Long id, @Valid @RequestBody ConstructionSiteDto dto) {
+    public ResponseEntity<ConstructionSiteDto> update(@PathVariable("id") Long id, @Valid @RequestBody ConstructionSiteDto dto) {
         return service.updateDto(id, dto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

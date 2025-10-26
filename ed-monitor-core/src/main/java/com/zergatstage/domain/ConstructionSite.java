@@ -3,6 +3,7 @@ package com.zergatstage.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +24,13 @@ public class ConstructionSite{
     private String siteId;
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<MaterialRequirement> requirements;
+
+    @Version
+    private long version;
+
+    @org.hibernate.annotations.ColumnDefault("CURRENT_TIMESTAMP")
+    @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    private Instant lastUpdated;
 
     /**
      * Calculates the overall construction progress in percentage (0–100).
@@ -50,6 +58,16 @@ public class ConstructionSite{
             requirements = new ArrayList<>();
         }
         return requirements;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        lastUpdated = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        lastUpdated = Instant.now();
     }
 
     /**

@@ -20,6 +20,8 @@ public class ConstructionSiteDtoMapper {
                 .map(ConstructionSiteDtoMapper::toDto)
                 .collect(Collectors.toList());
         dto.setRequirements(reqs);
+        dto.setVersion(site.getVersion());
+        dto.setLastUpdated(site.getLastUpdated());
         return dto;
     }
 
@@ -36,6 +38,8 @@ public class ConstructionSiteDtoMapper {
                 .marketId(dto.getMarketId())
                 .siteId(dto.getSiteId())
                 .requirements(new CopyOnWriteArrayList<>())
+                .version(dto.getVersion() == null ? 0L : dto.getVersion())
+                .lastUpdated(dto.getLastUpdated())
                 .build();
         if (dto.getRequirements() != null) {
             for (MaterialRequirementDto mrDto : dto.getRequirements()) {
@@ -59,4 +63,3 @@ public class ConstructionSiteDtoMapper {
         return site;
     }
 }
-
