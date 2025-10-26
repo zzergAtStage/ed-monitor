@@ -1,11 +1,18 @@
 package com.zergatstage.monitor;
 
 import java.awt.BorderLayout;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.Dimension;
+import java.awt.Color;
+import java.awt.Point;
+import java.awt.IllegalComponentStateException;
 import java.awt.Image;
 import java.io.IOException;
 import java.nio.file.Path;
 
 import javax.imageio.ImageIO;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -28,6 +35,8 @@ public class MonitorView {
     private final JFrame frame;
     private final DroneProvisionerPanel droneProvisionerPanel;
     private final ConstructionSitePanel constructionSitePanel;
+    private float currentOpacity = 0.6f;
+    private boolean overlayMode = false;
 
     public MonitorView(MonitorController controller, Path logDirectory) {
         this.controller = controller;
@@ -44,6 +53,9 @@ public class MonitorView {
         } catch (IOException e) {
             log.error("Failed to load application icon", e);
         }
+
+        // Ensure the app stays on top when not minimized
+        frame.setAlwaysOnTop(true);
 
         buildUI();
         controller.startAll();
@@ -98,6 +110,32 @@ public class MonitorView {
         tools.add(toggleStatus);
         tools.add(toggleLog);
 
+        // Overlay mode toggle (undecorated + adjustable opacity)
+        JCheckBoxMenuItem overlayToggle = new JCheckBoxMenuItem("Overlay mode (undecorated + opacity)", overlayMode);
+        overlayToggle.addActionListener(e -> {
+            boolean enable = overlayToggle.isSelected();
+            setOverlayMode(enable);
+        });
+        tools.addSeparator();
+        tools.add(overlayToggle);
+
+        // Opacity adjustment
+        JMenuItem setOpacity = new JMenuItem("Set opacity…");
+        setOpacity.addActionListener(e -> {
+            String input = JOptionPane.showInputDialog(frame, "Enter opacity 0.2 - 1.0", String.valueOf(currentOpacity));
+            if (input == null) return;
+            try {
+                float val = Float.parseFloat(input.trim());
+                if (val < 0.2f) val = 0.2f;
+                if (val > 1.0f) val = 1.0f;
+                currentOpacity = val;
+                if (overlayMode) applyWindowOpacity();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid number. Use 0.2 - 1.0", "Invalid input", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        tools.add(setOpacity);
+
         JMenu dict = new JMenu(UiConstants.DICTIONARY_MENU);
         JMenuItem openDict = new JMenuItem(UiConstants.OPEN_DICTIONARY);
         openDict.addActionListener(e -> {
@@ -110,5 +148,79 @@ public class MonitorView {
         menuBar.add(tools);
         menuBar.add(dict);
         return menuBar;
+    }
+
+    private void setOverlayMode(boolean enable) {
+        if (this.overlayMode == enable) return;
+        this.overlayMode = enable;
+        // Save state
+        Dimension size = frame.getSize();
+        Point loc = frame.getLocation();
+        boolean wasVisible = frame.isVisible();
+        try {
+            if (wasVisible) frame.setVisible(false);
+        } catch (IllegalComponentStateException ignore) {
+            // If not yet displayable, ignore
+        }
+
+        // Ensure the window is opaque before changing decoration to avoid IAE
+        forceOpaque();
+        frame.dispose();
+        frame.setUndecorated(enable);
+
+        // Apply opacity if supported in overlay mode; otherwise revert to 1.0
+        if (enable) {
+            if (!applyWindowOpacity()) {
+                JOptionPane.showMessageDialog(frame,
+                        "Window translucency is not supported on this system.",
+                        "Opacity not supported",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+        } else {
+            // Back to normal
+            safeSetOpacity(1.0f);
+        }
+
+        frame.setSize(size);
+        frame.setLocation(loc);
+        if (wasVisible) frame.setVisible(true);
+    }
+
+    private boolean applyWindowOpacity() {
+        try {
+            GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            if (gd.isWindowTranslucencySupported(GraphicsDevice.WindowTranslucency.TRANSLUCENT)) {
+                safeSetOpacity(currentOpacity);
+                return true;
+            } else {
+                log.warn("Window translucency not supported on this platform; skipping opacity.");
+                return false;
+            }
+        } catch (Throwable t) {
+            log.warn("Failed to set window opacity; proceeding without it.", t);
+            return false;
+        }
+    }
+
+    private void safeSetOpacity(float value) {
+        try {
+            frame.setOpacity(value);
+        } catch (Throwable t) {
+            // Ignore if unsupported at runtime; we keep running
+            log.warn("setOpacity failed (value={}): {}", value, t.toString());
+        }
+    }
+
+    private void forceOpaque() {
+        try {
+            // Full alpha background marks window as opaque for the toolkit
+            Color bg = frame.getBackground();
+            if (bg == null || bg.getAlpha() != 255) {
+                frame.setBackground(new Color(0, 0, 0, 255));
+            }
+        } catch (Throwable ignored) {
+        }
+        // Attempt to reset opacity to fully opaque (ok if this no-ops)
+        try { frame.setOpacity(1.0f); } catch (Throwable ignored) { }
     }
 }
