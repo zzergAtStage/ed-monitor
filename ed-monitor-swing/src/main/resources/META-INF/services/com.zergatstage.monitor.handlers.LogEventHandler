@@ -5,6 +5,7 @@ com.zergatstage.monitor.handlers.CargoInventoryEventHandler
 com.zergatstage.monitor.handlers.ColonisationConstructionDepot
 com.zergatstage.monitor.handlers.ColonisationContributionEventHandler
 com.zergatstage.monitor.handlers.DockedEventHandler
+com.zergatstage.monitor.handlers.LocationEventHandler
 com.zergatstage.monitor.handlers.LoadoutEventHandler
 com.zergatstage.monitor.handlers.MarketBuyEventHandler
 com.zergatstage.monitor.handlers.MarketSellEventHandler

@@ -13,6 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -27,6 +28,7 @@ public class ConstructionSiteManager {
     private static volatile ConstructionSiteManager instance;
     private final Map<Long, ConstructionSite> sites = new HashMap<>();
     private final Set<ConstructionSiteUpdateListener> listeners = new HashSet<>();
+    private final Set<Long> dirtySites = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
     private final CommodityRegistry commodityRegistry;
     private com.zergatstage.monitor.service.ConstructionSitesHttpService httpService;
     private java.util.concurrent.ScheduledExecutorService scheduler;
@@ -117,6 +119,62 @@ public class ConstructionSiteManager {
             return;
         boolean changed = false;
         try {
+            // 1) Flush local dirty sites first so local truth wins
+            java.util.List<Long> toFlush;
+            synchronized (dirtySites) {
+                toFlush = new java.util.ArrayList<>(dirtySites);
+            }
+            for (Long id : toFlush) {
+                ConstructionSite local = sites.get(id);
+                if (local == null) {
+                    dirtySites.remove(id);
+                    continue;
+                }
+                try {
+                    var dto = com.zergatstage.monitor.http.ConstructionSiteDtoMapper.toDto(local);
+                    // Preserve non-stub name from server when local has a stub
+                    if (isStubSiteId(local.getSiteId(), local.getMarketId())) {
+                        try {
+                            var latest = httpService.getSite(id);
+                            if (latest != null && latest.getSiteId() != null
+                                    && !latest.getSiteId().isBlank()
+                                    && !isStubSiteId(latest.getSiteId(), id)) {
+                                dto.setSiteId(latest.getSiteId());
+                                // align version to latest to reduce conflicts
+                                dto.setVersion(latest.getVersion());
+                            }
+                        } catch (Exception ignore) { /* proceed with current dto */ }
+                    }
+                    var updated = httpService.putSite(dto);
+                    sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(updated));
+                    dirtySites.remove(id);
+                    changed = true;
+                } catch (com.zergatstage.monitor.service.ConstructionSitesHttpService.VersionConflictException cf) {
+                    var latest = cf.getLatest();
+                    if (latest != null) {
+                        try {
+                            var dto = com.zergatstage.monitor.http.ConstructionSiteDtoMapper.toDto(local);
+                            dto.setVersion(latest.getVersion());
+                            // If local name is stub but server has a real name, keep server name
+                            if (isStubSiteId(local.getSiteId(), local.getMarketId())
+                                    && latest.getSiteId() != null
+                                    && !latest.getSiteId().isBlank()
+                                    && !isStubSiteId(latest.getSiteId(), id)) {
+                                dto.setSiteId(latest.getSiteId());
+                            }
+                            var updated = httpService.putSite(dto);
+                            sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(updated));
+                            dirtySites.remove(id);
+                            changed = true;
+                        } catch (com.zergatstage.monitor.service.ConstructionSitesHttpService.VersionConflictException ignore) {
+                            // keep dirty, retry on next cycle
+                        }
+                    }
+                } catch (Exception ignore) {
+                    // keep dirty, retry later
+                }
+            }
+
             // Pull first: get authoritative snapshot
             var remoteList = httpService.getSites(false);
             Map<Long, com.zergatstage.monitor.http.dto.ConstructionSiteDto> remoteMap = new HashMap<>();
@@ -142,19 +200,25 @@ public class ConstructionSiteManager {
                 lv = lv == null ? 0L : lv;
                 sv = sv == null ? 0L : sv;
                 if (lv < sv) {
+                    // If local site is dirty, skip replacing to avoid losing unsynced changes
+                    if (dirtySites.contains(id)) {
+                        continue;
+                    }
                     // Server newer → replace local
                     sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(serverDto));
                     changed = true;
                 } else if (lv > sv) {
                     // Local ahead (e.g., offline change) → resend local via PUT
+                    log.debug(" \t...updating server data ConstructionSite");
                     try {
                         var updated = httpService
                                 .putSite(com.zergatstage.monitor.http.ConstructionSiteDtoMapper.toDto(local));
                         sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(updated));
                         changed = true;
                     } catch (com.zergatstage.monitor.service.ConstructionSitesHttpService.VersionConflictException cf) {
+                        log.debug("\t ... updating local data from event {}", cf.getMessage());
                         var latest = cf.getLatest();
-                        if (latest != null) {
+                        if (latest != null && local.getLastUpdated().isBefore(latest.getLastUpdated())) {
                             sites.put(id, com.zergatstage.monitor.http.ConstructionSiteDtoMapper.fromDto(latest));
                             changed = true; // TODO: manual merge if needed
                         }
@@ -246,6 +310,12 @@ public class ConstructionSiteManager {
         } catch (JSONException e) {
             log.error("Dropped NPE or something else: {}", e.getMessage());
         }
+        // mark as dirty so sync pushes local truth first
+        if (currentSite != null) {
+            dirtySites.add(currentSite.getMarketId());
+        } else {
+            dirtySites.add(marketId);
+        }
         notifyListeners();
     }
 
@@ -256,6 +326,8 @@ public class ConstructionSiteManager {
                     .marketId(marketId)
                     .siteId(resolveSiteName(event).orElseGet(() -> buildStubSiteId(marketId)))
                     .requirements(new CopyOnWriteArrayList<>())
+                    .version(99)
+                    .lastUpdated(Instant.now())
                     .build();
             promoteSiteNameIfNeeded(site, event);
             sites.put(site.getMarketId(), site);

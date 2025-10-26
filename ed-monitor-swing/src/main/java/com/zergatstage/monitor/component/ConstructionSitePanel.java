@@ -164,7 +164,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         addCommodityButton.addActionListener(this::handleAddCommodity);
         controlPanel.add(addCommodityButton);
         JButton clearFilterButton = new JButton("Clear Filter");
-        clearFilterButton.addActionListener(_ -> refreshCommoditiesTable());
+        clearFilterButton.addActionListener(event -> refreshCommoditiesTable());
         controlPanel.add(clearFilterButton);
 
         add(controlPanel, BorderLayout.SOUTH);

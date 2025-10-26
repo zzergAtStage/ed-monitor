@@ -45,6 +45,7 @@ public class ColonisationConstructionDepot implements LogEventHandler {
             long marketId = event.getLong("MarketID");
             long currFingerprint = computeFingerprint(event);
             if (currFingerprint == lastFingerprints.getOrDefault(marketId, -1L)) {
+                log.debug("\tskip line processing due the non-unique fingerprint ");
                 return;
             }
 

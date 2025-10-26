@@ -57,9 +57,9 @@ public class CommodityManagerComponent extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
 
         // Button actions
-        addButton.addActionListener(_ -> onAddCommodity());
-        editButton.addActionListener(_ -> onEditCommodity());
-        deleteButton.addActionListener(_ -> onDeleteCommodity());
+        addButton.addActionListener(event -> onAddCommodity());
+        editButton.addActionListener(event -> onEditCommodity());
+        deleteButton.addActionListener(event -> onDeleteCommodity());
 
         loadCommodities();
         // Get the TableRowSorter

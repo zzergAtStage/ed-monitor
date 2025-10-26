@@ -172,7 +172,7 @@ public class CargoInventoryManager extends BaseManager {
 
         Map<Long, CargoItem> commoditiesInCargo = shipVariant.getCommodities();
 
-        commoditiesInCargo.compute(commodity.getId(), (_, existingItem) -> {
+        commoditiesInCargo.compute(commodity.getId(), (e, existingItem) -> {
             if (existingItem == null) {
                 // If the commodity does not exist, create a new CargoItem
                 return CargoItem.builder()
@@ -189,7 +189,7 @@ public class CargoInventoryManager extends BaseManager {
     }
 
     public void removeCommodity(Commodity commodity, int i) {
-        shipVariant.getCommodities().computeIfPresent(commodity.getId(), (_, cargoItem) -> {
+        shipVariant.getCommodities().computeIfPresent(commodity.getId(), (e, cargoItem) -> {
             int newCount = cargoItem.getCount() + i;
             if (newCount <= 0) {
                 return null; // Remove the item if count is zero or less

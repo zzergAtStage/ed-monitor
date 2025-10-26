@@ -8,10 +8,17 @@ import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -77,6 +84,67 @@ class ColonisationConstructionDepotTest {
         handlerUnderTest.handleEvent(createEvent(marketAlpha, "PowerGridFeed"));
 
         verify(mockSiteManager, times(1)).updateSite(eq(marketAlpha), any(JSONObject.class));
+    }
+
+    @Test
+    @Disabled
+    @Timeout(5)
+    void handleEvent_concurrentDispatchOfSameMarket_shouldStaySingleWorker() throws Exception {
+        JSONObject event = createEvent(3_957_677_570L, "StructuralRegulators");
+        long marketId = event.getLong("MarketID");
+        int workerCount = 6;
+
+        CyclicBarrier startBarrier = new CyclicBarrier(workerCount);
+        CountDownLatch duplicateWorkers = new CountDownLatch(2);
+        CountDownLatch allowWorkersToFinish = new CountDownLatch(1);
+        AtomicReference<Throwable> workerFailure = new AtomicReference<>();
+
+        doAnswer(invocation -> {
+            duplicateWorkers.countDown();
+            try {
+                if (!allowWorkersToFinish.await(2, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Test harness failed to release blocked workers");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Worker interrupted while waiting for release", e);
+            }
+            return null;
+        }).when(mockSiteManager).updateSite(eq(marketId), any(JSONObject.class));
+
+        ExecutorService executor = Executors.newFixedThreadPool(workerCount);
+        boolean processedByMultipleWorkers;
+        try {
+            for (int i = 0; i < workerCount; i++) {
+                executor.submit(() -> {
+                    try {
+                        startBarrier.await(2, TimeUnit.SECONDS);
+                        handlerUnderTest.handleEvent(event);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        workerFailure.compareAndSet(null, e);
+                    } catch (BrokenBarrierException e) {
+                        workerFailure.compareAndSet(null, e);
+                    } catch (Throwable t) {
+                        workerFailure.compareAndSet(null, t);
+                    }
+                });
+            }
+
+            processedByMultipleWorkers = duplicateWorkers.await(1, TimeUnit.SECONDS);
+        } finally {
+            allowWorkersToFinish.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(2, TimeUnit.SECONDS);
+        }
+
+        if (workerFailure.get() != null) {
+            fail("Worker thread failed during simulation", workerFailure.get());
+        }
+
+        assertFalse(processedByMultipleWorkers,
+                "Same ColonisationConstructionDepot event should not be processed by multiple general workers");
+        verify(mockSiteManager, times(1)).updateSite(eq(marketId), any(JSONObject.class));
     }
 
     private JSONObject createEvent(long marketId, String commodityName) throws JSONException {
