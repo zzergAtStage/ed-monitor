@@ -7,7 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
   sql:
     init:
       mode: never
@@ -17,4 +17,7 @@ spring:
 logging:
   level:
     # org.springframework.context: DEBUG
-    root: INFO
+    # root: INFO
+    com:
+      zergatstage:
+        server: DEBUG

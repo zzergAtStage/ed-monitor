@@ -19,6 +19,8 @@ public class ConstructionSiteMapper {
                 .marketId(dto.getMarketId())
                 .siteId(dto.getSiteId())
                 .requirements(new CopyOnWriteArrayList<>())
+                .version(dto.getVersion() == null ? 0L : dto.getVersion())
+                .lastUpdated(dto.getLastUpdated())
                 .build();
 
         if (dto.getRequirements() != null) {
@@ -45,6 +47,8 @@ public class ConstructionSiteMapper {
                 .map(ConstructionSiteMapper::toDto)
                 .collect(Collectors.toList());
         dto.setRequirements(reqs);
+        dto.setVersion(entity.getVersion());
+        dto.setLastUpdated(entity.getLastUpdated());
         return dto;
     }
 
@@ -56,4 +60,3 @@ public class ConstructionSiteMapper {
         return new MaterialRequirementDto(mr.getId(), cd, mr.getRequiredQuantity(), mr.getDeliveredQuantity());
     }
 }
-

@@ -28,8 +28,20 @@ public class ConstructionSiteService {
     @Transactional
     public List<ConstructionSiteDto> upsertAll(List<ConstructionSiteDto> incoming) {
         Map<Long, Commodity> commodityById = ensureCommodities(incoming);
+        // Preserve existing versions when client doesn't provide them (bulk sync compatibility)
+        Map<Long, Long> existingVersions = new HashMap<>();
+        List<Long> ids = incoming.stream().map(ConstructionSiteDto::getMarketId).toList();
+        if (!ids.isEmpty()) {
+            siteRepository.findAllById(ids).forEach(s -> existingVersions.put(s.getMarketId(), s.getVersion()));
+        }
+
         List<ConstructionSite> toSave = incoming.stream()
-                .map(dto -> ConstructionSiteMapper.toEntity(dto, commodityById))
+                .map(dto -> {
+                    if (dto.getVersion() == null && existingVersions.containsKey(dto.getMarketId())) {
+                        dto.setVersion(existingVersions.get(dto.getMarketId()));
+                    }
+                    return ConstructionSiteMapper.toEntity(dto, commodityById);
+                })
                 .toList();
         List<ConstructionSite> saved = siteRepository.saveAll(toSave);
         return saved.stream().map(ConstructionSiteMapper::toDto).collect(Collectors.toList());

@@ -39,6 +39,11 @@
             <artifactId>jackson-annotations</artifactId>
             <version>2.17.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.17.2</version>
+        </dependency>
         <!-- Test: OkHttp MockWebServer -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -53,6 +58,19 @@
 
   <!-- 2) All your build plugins go in a single <plugins> block -->
   <plugins>
+    <!-- Ensure preview features enabled for Swing module (uses unnamed variables) -->
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.14.0</version>
+      <configuration>
+        <source>${maven.compiler.source}</source>
+        <target>${maven.compiler.target}</target>
+        <compilerArgs>
+          <arg>--enable-preview</arg>
+        </compilerArgs>
+      </configuration>
+    </plugin>
     <!-- Shade plugin to produce a fat JAR named ed-monitor-swing-0.1.0.jar -->
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>

@@ -1,4 +1,5 @@
 package com.zergatstage.domain;
+
 import org.h2.tools.Server;
 import java.sql.SQLException;
 
