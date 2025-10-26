@@ -116,8 +116,8 @@ class JournalLogMonitorTest {
         // Act
         method.invoke(directMonitor, content, handlers);
 
-        // Assert: each handler.handleEvent called once per valid JSON
-        verify(mockHandlerFoo, times(1)).handleEvent(any(JSONObject.class));
-        verify(mockHandlerBar, times(1)).handleEvent(any(JSONObject.class));
+        // Assert: each handler.handleEvent called once per valid JSON (async parsing pool)
+        verify(mockHandlerFoo, timeout(500).times(1)).handleEvent(any(JSONObject.class));
+        verify(mockHandlerBar, timeout(500).times(1)).handleEvent(any(JSONObject.class));
     }
 }

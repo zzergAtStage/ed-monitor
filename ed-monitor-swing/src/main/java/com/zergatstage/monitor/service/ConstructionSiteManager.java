@@ -118,7 +118,7 @@ public class ConstructionSiteManager {
         try {
             // Pull first: get authoritative snapshot
             var remoteList = httpService.getSites(false);
-            Map<Long, ConstructionSiteDto> remoteMap = new HashMap<>();
+            Map<Long, com.zergatstage.monitor.http.dto.ConstructionSiteDto> remoteMap = new HashMap<>();
             if (remoteList != null) {
                 for (var dto : remoteList) {
                     remoteMap.put(dto.getMarketId(), dto);
