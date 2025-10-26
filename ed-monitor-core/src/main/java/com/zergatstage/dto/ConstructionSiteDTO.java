@@ -1,9 +1,7 @@
 package com.zergatstage.dto;
 
-import com.zergatstage.domain.makret.Market;
 import lombok.*;
 
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**

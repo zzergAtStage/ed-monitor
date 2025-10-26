@@ -4,6 +4,7 @@ import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.domain.dictionary.CommodityRepository;
 import com.zergatstage.domain.makret.Market;
 import com.zergatstage.server.market.MarketMapper;
+import com.zergatstage.server.market.dto.CommodityDto;
 import com.zergatstage.server.market.dto.MarketDto;
 import com.zergatstage.server.market.dto.MarketItemDto;
 import com.zergatstage.server.repository.MarketRepository;
@@ -55,9 +56,12 @@ public class MarketService {
     private Map<Long, Commodity> ensureCommodities(List<MarketDto> payload) {
         Map<Long, Commodity> result = new HashMap<>();
         Set<Long> ids = payload.stream()
-                .flatMap(m -> m.getItems().stream())
+                .filter(Objects::nonNull)
+                .flatMap(m -> Optional.ofNullable(m.getItems()).orElseGet(List::of).stream())
                 .map(MarketItemDto::getCommodity)
-                .map(c -> c.getId())
+                .filter(Objects::nonNull)
+                .map(CommodityDto::getId)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         if (ids.isEmpty()) return result;
 
@@ -67,9 +71,11 @@ public class MarketService {
         }
         // Create missing
         List<Commodity> toCreate = payload.stream()
-                .flatMap(m -> m.getItems().stream())
+                .filter(Objects::nonNull)
+                .flatMap(m -> Optional.ofNullable(m.getItems()).orElseGet(List::of).stream())
                 .map(MarketItemDto::getCommodity)
-                .filter(c -> !result.containsKey(c.getId()))
+                .filter(Objects::nonNull)
+                .filter(c -> c.getId() != null && !result.containsKey(c.getId()))
                 .map(c -> Commodity.builder()
                         .id(c.getId())
                         .name(c.getName())

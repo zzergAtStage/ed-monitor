@@ -1,5 +1,11 @@
 package com.zergatstage.monitor.service.managers;
 
+import java.util.Map;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.zergatstage.domain.Ship;
 import com.zergatstage.domain.dictionary.CargoItem;
 import com.zergatstage.domain.dictionary.Commodity;
@@ -7,14 +13,9 @@ import com.zergatstage.monitor.factory.DefaultManagerFactory;
 import com.zergatstage.monitor.service.BaseManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.JournalLogMonitor;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**

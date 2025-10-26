@@ -66,9 +66,6 @@
       <configuration>
         <source>${maven.compiler.source}</source>
         <target>${maven.compiler.target}</target>
-        <compilerArgs>
-          <arg>--enable-preview</arg>
-        </compilerArgs>
       </configuration>
     </plugin>
     <!-- Shade plugin to produce a fat JAR named ed-monitor-swing-0.1.0.jar -->

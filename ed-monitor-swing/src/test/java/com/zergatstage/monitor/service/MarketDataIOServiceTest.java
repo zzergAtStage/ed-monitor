@@ -1,23 +1,23 @@
 package com.zergatstage.monitor.service;
 
-import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
-import com.zergatstage.monitor.service.readers.FileReadStrategy;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
+import com.zergatstage.monitor.service.readers.FileReadStrategy;
 
 class MarketDataIOServiceTest {
 

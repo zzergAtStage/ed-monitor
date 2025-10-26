@@ -21,6 +21,7 @@ public class ConstructionSite{
 
     @Id
     private long marketId;
+    @Setter
     private String siteId;
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<MaterialRequirement> requirements;

@@ -30,6 +30,7 @@ public class ConstructionSiteManager {
     private final CommodityRegistry commodityRegistry;
     private com.zergatstage.monitor.service.ConstructionSitesHttpService httpService;
     private java.util.concurrent.ScheduledExecutorService scheduler;
+    private static final String STUB_PREFIX = "STUB_";
 
     private ConstructionSiteManager() {
         commodityRegistry = CommodityRegistry.getInstance();
@@ -203,6 +204,8 @@ public class ConstructionSiteManager {
 
         if (currentSite == null) {
             currentSite = createConstructionSite(event);
+        } else {
+            promoteSiteNameIfNeeded(currentSite, event);
         }
         if (!event.has("ResourcesRequired")) {
             log.warn("No required materials found!");
@@ -248,11 +251,13 @@ public class ConstructionSiteManager {
 
     private ConstructionSite createConstructionSite(JSONObject event) {
         try {
+            long marketId = event.getLong("MarketID");
             ConstructionSite site = ConstructionSite.builder()
-                    .marketId(event.getLong("MarketID"))
-                    .siteId("STUB_" + event.getLong("MarketID")) // TODO: Generate a unique site ID
+                    .marketId(marketId)
+                    .siteId(resolveSiteName(event).orElseGet(() -> buildStubSiteId(marketId)))
                     .requirements(new CopyOnWriteArrayList<>())
                     .build();
+            promoteSiteNameIfNeeded(site, event);
             sites.put(site.getMarketId(), site);
             return site;
         } catch (JSONException e) {
@@ -270,6 +275,40 @@ public class ConstructionSiteManager {
                 .filter(site -> site.getSiteId().equals(siteId))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private void promoteSiteNameIfNeeded(ConstructionSite site, JSONObject event) {
+        if (site == null) return;
+        Optional<String> resolvedName = resolveSiteName(event);
+        if (resolvedName.isEmpty()) return;
+        if (isStubSiteId(site.getSiteId(), site.getMarketId())) {
+            site.setSiteId(resolvedName.get());
+        }
+    }
+
+    private boolean isStubSiteId(String currentSiteId, long marketId) {
+        if (currentSiteId == null || currentSiteId.isBlank()) {
+            return true;
+        }
+        if (currentSiteId.startsWith(STUB_PREFIX)) {
+            return true;
+        }
+        return Long.toString(marketId).equals(currentSiteId);
+    }
+
+    private Optional<String> resolveSiteName(JSONObject event) {
+        String[] candidateKeys = {"StationName", "ConstructionSite", "Body", "Name"};
+        for (String key : candidateKeys) {
+            String value = event.optString(key, null);
+            if (value != null && !value.isBlank()) {
+                return Optional.of(value.trim());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private String buildStubSiteId(long marketId) {
+        return STUB_PREFIX + marketId;
     }
     // Additional methods for removal, lookup, etc.
 }

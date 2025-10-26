@@ -23,9 +23,23 @@ public class MarketMapper {
                 .items(new HashMap<>())
                 .build();
 
+        if (dto.getItems() == null || dto.getItems().isEmpty()) {
+            return market;
+        }
+
         for (MarketItemDto itemDto : dto.getItems()) {
+            if (itemDto == null) {
+                continue;
+            }
             CommodityDto c = itemDto.getCommodity();
+            if (c == null || c.getId() == null) {
+                continue;
+            }
             Commodity commodity = commodityById.get(c.getId());
+            if (commodity == null) {
+                // As a safety net, skip items whose commodities were not materialized upstream
+                continue;
+            }
             MarketItem item = MarketItem.builder()
                     .commodity(commodity)
                     .market(market)

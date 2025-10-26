@@ -1,29 +1,26 @@
 package com.zergatstage.monitor;
 
-import com.zergatstage.ClientApp;
-import com.zergatstage.monitor.factory.DefaultManagerFactory;
-import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
-import com.zergatstage.monitor.handlers.ExitHandler;
-import com.zergatstage.monitor.service.JournalLogMonitor;
-import com.zergatstage.monitor.service.MarketDataIOService;
-import com.zergatstage.monitor.service.StatusMonitor;
-import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONException;
-import org.json.JSONTokener;
-
 import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import com.zergatstage.ClientApp;
+import com.zergatstage.monitor.factory.DefaultManagerFactory;
+import com.zergatstage.monitor.handlers.ExitHandler;
+import com.zergatstage.monitor.service.JournalLogMonitor;
+import com.zergatstage.monitor.service.MarketDataIOService;
+import com.zergatstage.monitor.service.StatusMonitor;
+import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
+import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
+
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MonitorController {

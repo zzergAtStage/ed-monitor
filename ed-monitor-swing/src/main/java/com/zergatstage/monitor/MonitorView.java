@@ -1,22 +1,26 @@
 package com.zergatstage.monitor;
 
+import java.awt.BorderLayout;
+import java.awt.Image;
+import java.io.IOException;
+import java.nio.file.Path;
+
+import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.WindowConstants;
+
 import com.zergatstage.monitor.component.ConstructionSitePanel;
 import com.zergatstage.monitor.component.DictionaryManagerDialog;
 import com.zergatstage.monitor.component.DroneProvisionerPanel;
 import com.zergatstage.monitor.config.UiConstants;
-import com.zergatstage.monitor.handlers.HandlerConfiguration;
-import com.zergatstage.monitor.handlers.LogEventHandler;
-import com.zergatstage.monitor.service.JournalLogMonitor;
-import com.zergatstage.monitor.service.StatusMonitor;
+
 import lombok.extern.slf4j.Slf4j;
-
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.*;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Map;
 
 @Slf4j
 public class MonitorView {

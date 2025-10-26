@@ -1,15 +1,14 @@
 package com.zergatstage.monitor.service.managers;
 
-import com.zergatstage.domain.dictionary.Commodity;
-import com.zergatstage.domain.makret.Market;
-import com.zergatstage.domain.makret.MarketItem;
+import java.util.HashMap;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import com.zergatstage.domain.dictionary.Commodity;
+import com.zergatstage.domain.makret.Market;
+import com.zergatstage.domain.makret.MarketItem;
 
 
 public class MarketDataParser {

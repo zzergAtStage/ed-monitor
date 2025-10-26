@@ -50,7 +50,7 @@ class RouteOptimizer {
                     if (alreadyVisited) continue;
 
                     // Calculate potential load from this market
-                    Map<String, Integer> potentialLoad = calculatePotentialLoad(market, remaining,
+                    Map<String, Integer> potentialLoad = calculatePotentialLoad(market, requiredMaterials, remaining,
                             shipCapacity - currentTrip.getTotalCargo());
 
                     int loadValue = potentialLoad.values().stream().mapToInt(Integer::intValue).sum();
@@ -96,11 +96,20 @@ class RouteOptimizer {
                                                                          List<Market> markets) {
         Map<String, List<Market>> result = new HashMap<>();
 
-        for (String materialName : requiredMaterials.keySet()) {
+        for (Map.Entry<String, Material> entry : requiredMaterials.entrySet()) {
+            String materialName = entry.getKey();
+            Material material = entry.getValue();
+            if (material == null || material.getCommodity() == null) {
+                continue;
+            }
+            Long commodityId = material.getCommodity().getId();
+            if (commodityId == null) {
+                continue;
+            }
             List<Market> marketsWithMaterial = new ArrayList<>();
 
             for (Market market : markets) {
-                MarketItem item = market.getItem(materialName);
+                MarketItem item = market.getItem(commodityId);
                 if (item != null && item.getStock() > 0) {
                     marketsWithMaterial.add(market);
                 }
@@ -108,7 +117,7 @@ class RouteOptimizer {
 
             // Sort markets by buy price (lowest first)
             marketsWithMaterial.sort(Comparator.comparingInt(
-                    market -> market.getItem(materialName).getBuyPrice()
+                    market -> market.getItem(commodityId).getBuyPrice()
             ));
 
             result.put(materialName, marketsWithMaterial);
@@ -118,6 +127,7 @@ class RouteOptimizer {
     }
 
     private static Map<String, Integer> calculatePotentialLoad(Market market,
+                                                               Map<String, Material> requiredMaterials,
                                                                Map<String, Integer> remaining,
                                                                int availableCapacity) {
         Map<String, Integer> potentialLoad = new HashMap<>();
@@ -130,7 +140,12 @@ class RouteOptimizer {
 
             if (neededAmount <= 0) continue;
 
-            MarketItem item = market.getItem(materialName);
+            Material material = requiredMaterials.get(materialName);
+            if (material == null || material.getCommodity() == null) continue;
+            Long commodityId = material.getCommodity().getId();
+            if (commodityId == null) continue;
+
+            MarketItem item = market.getItem(commodityId);
             if (item != null && item.getStock() > 0) {
                 // Calculate how much we can load
                 int availableAmount = item.getStock();
