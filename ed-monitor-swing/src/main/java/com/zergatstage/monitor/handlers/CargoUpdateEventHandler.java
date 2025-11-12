@@ -15,11 +15,10 @@ import org.json.JSONObject;
 @Log4j2
 public class CargoUpdateEventHandler implements LogEventHandler {
 
-    private final ConstructionSiteManager siteManager;
     private final CargoInventoryManager cargoInventoryManager;
     private final CommodityRegistry commodityRegistry;
     public CargoUpdateEventHandler(){
-        siteManager = ConstructionSiteManager.getInstance();
+        ConstructionSiteManager.getInstance();
         cargoInventoryManager = CargoInventoryManager.getInstance();
         commodityRegistry = CommodityRegistry.getInstance();
     }
