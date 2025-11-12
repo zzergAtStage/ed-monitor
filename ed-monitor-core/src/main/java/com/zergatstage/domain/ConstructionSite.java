@@ -1,14 +1,12 @@
 package com.zergatstage.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Represents a construction site with a list of material requirements.
@@ -23,9 +21,17 @@ public class ConstructionSite{
 
     @Id
     private long marketId;
+    @Setter
     private String siteId;
-    @OneToMany(fetch = FetchType.LAZY)
-    private CopyOnWriteArrayList<MaterialRequirement> requirements;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<MaterialRequirement> requirements;
+
+    @Version
+    private long version;
+
+    @org.hibernate.annotations.ColumnDefault("CURRENT_TIMESTAMP")
+    @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    private Instant lastUpdated;
 
     /**
      * Calculates the overall construction progress in percentage (0–100).
@@ -48,9 +54,21 @@ public class ConstructionSite{
         return (int) Math.min(ratio * 100, 100);
     }
 
-    @Synchronized
-    public CopyOnWriteArrayList<MaterialRequirement> getRequirements() {
+    public synchronized List<MaterialRequirement> getRequirements() {
+        if (requirements == null) {
+            requirements = new ArrayList<>();
+        }
         return requirements;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        lastUpdated = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        lastUpdated = Instant.now();
     }
 
     /**

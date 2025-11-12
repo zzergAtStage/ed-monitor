@@ -2,8 +2,6 @@ package com.zergatstage.monitor.handlers;
 
 import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 @Slf4j
@@ -37,14 +35,9 @@ public class CargoInventoryEventHandler implements LogEventHandler{
      */
     @Override
     public void handleEvent(JSONObject event) {
-        try {
-            if (event.has("Inventory")) {
-                JSONArray inventory = event.getJSONArray("Inventory");
-                cargoInventoryManager.setCargoFromSnapshot(event);
-                cargoInventoryManager.notifyListeners();
-            }
-        } catch (JSONException e) {
-            log.error("Error processing Cargo inventory event{} : {}", event, e.getMessage());
+        if (event.has("Inventory")) {
+            cargoInventoryManager.setCargoFromSnapshot(event);
+            cargoInventoryManager.notifyListeners();
         }
     }
 }

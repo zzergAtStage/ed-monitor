@@ -1,6 +1,6 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
   profiles:
-    active: prod  # Default profile is production
+    active: dev  # Default profile for this branch

@@ -8,7 +8,6 @@ import lombok.extern.log4j.Log4j2;
 
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,7 @@ public class MonitorServiceFactoryImpl implements MonitorServiceFactory {
         // A pool for everything else:
         this.generalExecutor = Executors.newFixedThreadPool(
 
-                Math.max(Runtime.getRuntime().availableProcessors() - 10, 4), // leave some threads for UI
+                1,//Math.max(Runtime.getRuntime().availableProcessors() - 10, 4), // leave some threads for UI
                 r -> {
                     Thread t = new Thread(r, "general‐worker-" + treadCount++);
                     t.setDaemon(true);

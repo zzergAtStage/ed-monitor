@@ -1,5 +1,11 @@
 package com.zergatstage.monitor.service.managers;
 
+import java.util.Map;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.zergatstage.domain.Ship;
 import com.zergatstage.domain.dictionary.CargoItem;
 import com.zergatstage.domain.dictionary.Commodity;
@@ -7,14 +13,9 @@ import com.zergatstage.monitor.factory.DefaultManagerFactory;
 import com.zergatstage.monitor.service.BaseManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.JournalLogMonitor;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**
@@ -171,7 +172,7 @@ public class CargoInventoryManager extends BaseManager {
 
         Map<Long, CargoItem> commoditiesInCargo = shipVariant.getCommodities();
 
-        commoditiesInCargo.compute(commodity.getId(), (_, existingItem) -> {
+        commoditiesInCargo.compute(commodity.getId(), (e, existingItem) -> {
             if (existingItem == null) {
                 // If the commodity does not exist, create a new CargoItem
                 return CargoItem.builder()
@@ -188,7 +189,7 @@ public class CargoInventoryManager extends BaseManager {
     }
 
     public void removeCommodity(Commodity commodity, int i) {
-        shipVariant.getCommodities().computeIfPresent(commodity.getId(), (_, cargoItem) -> {
+        shipVariant.getCommodities().computeIfPresent(commodity.getId(), (e, cargoItem) -> {
             int newCount = cargoItem.getCount() + i;
             if (newCount <= 0) {
                 return null; // Remove the item if count is zero or less

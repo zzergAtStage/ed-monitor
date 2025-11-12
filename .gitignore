@@ -49,3 +49,6 @@ build/
 ed-monitor-server/data/**
 /slim-runtime/
 /ed-monitor-swing/.idea/
+data/marketdb-dev.mv.db
+data/marketdb-dev.trace.db
+data/ed-monitor-server.log

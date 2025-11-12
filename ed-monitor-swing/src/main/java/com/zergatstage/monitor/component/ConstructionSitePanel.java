@@ -17,7 +17,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -165,7 +164,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         addCommodityButton.addActionListener(this::handleAddCommodity);
         controlPanel.add(addCommodityButton);
         JButton clearFilterButton = new JButton("Clear Filter");
-        clearFilterButton.addActionListener(_ -> refreshCommoditiesTable());
+        clearFilterButton.addActionListener(event -> refreshCommoditiesTable());
         controlPanel.add(clearFilterButton);
 
         add(controlPanel, BorderLayout.SOUTH);
@@ -405,6 +404,8 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private void refreshSiteProgressTable() {
         siteProgressTableModel.setRowCount(0);
 
+        // TODO(UI): Later, hide completed depots here when includeCompleted=false
+        // Definition (same as server): completed if sum(max(required - delivered, 0)) == 0
         for (ConstructionSite site : siteManager.getSites().values()) {
             Object[] row = {
                     site.getSiteId(),
@@ -420,6 +421,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private void refreshCommoditiesTable() {
         commoditiesTableModel.setRowCount(0);
         // Placeholder for "In Cargo" column, not used in this context
+        // TODO(UI): Later, skip completed depots unless includeCompleted=true
         for (ConstructionSite site : siteManager.getSites().values()) {
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {

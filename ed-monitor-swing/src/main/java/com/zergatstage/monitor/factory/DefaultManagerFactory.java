@@ -6,6 +6,7 @@ import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.managers.DroneManager;
 import com.zergatstage.monitor.service.managers.MarketDataParser;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
+import com.zergatstage.monitor.service.MarketDataHttpService;
 import lombok.Getter;
 
 @Getter
@@ -40,6 +41,17 @@ public class DefaultManagerFactory implements ManagerFactory {
         this.marketDataUpdateService = new MarketDataUpdateService(
                this.commodityRegistry,
                 this.getMarketDataParser());
+
+        String baseUrl = System.getProperty("ed.server.baseUrl", System.getenv().getOrDefault("ED_SERVER_BASE_URL", "http://localhost:8080"));
+        try {
+            this.marketDataUpdateService.setHttpService(new MarketDataHttpService(baseUrl));
+            // Hook up construction site HTTP sync (every ~10s inside manager)
+            this.constructionSiteManager.setHttpService(new com.zergatstage.monitor.service.ConstructionSitesHttpService(baseUrl));
+            // Initial pull from server to populate cache after restart (best-effort)
+            this.marketDataUpdateService.refreshFromServer();
+        } catch (IllegalArgumentException ignored) {
+            // Invalid base URL provided; proceed without HTTP sync.
+        }
     }
 
 }

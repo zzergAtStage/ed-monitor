@@ -31,4 +31,12 @@ public class Material {
         return commodity.getName();
     }
 
+    /**
+     * Exposes the commodity backing this material so callers can access its metadata (id, etc.).
+     *
+     * @return the commodity instance backing this material
+     */
+    public Commodity getCommodity() {
+        return commodity;
+    }
 }

@@ -1,6 +1,5 @@
 package com.zergatstage.monitor.handlers;
 
-import com.zergatstage.dto.CommodityMapper;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
@@ -16,11 +15,10 @@ import org.json.JSONObject;
 @Log4j2
 public class CargoUpdateEventHandler implements LogEventHandler {
 
-    private final ConstructionSiteManager siteManager;
     private final CargoInventoryManager cargoInventoryManager;
     private final CommodityRegistry commodityRegistry;
     public CargoUpdateEventHandler(){
-        siteManager = ConstructionSiteManager.getInstance();
+        ConstructionSiteManager.getInstance();
         cargoInventoryManager = CargoInventoryManager.getInstance();
         commodityRegistry = CommodityRegistry.getInstance();
     }

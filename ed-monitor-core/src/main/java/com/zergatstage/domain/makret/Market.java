@@ -54,10 +54,10 @@ public class Market {
     /**
      * Retrieves a market item based on the commodity ID.
      *
-     * @param commodityId The unique identifier of the commodity.
-     * @return The corresponding market item, or null if not found.
+     * @param commodityId the unique identifier of the commodity
+     * @return the corresponding market item, or {@code null} if not found
      */
-    public MarketItem getItem(String commodityId) {
+    public MarketItem getItem(Long commodityId) {
         return items.get(commodityId);
     }
 

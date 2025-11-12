@@ -1,9 +1,11 @@
 package com.zergatstage.server.handlers;
 
+import jakarta.persistence.OptimisticLockException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -14,11 +16,10 @@ import java.util.NoSuchElementException;
 @Slf4j
 public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)  // 409
-    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ExceptionHandler({DataIntegrityViolationException.class, ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
     public void handleConflict() {
-        // Nothing to do
+        // Nothing to do – framework returns 409
     }
-
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<?> handleNoSuchElement(Exception ex){
@@ -31,6 +32,4 @@ public class GlobalExceptionHandler {
         log.error("Catch something unusual: {}", ex.getMessage() );
         return ResponseEntity.internalServerError().body("Internal server error. Please report the administrator @admin");
     }
-
-
 }

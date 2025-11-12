@@ -7,7 +7,6 @@ import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Log4j2
@@ -31,7 +30,8 @@ public class DockedEventHandler implements LogEventHandler {
 
     /**
      * Processes the given log event.
-     *
+     * Docked event provides basic info about station - it is often required to build
+     * Construction Site entity
      * @param event the JSON object representing the log event.
      */
     @SneakyThrows
@@ -64,6 +64,6 @@ public class DockedEventHandler implements LogEventHandler {
         }
         siteManager.addSite(constructionSite);
 
-        log.info("Construction site {} added to list", (constructionSite).getSiteId());
+        log.info("Construction site {} was updated due event {}", (constructionSite).getSiteId(), getEventType());
     }
 }
