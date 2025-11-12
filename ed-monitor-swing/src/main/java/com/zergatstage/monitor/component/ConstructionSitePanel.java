@@ -17,7 +17,13 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -47,6 +53,10 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private JLabel remainingLabel;
     private JLabel estimatedRunsLabel;
     private static final int DEFAULT_CARGO_CAPACITY = 1232;
+    private static final String ALL_SITES_LABEL = "All Sites";
+    private static final String SELECTED_SITES_LABEL = "Selected Sites";
+    private final LinkedHashSet<String> selectedSiteIds = new LinkedHashSet<>();
+    private boolean suppressSiteSelectionEvents;
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
      */
@@ -77,14 +87,16 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         JScrollPane siteProgressScroll = new JScrollPane(siteProgressTable);
 
         siteProgressTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                int selectedRow = siteProgressTable.getSelectedRow();
-                if (selectedRow != -1) {
-                    // Adjust for row sorting
-                    int modelRow = siteProgressTable.convertRowIndexToModel(selectedRow);
-                    String siteId = (String) siteProgressTableModel.getValueAt(modelRow, 0);
-                    refreshCommoditiesTableForSite(siteId);
+            if (!e.getValueIsAdjusting() && !suppressSiteSelectionEvents) {
+                selectedSiteIds.clear();
+                int[] selectedRows = siteProgressTable.getSelectedRows();
+                for (int viewRow : selectedRows) {
+                    int modelRow = safeConvertViewRowToModel(siteProgressTable, viewRow);
+                    if (modelRow >= 0) {
+                        selectedSiteIds.add((String) siteProgressTableModel.getValueAt(modelRow, 0));
+                    }
                 }
+                refreshCommoditiesTable();
             }
         });
 
@@ -138,20 +150,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 return this;
             }
         });
-        marketComboBox.addActionListener(e -> {
-            int sel = siteProgressTable.getSelectedRow();
-            if (sel >= 0) {
-                String siteId = (String)
-                        siteProgressTableModel.getValueAt(
-                                siteProgressTable.convertRowIndexToModel(sel), 0);
-                refreshCommoditiesTableForSite(siteId);
-            } else if (siteProgressTable.getRowCount() > 0) {
-                String siteId = (String)
-                        siteProgressTableModel.getValueAt(
-                                siteProgressTable.convertRowIndexToModel(0), 0);
-                refreshCommoditiesTableForSite(siteId);
-            }
-        });
+        marketComboBox.addActionListener(e -> refreshCommoditiesTable());
 
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         controlPanel.add(new JLabel("Market:"));
@@ -164,7 +163,20 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         addCommodityButton.addActionListener(this::handleAddCommodity);
         controlPanel.add(addCommodityButton);
         JButton clearFilterButton = new JButton("Clear Filter");
-        clearFilterButton.addActionListener(event -> refreshCommoditiesTable());
+        clearFilterButton.addActionListener(event -> {
+            if (selectedSiteIds.isEmpty() && siteProgressTable.getSelectedRowCount() == 0) {
+                refreshCommoditiesTable();
+                return;
+            }
+            suppressSiteSelectionEvents = true;
+            try {
+                selectedSiteIds.clear();
+                siteProgressTable.clearSelection();
+            } finally {
+                suppressSiteSelectionEvents = false;
+            }
+            refreshCommoditiesTable();
+        });
         controlPanel.add(clearFilterButton);
 
         add(controlPanel, BorderLayout.SOUTH);
@@ -262,7 +274,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         refreshAll();
     }
 
-    private void refreshCommoditiesTableForSite(String siteId) {
+    private void populateCommoditiesTableForSite(String siteId) {
         commoditiesTableModel.setRowCount(0);
 
         ConstructionSite site = siteManager.getSites().values().stream()
@@ -283,7 +295,35 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 commoditiesTableModel.addRow(row);
             }
         }
-        updateSummaryPanel();
+    }
+
+    private void populateAggregatedCommoditiesTable(Collection<ConstructionSite> sites, String siteLabel) {
+        commoditiesTableModel.setRowCount(0);
+
+        Map<Long, CommodityAggregate> aggregates = new LinkedHashMap<>();
+        for (ConstructionSite site : sites) {
+            for (MaterialRequirement req : site.getRequirements()) {
+                long commodityId = req.getCommodity().getId();
+                CommodityAggregate aggregate = aggregates.computeIfAbsent(
+                        commodityId,
+                        id -> new CommodityAggregate(new RequiredCommodityItem(id, req.getCommodity().getNameLocalised()))
+                );
+                aggregate.required += req.getRequiredQuantity();
+                aggregate.delivered += req.getDeliveredQuantity();
+                aggregate.remaining += req.getRemainingQuantity();
+            }
+        }
+
+        for (CommodityAggregate aggregate : aggregates.values()) {
+            commoditiesTableModel.addRow(new Object[]{
+                    siteLabel,
+                    aggregate.item,
+                    aggregate.required,
+                    cargoInventoryManager.getInCargo(aggregate.item.getId()),
+                    aggregate.delivered,
+                    aggregate.remaining
+            });
+        }
     }
 
     /**
@@ -395,23 +435,46 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private void refreshAll() {
         refreshSiteProgressTable();
         refreshCommoditiesTable();
-        updateSummaryPanel();
     }
 
     /**
      * Updates the top table, which shows each site's name and overall progress.
      */
     private void refreshSiteProgressTable() {
-        siteProgressTableModel.setRowCount(0);
+        suppressSiteSelectionEvents = true;
+        try {
+            siteProgressTableModel.setRowCount(0);
 
-        // TODO(UI): Later, hide completed depots here when includeCompleted=false
-        // Definition (same as server): completed if sum(max(required - delivered, 0)) == 0
-        for (ConstructionSite site : siteManager.getSites().values()) {
-            Object[] row = {
-                    site.getSiteId(),
-                    site.getProgressPercent()
-            };
-            siteProgressTableModel.addRow(row);
+            // TODO(UI): Later, hide completed depots here when includeCompleted=false
+            // Definition (same as server): completed if sum(max(required - delivered, 0)) == 0
+            LinkedHashSet<String> previousSelection = new LinkedHashSet<>(selectedSiteIds);
+            selectedSiteIds.clear();
+            List<Integer> modelRowsToSelect = new ArrayList<>();
+            int rowIndex = 0;
+            for (ConstructionSite site : siteManager.getSites().values()) {
+                Object[] row = {
+                        site.getSiteId(),
+                        site.getProgressPercent()
+                };
+                siteProgressTableModel.addRow(row);
+                if (previousSelection.contains(site.getSiteId())) {
+                    selectedSiteIds.add(site.getSiteId());
+                    modelRowsToSelect.add(rowIndex);
+                }
+                rowIndex++;
+            }
+
+            siteProgressTable.clearSelection();
+            if (!selectedSiteIds.isEmpty()) {
+                for (int modelRow : modelRowsToSelect) {
+                    int viewRow = safeConvertModelRowToView(siteProgressTable, modelRow);
+                    if (viewRow >= 0) {
+                        siteProgressTable.addRowSelectionInterval(viewRow, viewRow);
+                    }
+                }
+            }
+        } finally {
+            suppressSiteSelectionEvents = false;
         }
     }
 
@@ -419,22 +482,14 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
      * Updates the bottom table, which lists each site's material requirements in detail.
      */
     private void refreshCommoditiesTable() {
-        commoditiesTableModel.setRowCount(0);
-        // Placeholder for "In Cargo" column, not used in this context
-        // TODO(UI): Later, skip completed depots unless includeCompleted=true
-        for (ConstructionSite site : siteManager.getSites().values()) {
-            for (MaterialRequirement req : site.getRequirements()) {
-                Object[] row = {
-                        site.getSiteId(),
-                        new RequiredCommodityItem(req.getCommodity().getId(), req.getCommodity().getNameLocalised()),
-                        req.getRequiredQuantity(),
-                        cargoInventoryManager.getInCargo(req.getCommodity().getId()), // Get in cargo from inventory
-                        req.getDeliveredQuantity(),
-                        req.getRemainingQuantity()
-                };
-                commoditiesTableModel.addRow(row);
-            }
+        if (selectedSiteIds.isEmpty()) {
+            populateAggregatedCommoditiesTable(siteManager.getSites().values(), ALL_SITES_LABEL);
+        } else if (selectedSiteIds.size() == 1) {
+            populateCommoditiesTableForSite(selectedSiteIds.iterator().next());
+        } else {
+            populateAggregatedCommoditiesTable(resolveSites(selectedSiteIds), SELECTED_SITES_LABEL);
         }
+        updateSummaryPanel();
     }
 
     /**
@@ -466,8 +521,11 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             // only care about Material or Remaining columns
             if (column == MATERIAL_COL || column == REMAINING_COL) {
                 // convert to model row in case of sorting
-                int modelRow = table.convertRowIndexToModel(row);
-
+                int modelRow = safeConvertViewRowToModel(table, row);
+                if (modelRow < 0) {
+                    setBackground(Color.WHITE);
+                    return this;
+                }
 
                 RequiredCommodityItem material = (RequiredCommodityItem) table.getModel().getValueAt(modelRow, MATERIAL_COL);
                 Integer remaining = (Integer) table.getModel().getValueAt(modelRow, REMAINING_COL);
@@ -497,31 +555,14 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         int totalDelivered = 0;
         int totalRemaining = 0;
 
-        // Calculate totals based on current filter (selected site or all sites)
-        int selectedRow = siteProgressTable.getSelectedRow();
-        if (selectedRow != -1) {
-            // Show summary for selected site only
-            int modelRow = siteProgressTable.convertRowIndexToModel(selectedRow);
-            String siteId = (String) siteProgressTableModel.getValueAt(modelRow, 0);
+        Collection<ConstructionSite> targetSites = selectedSiteIds.isEmpty()
+                ? siteManager.getSites().values()
+                : resolveSites(selectedSiteIds);
 
-            ConstructionSite site = siteManager.getSites().values().stream()
-                    .filter(s -> s.getSiteId().equals(siteId))
-                    .findFirst()
-                    .orElse(null);
-
-            if (site != null) {
-                for (MaterialRequirement req : site.getRequirements()) {
-                    totalDelivered += req.getDeliveredQuantity();
-                    totalRemaining += req.getRemainingQuantity();
-                }
-            }
-        } else {
-            // Show summary for all sites
-            for (ConstructionSite site : siteManager.getSites().values()) {
-                for (MaterialRequirement req : site.getRequirements()) {
-                    totalDelivered += req.getDeliveredQuantity();
-                    totalRemaining += req.getRemainingQuantity();
-                }
+        for (ConstructionSite site : targetSites) {
+            for (MaterialRequirement req : site.getRequirements()) {
+                totalDelivered += req.getDeliveredQuantity();
+                totalRemaining += req.getRemainingQuantity();
             }
         }
 
@@ -541,6 +582,50 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             remainingLabel.setForeground(new Color(220, 20, 60)); // Red when incomplete
         }
     }
+
+    private Collection<ConstructionSite> resolveSites(Collection<String> siteIds) {
+        List<ConstructionSite> result = new ArrayList<>();
+        for (ConstructionSite site : siteManager.getSites().values()) {
+            if (siteIds.contains(site.getSiteId())) {
+                result.add(site);
+            }
+        }
+        return result;
+    }
+
+    private int safeConvertViewRowToModel(JTable table, int viewRow) {
+        if (viewRow < 0 || viewRow >= table.getRowCount()) {
+            return -1;
+        }
+        try {
+            return table.convertRowIndexToModel(viewRow);
+        } catch (IndexOutOfBoundsException ex) {
+            return -1;
+        }
+    }
+
+    private int safeConvertModelRowToView(JTable table, int modelRow) {
+        if (modelRow < 0 || modelRow >= table.getModel().getRowCount()) {
+            return -1;
+        }
+        try {
+            return table.convertRowIndexToView(modelRow);
+        } catch (IndexOutOfBoundsException ex) {
+            return -1;
+        }
+    }
+
+    private static class CommodityAggregate {
+        private final RequiredCommodityItem item;
+        private int required;
+        private int delivered;
+        private int remaining;
+
+        private CommodityAggregate(RequiredCommodityItem item) {
+            this.item = item;
+        }
+    }
+
 /** Simple wrapper so combo returns ID but shows name. */
 	private static class MarketComboItem {
 	    private final long id;
