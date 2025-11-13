@@ -16,6 +16,11 @@ public final class  UiConstants {
     public static final String OPEN_DICTIONARY = "Open Dictionary";
     public static final String START_STATUS_BTN = "Start Status Monitor";
     public static final String STOP_STATUS_BTN = "Stop Status Monitor";
+    public static final String SERVER_MENU = "Server management";
+    public static final String SERVER_START_ITEM = "Start backend";
+    public static final String SERVER_STOP_ITEM = "Stop backend";
+    public static final String SERVER_CHECK_HEALTH_ITEM = "Check health";
+    public static final String SERVER_RESTART_ITEM = "Restart backend";
 
     public static final  Color darkBackground = new Color(12, 12, 12);   // #0C0C0C
     public static final Color lightBackground = new Color(50, 29, 11);   // #321d0b

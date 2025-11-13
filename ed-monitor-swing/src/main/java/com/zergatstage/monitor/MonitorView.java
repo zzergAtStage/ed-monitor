@@ -25,6 +25,7 @@ import javax.swing.WindowConstants;
 import com.zergatstage.monitor.component.ConstructionSitePanel;
 import com.zergatstage.monitor.component.DictionaryManagerDialog;
 import com.zergatstage.monitor.component.DroneProvisionerPanel;
+import com.zergatstage.monitor.component.ServerManagementMenu;
 import com.zergatstage.monitor.config.UiConstants;
 
 import lombok.extern.slf4j.Slf4j;
@@ -146,6 +147,7 @@ public class MonitorView {
 
         menuBar.add(file);
         menuBar.add(tools);
+        menuBar.add(new ServerManagementMenu(frame, controller.getServerLifecycleService()).build());
         menuBar.add(dict);
         return menuBar;
     }

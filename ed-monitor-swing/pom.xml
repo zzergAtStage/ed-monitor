@@ -62,10 +62,9 @@
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-compiler-plugin</artifactId>
-      <version>3.14.0</version>
+      <version>3.14.1</version>
       <configuration>
-        <source>${maven.compiler.source}</source>
-        <target>${maven.compiler.target}</target>
+        <release>21</release>
       </configuration>
     </plugin>
     <!-- Shade plugin to produce a fat JAR named ed-monitor-swing-0.1.0.jar -->
