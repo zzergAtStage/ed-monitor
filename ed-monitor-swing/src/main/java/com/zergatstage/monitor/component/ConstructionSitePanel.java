@@ -2,11 +2,8 @@ package com.zergatstage.monitor.component;
 
 import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
-import com.zergatstage.domain.dictionary.Commodity;
 import com.zergatstage.domain.makret.Market;
-import com.zergatstage.dto.ConstructionSiteDTO;
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
-import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.ConstructionSiteUpdateListener;
 import com.zergatstage.monitor.service.managers.CargoInventoryManager;
@@ -16,7 +13,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,7 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * The ConstructionSitePanel class provides a UI panel for managing
@@ -42,7 +37,6 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private final JTable siteProgressTable;
     private final DefaultTableModel siteProgressTableModel;
     private final DefaultTableModel commoditiesTableModel;
-    private final CommodityRegistry commodityRegistry;
     private final ConstructionSiteManager siteManager;
     private final CargoInventoryManager cargoInventoryManager;
     private final MarketDataUpdateService marketDataService;
@@ -66,7 +60,6 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         siteManager = ConstructionSiteManager.getInstance();
 
         cargoInventoryManager = CargoInventoryManager.getInstance();
-        commodityRegistry = CommodityRegistry.getInstance();
         marketDataService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
         marketDataService.addListener(this::populateMarketComboBox);
         // ============= Site Progress Table (Top) =============
@@ -131,7 +124,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
 
-        // ============= Control Panel (Add Site, Add Commodity) =============
+        // ============= Control Panel (Market & Filters) =============
 
         marketComboBox = new JComboBox<>();
         for (Market m : marketDataService.getAllMarkets()) {
@@ -155,13 +148,6 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         controlPanel.add(new JLabel("Market:"));
         controlPanel.add(marketComboBox);
-        JButton addSiteButton = new JButton("Add Site");
-        addSiteButton.addActionListener(this::handleAddSite);
-        controlPanel.add(addSiteButton);
-
-        JButton addCommodityButton = new JButton("Add Commodity");
-        addCommodityButton.addActionListener(this::handleAddCommodity);
-        controlPanel.add(addCommodityButton);
         JButton clearFilterButton = new JButton("Clear Filter");
         clearFilterButton.addActionListener(event -> {
             if (selectedSiteIds.isEmpty() && siteProgressTable.getSelectedRowCount() == 0) {
@@ -238,42 +224,6 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     }
 
 
-    /**
-     * Handles the action event of adding a new construction site.
-     * Prompts the user to enter a unique site ID.
-     */
-    private void handleAddSite(ActionEvent event) {
-        String siteId = JOptionPane.showInputDialog(
-                this,
-                "Enter a unique Construction Site ID:",
-                "Add Site",
-                JOptionPane.PLAIN_MESSAGE
-        );
-
-        if (siteId == null || siteId.trim().isEmpty()) {
-            return; // User canceled or empty
-        }
-
-        // Check if a site with this ID already exists
-        boolean isSitePresent = siteManager.getSites().values().stream()
-                .anyMatch(s -> s.getSiteId().equals(siteId));
-        if (isSitePresent) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "A site with this ID already exists!",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
-            return;
-        }
-
-        // Create the new site with 0 marketId. The not zero ID means site is imported.
-        ConstructionSiteDTO newSite = new ConstructionSiteDTO(0, siteId, new CopyOnWriteArrayList<>());
-        siteManager.addSite(newSite);
-
-        refreshAll();
-    }
-
     private void populateCommoditiesTableForSite(String siteId) {
         commoditiesTableModel.setRowCount(0);
 
@@ -327,109 +277,6 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     }
 
     /**
-     * Handles the action event of adding a new commodity (material) to an existing site.
-     */
-    private void handleAddCommodity(ActionEvent event) {
-        if (siteManager.getSites().isEmpty()) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "No sites available. Please add a site first.",
-                    "Warning",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-        /*
-         * A sample list of available commodities to choose from when adding materials.
-         */
-        String[] AVAILABLE_COMMODITIES = commodityRegistry.getAllNames();
-        // 1) Select the target site
-        String[] siteIds = siteManager.getSites().values().stream()
-                .map(ConstructionSite::getSiteId)
-                .toArray(String[]::new);
-
-        String selectedSiteId = (String) JOptionPane.showInputDialog(
-                this,
-                "Select a site:",
-                "Add Commodity",
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                siteIds,
-                siteIds[0]
-        );
-
-        if (selectedSiteId == null) {
-            return; // user canceled
-        }
-
-        // 2) Select the commodity from the predefined list
-        String selectedCommodity = (String) JOptionPane.showInputDialog(
-                this,
-                "Select a commodity:",
-                "Add Commodity",
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                AVAILABLE_COMMODITIES,
-                AVAILABLE_COMMODITIES[0]
-        );
-
-        if (selectedCommodity == null) {
-            return; // user canceled
-        }
-
-        // 3) Enter required quantity
-        String quantityStr = JOptionPane.showInputDialog(
-                this,
-                "Enter required quantity:",
-                "Add Commodity",
-                JOptionPane.PLAIN_MESSAGE
-        );
-
-        if (quantityStr == null) {
-            return; // user canceled
-        }
-
-        int requiredQuantity;
-        try {
-            requiredQuantity = Integer.parseInt(quantityStr.trim());
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Invalid quantity!",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
-            return;
-        }
-
-        // Find the selected site with StringID - manually added entities
-        ConstructionSite selectedSite = siteManager.getSites().values().stream()
-                .filter(s -> s.getSiteId().equals(selectedSiteId))
-                .findFirst()
-                .orElse(null);
-
-        if (selectedSite == null) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Site not found!",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
-            return;
-        }
-
-        // Add the new requirement
-        selectedSite.getRequirements().add(
-                MaterialRequirement.builder()
-                        .commodity(Commodity.builder().build()) //TODO: Replace with real choice
-                        .requiredQuantity(requiredQuantity)
-                        .build()
-        );
-
-        refreshAll();
-    }
-
-    /**
      * Refreshes both the "Site Progress Table" and the "Commodities Table."
      */
     private void refreshAll() {
@@ -444,9 +291,6 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         suppressSiteSelectionEvents = true;
         try {
             siteProgressTableModel.setRowCount(0);
-
-            // TODO(UI): Later, hide completed depots here when includeCompleted=false
-            // Definition (same as server): completed if sum(max(required - delivered, 0)) == 0
             LinkedHashSet<String> previousSelection = new LinkedHashSet<>(selectedSiteIds);
             selectedSiteIds.clear();
             List<Integer> modelRowsToSelect = new ArrayList<>();
