@@ -4,6 +4,13 @@ import com.zergatstage.domain.ConstructionSite;
 import com.zergatstage.domain.MaterialRequirement;
 import com.zergatstage.domain.makret.Market;
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
+import com.zergatstage.monitor.routes.service.GreedyRouteOptimizationService;
+import com.zergatstage.monitor.routes.service.RouteOptimizationService;
+import com.zergatstage.monitor.routes.spi.DefaultRouteOptimizerDataProvider;
+import com.zergatstage.monitor.routes.spi.RouteOptimizerDataProvider;
+import com.zergatstage.monitor.routes.ui.RouteOptimizerController;
+import com.zergatstage.monitor.routes.ui.RouteOptimizerDialog;
+import com.zergatstage.monitor.routes.ui.RouteOptimizerModel;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.ConstructionSiteUpdateListener;
 import com.zergatstage.monitor.service.managers.CargoInventoryManager;
@@ -41,6 +48,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private final CargoInventoryManager cargoInventoryManager;
     private final MarketDataUpdateService marketDataService;
     private final JComboBox<MarketComboItem> marketComboBox;
+    private final JButton planRouteButton;
     // Summary fields
     private JPanel summaryPanel;
     private JLabel deliveredLabel;
@@ -90,6 +98,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                     }
                 }
                 refreshCommoditiesTable();
+                updatePlanRouteButtonState();
             }
         });
 
@@ -164,6 +173,10 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             refreshCommoditiesTable();
         });
         controlPanel.add(clearFilterButton);
+        planRouteButton = new JButton("Plan Route...");
+        planRouteButton.setEnabled(false);
+        planRouteButton.addActionListener(e -> openRouteOptimizer());
+        controlPanel.add(planRouteButton);
 
         add(controlPanel, BorderLayout.SOUTH);
 
@@ -425,6 +438,51 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         } else {
             remainingLabel.setForeground(new Color(220, 20, 60)); // Red when incomplete
         }
+    }
+
+    private void updatePlanRouteButtonState() {
+        planRouteButton.setEnabled(selectedSiteIds.size() == 1);
+    }
+
+    private void openRouteOptimizer() {
+        if (selectedSiteIds.size() != 1) {
+            JOptionPane.showMessageDialog(this,
+                    "Select exactly one construction site to plan deliveries.",
+                    "Route Optimizer",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        String siteId = selectedSiteIds.iterator().next();
+        ConstructionSite site = resolveSites(List.of(siteId)).stream().findFirst().orElse(null);
+        if (site == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Unable to load construction site details.",
+                    "Route Optimizer",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try {
+            RouteOptimizerDataProvider dataProvider =
+                    new DefaultRouteOptimizerDataProvider(resolveServerBaseUrl());
+            RouteOptimizationService optimizationService = new GreedyRouteOptimizationService(dataProvider);
+            RouteOptimizerModel model = new RouteOptimizerModel();
+            RouteOptimizerController controller =
+                    new RouteOptimizerController(model, dataProvider, optimizationService);
+            RouteOptimizerDialog dialog =
+                    new RouteOptimizerDialog(SwingUtilities.getWindowAncestor(this), model, controller);
+            dialog.displaySite(site.getMarketId(), DEFAULT_CARGO_CAPACITY, 2);
+            dialog.setVisible(true);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Invalid ED server URL: " + ex.getMessage(),
+                    "Route Optimizer",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String resolveServerBaseUrl() {
+        return System.getProperty("ed.server.baseUrl",
+                System.getenv().getOrDefault("ED_SERVER_BASE_URL", "http://localhost:8080"));
     }
 
     private Collection<ConstructionSite> resolveSites(Collection<String> siteIds) {

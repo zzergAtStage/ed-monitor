@@ -219,24 +219,24 @@ Cover the greedy optimizer with unit tests using in-memory stub data providers t
 Add a dedicated MVC model and controller for the Route Optimizer in the Swing application. This layer coordinates UI state, calls the optimizer service, and exposes data for rendering, without embedding business logic in UI components.
 
 **Acceptance Criteria**:
-- [ ] New class `RouteOptimizerModel` created under a UI/model package, e.g. `com.zergatstage.monitor.routes.ui`.
-  - [ ] Holds:
-    - [ ] Current `ConstructionSiteDto` (or its id).
-    - [ ] Current `RouteOptimizationRequest` parameters (capacity, maxMarketsPerRun, etc.).
-    - [ ] Latest `RoutePlanDto` result.
-  - [ ] Provides getters/setters and listener or event mechanism compatible with existing UI patterns (e.g. `PropertyChangeSupport` or custom listeners).
-- [ ] New class `RouteOptimizerController` created in the same package.
-  - [ ] Depends on:
-    - [ ] `RouteOptimizerDataProvider`
-    - [ ] `RouteOptimizationService`
-    - [ ] `RouteOptimizerModel`
-  - [ ] Responsibilities:
-    - [ ] Load Construction Site and candidate markets from server via data provider.
-    - [ ] Construct and update `RouteOptimizationRequest` based on UI inputs.
-    - [ ] Invoke `RouteOptimizationService.buildRoutePlan(...)` and store the result in the model.
-    - [ ] Handle errors (e.g. show error dialogs via existing UI error reporting pattern, or propagate status).
-- [ ] No route-planning heuristic is implemented in the controller or model (it lives only in the service).
-- [ ] JavaDoc documents responsibilities and collaboration between model and controller.
+- [x] New class `RouteOptimizerModel` created under a UI/model package, e.g. `com.zergatstage.monitor.routes.ui`.
+  - [x] Holds:
+    - [x] Current `ConstructionSiteDto` (or its id).
+    - [x] Current `RouteOptimizationRequest` parameters (capacity, maxMarketsPerRun, etc.).
+    - [x] Latest `RoutePlanDto` result.
+  - [x] Provides getters/setters and listener or event mechanism compatible with existing UI patterns (e.g. `PropertyChangeSupport` or custom listeners).
+- [x] New class `RouteOptimizerController` created in the same package.
+  - [x] Depends on:
+    - [x] `RouteOptimizerDataProvider`
+    - [x] `RouteOptimizationService`
+    - [x] `RouteOptimizerModel`
+  - [x] Responsibilities:
+    - [x] Load Construction Site and candidate markets from server via data provider.
+    - [x] Construct and update `RouteOptimizationRequest` based on UI inputs.
+    - [x] Invoke `RouteOptimizationService.buildRoutePlan(...)` and store the result in the model.
+    - [x] Handle errors (e.g. show error dialogs via existing UI error reporting pattern, or propagate status).
+- [x] No route-planning heuristic is implemented in the controller or model (it lives only in the service).
+- [x] JavaDoc documents responsibilities and collaboration between model and controller.
 
 **Scope**:
 - Files involved:
@@ -262,25 +262,25 @@ Add a dedicated MVC model and controller for the Route Optimizer in the Swing ap
 Create a Swing UI for the Route Optimizer (view) and integrate it with the existing Construction Sites tab – for example, as a “Plan Route…” action/dialog. The UI allows the user to configure parameters and inspect the generated runs.
 
 **Acceptance Criteria**:
-- [ ] New Swing view panel/dialog created, e.g. `RouteOptimizerDialog` or `RouteOptimizerPanel` in `com.zergatstage.monitor.routes.ui`.
-- [ ] UI elements include at least:
-  - [ ] Display of selected Construction Site (name, summary of delivered/remaining tonnage).
-  - [ ] Field (spinner/text) for cargo capacity in tons.
-  - [ ] Field (spinner) for `maxMarketsPerRun` (default 2).
-  - [ ] Table of planned runs:
-    - [ ] Columns like: `Run`, `Route (Markets → Site)`, `Total t`, `Materials summary`.
-  - [ ] Detail view for selected run:
-    - [ ] Table of legs with columns: `Leg`, `Market`, `Material`, `t`.
-  - [ ] A visual indicator (e.g. label or progress bar) for `coverageFraction` (“Plan covers 85% of remaining demand”).
-  - [ ] Buttons: `Recalculate`, `Close` (and optionally `Export` in future).
-- [ ] View is wired to `RouteOptimizerModel` and `RouteOptimizerController` from T-150:
-  - [ ] When user changes capacity or `maxMarketsPerRun`, controller is invoked to recompute plan.
-  - [ ] When a new `RoutePlanDto` is available in the model, UI refreshes tables and summary.
-- [ ] Integration with Construction Sites tab:
-  - [ ] A button or menu item (e.g. “Plan Route…”) is added and enabled when a Construction Site is selected.
-  - [ ] Clicking it opens the Route Optimizer view pre-loaded with that site.
-- [ ] No business logic in Swing components beyond simple formatting.
-- [ ] JavaDoc and/or inline comments describe key UI behaviors.
+- [x] New Swing view panel/dialog created, e.g. `RouteOptimizerDialog` or `RouteOptimizerPanel` in `com.zergatstage.monitor.routes.ui`.
+- [x] UI elements include at least:
+  - [x] Display of selected Construction Site (name, summary of delivered/remaining tonnage).
+  - [x] Field (spinner/text) for cargo capacity in tons.
+  - [x] Field (spinner) for `maxMarketsPerRun` (default 2).
+  - [x] Table of planned runs:
+    - [x] Columns like: `Run`, `Route (Markets → Site)`, `Total t`, `Materials summary`.
+  - [x] Detail view for selected run:
+    - [x] Table of legs with columns: `Leg`, `Market`, `Material`, `t`.
+  - [x] A visual indicator (e.g. label or progress bar) for `coverageFraction` (“Plan covers 85% of remaining demand”).
+  - [x] Buttons: `Recalculate`, `Close` (and optionally `Export` in future).
+- [x] View is wired to `RouteOptimizerModel` and `RouteOptimizerController` from T-150:
+  - [x] When user changes capacity or `maxMarketsPerRun`, controller is invoked to recompute plan.
+  - [x] When a new `RoutePlanDto` is available in the model, UI refreshes tables and summary.
+- [x] Integration with Construction Sites tab:
+  - [x] A button or menu item (e.g. “Plan Route…”) is added and enabled when a Construction Site is selected.
+  - [x] Clicking it opens the Route Optimizer view pre-loaded with that site.
+- [x] No business logic in Swing components beyond simple formatting.
+- [x] JavaDoc and/or inline comments describe key UI behaviors.
 
 **Scope**:
 - Files involved:
@@ -306,19 +306,19 @@ Create a Swing UI for the Route Optimizer (view) and integrate it with the exist
 Define server-side DTOs and REST endpoint signature that mirrors the client-side optimizer DTOs, without implementing server-side optimization logic yet. This makes a future migration of the algorithm to `ed-monitor-server` straightforward.
 
 **Acceptance Criteria**:
-- [ ] New DTOs created in `ed-monitor-server` (package name to match project conventions, e.g. `com.zergatstage.monitor.routes.dto`):
-  - [ ] `RouteOptimizationRequestDto`
-  - [ ] `RoutePlanDto`
-  - [ ] `DeliveryRunDto`
-  - [ ] `RunLegDto`
-  - [ ] `PurchaseDto`
-- [ ] DTOs are structurally aligned with client-side equivalents created in T-100 (names and semantics match as much as possible).
-- [ ] New Spring MVC controller skeleton added, e.g. `RouteOptimizationController` with:
-  - [ ] `@PostMapping("/api/v1/construction-sites/{id}/route-plan")`
-  - [ ] Method signature accepting `@PathVariable Long id` and `@RequestBody RouteOptimizationRequestDto` and returning `RoutePlanDto`.
-  - [ ] JavaDoc clearly states that for now this endpoint is **not implemented** and should return HTTP 501 (Not Implemented) or similar.
-- [ ] No business logic implemented; only contract and placeholder response with clear TODO.
-- [ ] Controller and DTOs are covered by minimal Spring MVC test or at least compile and are picked up by the application context.
+- [x] New DTOs created in `ed-monitor-server` (package name to match project conventions, e.g. `com.zergatstage.monitor.routes.dto`):
+  - [x] `RouteOptimizationRequestDto`
+  - [x] `RoutePlanDto`
+  - [x] `DeliveryRunDto`
+  - [x] `RunLegDto`
+  - [x] `PurchaseDto`
+- [x] DTOs are structurally aligned with client-side equivalents created in T-100 (names and semantics match as much as possible).
+- [x] New Spring MVC controller skeleton added, e.g. `RouteOptimizationController` with:
+  - [x] `@PostMapping("/api/v1/construction-sites/{id}/route-plan")`
+  - [x] Method signature accepting `@PathVariable Long id` and `@RequestBody RouteOptimizationRequestDto` and returning `RoutePlanDto`.
+  - [x] JavaDoc clearly states that for now this endpoint is **not implemented** and should return HTTP 501 (Not Implemented) or similar.
+- [x] No business logic implemented; only contract and placeholder response with clear TODO.
+- [x] Controller and DTOs are covered by minimal Spring MVC test or at least compile and are picked up by the application context.
 
 **Scope**:
 - Files involved:
