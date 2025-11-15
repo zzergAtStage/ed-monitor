@@ -4,3 +4,17 @@ spring:
       ddl-auto: update
   profiles:
     active: dev  # Default profile for this branch
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      status:
+        http-mapping:
+          degraded: 503

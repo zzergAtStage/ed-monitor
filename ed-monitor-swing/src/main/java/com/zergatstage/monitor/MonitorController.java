@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.zergatstage.ClientApp;
+import com.zergatstage.monitor.config.ServerManagementProperties;
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
 import com.zergatstage.monitor.handlers.ExitHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
@@ -18,6 +19,7 @@ import com.zergatstage.monitor.service.MarketDataIOService;
 import com.zergatstage.monitor.service.StatusMonitor;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
+import com.zergatstage.monitor.service.server.ServerLifecycleService;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class MonitorController {
     @Getter
     private final ScheduledExecutorService scheduler;
     private final ExitHandler exitHandler;
+    private final ServerLifecycleService serverLifecycleService;
 
     public MonitorController(JournalLogMonitor logService,
                              StatusMonitor statusService,
@@ -45,6 +48,7 @@ public class MonitorController {
         this.marketDataIOService = new MarketDataIOService(marketConsumer);
         marketDataUpdateService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
         initCommodityRegisrtyOverMarketDataIOService();
+        serverLifecycleService = new ServerLifecycleService(ServerManagementProperties.load());
     }
 
     private void initCommodityRegisrtyOverMarketDataIOService() {
@@ -72,6 +76,7 @@ public class MonitorController {
         logService.stopMonitoring();
         statusService.stop();
         marketDataIOService.stop();
+        serverLifecycleService.close();
     }
 
     public void onExit(ActionEvent e) {
@@ -104,5 +109,9 @@ public class MonitorController {
         scheduler.schedule(() -> marketDataUpdateService.onMarketDataUpdate(event)
                 , 0, TimeUnit.SECONDS);
 
+    }
+
+    public ServerLifecycleService getServerLifecycleService() {
+        return serverLifecycleService;
     }
 }
