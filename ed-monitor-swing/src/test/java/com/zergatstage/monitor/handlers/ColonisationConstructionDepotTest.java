@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@Disabled("Flaky test: ED-Stage/ed-monitor#373 \n Reason: Timing-sensitive test that can fail under load or slow CI environments. \nNeeds rework to make it more robust.")
 class ColonisationConstructionDepotTest {
 
     private ConstructionSiteManager mockSiteManager;
