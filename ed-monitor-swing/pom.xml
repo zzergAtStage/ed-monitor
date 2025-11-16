@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.zergatstage</groupId>
         <artifactId>ed-monitor</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
     </parent>
 
     <groupId>com.zergatstage.ui</groupId>
@@ -54,7 +54,7 @@
     </dependencies>
 <build>
   <!-- 1) Controls the name of your main artifact -->
-  <finalName>ed-monitor-swing-0.1.0</finalName>
+  <finalName>ed-monitor-swing-0.2.0</finalName>
 
   <!-- 2) All your build plugins go in a single <plugins> block -->
   <plugins>
@@ -67,7 +67,7 @@
         <release>21</release>
       </configuration>
     </plugin>
-    <!-- Shade plugin to produce a fat JAR named ed-monitor-swing-0.1.0.jar -->
+    <!-- Shade plugin to produce a fat JAR named ed-monitor-swing-0.2.0.jar -->
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-shade-plugin</artifactId>
