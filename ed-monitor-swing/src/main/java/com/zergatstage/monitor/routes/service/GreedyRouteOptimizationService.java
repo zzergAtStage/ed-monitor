@@ -404,11 +404,11 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         if (commodity == null) {
             return "Unknown Commodity";
         }
-        if (commodity.getName() != null && !commodity.getName().isBlank()) {
-            return commodity.getName();
-        }
         if (commodity.getNameLocalised() != null && !commodity.getNameLocalised().isBlank()) {
             return commodity.getNameLocalised();
+        }
+        if (commodity.getName() != null && !commodity.getName().isBlank()) {
+            return commodity.getName();
         }
         if (commodity.getId() != null) {
             return "Commodity-" + commodity.getId();
