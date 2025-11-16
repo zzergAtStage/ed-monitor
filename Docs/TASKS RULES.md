@@ -29,3 +29,19 @@ Task-driven development registry. Each task includes scope, acceptance criteria,
 **Notes**:
 - Additional context for agent/developer
 ```
+
+- Files: `service/MarketDataUpdateService.java`, possibly UI components that display market data
+- Modules: ed-monitor-swing
+- Complexity: Medium
+
+**Constraints**:
+- No blocking operations on EDT
+- All Swing updates on EDT (SwingUtilities.invokeLater)
+
+**Priority**: P2 (medium)
+
+**Notes**:
+- Related to server integration (ARCHITECTURE.md section 9)
+- Use same ExecutorService pattern as JournalLogMonitor
+
+---

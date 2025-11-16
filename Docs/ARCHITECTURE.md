@@ -14,31 +14,31 @@ Current architecture of ed-monitor as of Nov 2025.
 │  [MonitorView] ← JFrame with tabbed interface               │
 │  ├─ [ConstructionSitePanel] (construction site tracking)    │
 │  ├─ [DroneProvisionerPanel] (asteroid mineral analysis)     │
-│  └─ [Other UI components]                                  │
+│  └─ [Other UI components]                                   │
 └─────────────────────────────────────────────────────────────┘
                             ↑ Observer Pattern
 ┌─────────────────────────────────────────────────────────────┐
-│  TIER 2: Business Logic & Event Processing (Swing Module)  │
-│  [Managers] — extend BaseManager, implement Observer       │
+│  TIER 2: Business Logic & Event Processing (Swing Module)   │
+│  [Managers] — extend BaseManager, implement Observer        │
 │  ├─ DroneManager                                            │
 │  ├─ AsteroidManager                                         │
-│  ├─ CargoInventoryManager                                  │
-│  ├─ ConstructionSiteManager                                │
+│  ├─ CargoInventoryManager                                   │
+│  ├─ ConstructionSiteManager                                 │
 │  └─ (others)                                                │
-│                                                              │
-│  [Event Handlers] — implement LogEventHandler              │
-│  ├─ DroneLaunchEventHandler                                │
-│  ├─ AsteroidProspectEventHandler                           │
-│  ├─ CargoInventoryEventHandler                             │
+│                                                             │
+│  [Event Handlers] — implement LogEventHandler               │
+│  ├─ DroneLaunchEventHandler                                 │
+│  ├─ AsteroidProspectEventHandler                            │
+│  ├─ CargoInventoryEventHandler                              │
 │  └─ (10+ more)                                              │
 └─────────────────────────────────────────────────────────────┘
                             ↑ (event dispatch)
 ┌─────────────────────────────────────────────────────────────┐
-│  TIER 3: Journal Event Source                              │
-│  [JournalLogMonitor] — reads Elite Dangerous journal logs  │
-│  ├─ GenericFileMonitor (file system watching)              │
-│  ├─ AppendFileReadStrategy (only new appended content)     │
-│  └─ → JSONObject per line (event type extracted)           │
+│  TIER 3: Journal Event Source                               │
+│  [JournalLogMonitor] — reads Elite Dangerous journal logs   │
+│  ├─ GenericFileMonitor (file system watching)               │
+│  ├─ AppendFileReadStrategy (only new appended content)      │
+│  └─ → JSONObject per line (event type extracted)            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -88,7 +88,7 @@ DroneProvisionerPanel listener fires → repaint() with new colors
   - Persistence (if any)
 - **Dependencies**: Spring Boot, ed-monitor-core
 - **Does NOT interact** with ed-monitor-swing (separate runtime)
-- **Current Status**: Early stage, not used by desktop client
+- **Current Status**: Early stage, since v. 0.2.0 is used by swind desktop app and can be managed form it.
 
 ### ed-monitor-swing
 - **Maven Module**: `<artifactId>ed-monitor-swing</artifactId>`

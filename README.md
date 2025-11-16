@@ -139,7 +139,7 @@ Run Swing client fat jar:
 ```
 cd ed-monitor-swing
 mvn -q -DskipTests package
-java -Ded.server.baseUrl=http://localhost:8080 -jar target/ed-monitor-swing-0.1.0.jar
+java -Ded.server.baseUrl=http://localhost:8080 -jar target/ed-monitor-swing-0.2.0.jar
 ```
 
 ## Contributing
