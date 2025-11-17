@@ -27,31 +27,37 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Greedy {@link RouteOptimizationService} implementation described in ADR-ROUTE-001.
- * Focuses on a single construction site, prioritizes scarce materials, and greedily fills
- * each run until cargo capacity or candidate stock is exhausted. The heuristic aims to
- * minimize the number of runs while remaining explainable and fast for small data sets.
+ * Improved Greedy {@link RouteOptimizationService} implementation with proper inter-system jump tracking.
+ * 
+ * <p>Key improvements over original:</p>
+ * <ul>
+ *     <li>Tracks system transitions between consecutive legs in a run</li>
+ *     <li>Accumulates jump penalties throughout the route</li>
+ *     <li>Considers both intra-system (no jump) and inter-system (jump required) transitions</li>
+ *     <li>Applies progressive penalties for each additional system jump</li>
+ * </ul>
  *
  * <p>Limitations:</p>
  * <ul>
- *     <li>Leg cost is uniform; distance / time are ignored.</li>
- *     <li>Heuristic is not globally optimal but produces human-like plans.</li>
- *     <li>Relies on offline market data provided via {@link RouteOptimizerDataProvider}.</li>
+ *     <li>Still uses simplified distance model (presence/absence of jump, not actual distance)</li>
+ *     <li>Heuristic is not globally optimal but produces human-like plans</li>
+ *     <li>Relies on offline market data provided via {@link RouteOptimizerDataProvider}</li>
  * </ul>
- *
- * <p>Expected input sizes: tens of markets, up to ~20 materials per site.</p>
  */
 public class GreedyRouteOptimizationService implements RouteOptimizationService {
 
     private static final double EPSILON = 1.0e-6;
     private static final double SCARCITY_WEIGHT_FACTOR = 0.25;
-    private static final double SAME_SYSTEM_MULTIPLIER = 1.2;
-    private static final double DIFFERENT_SYSTEM_MULTIPLIER = 0.7;
-
+    
+    // System preference multipliers
+    private static final double SAME_SYSTEM_BONUS = 1.3;
+    private static final double JUMP_BASE_PENALTY = 0.75;
+    private static final double ADDITIONAL_JUMP_PENALTY = 0.85; // Multiplier for each additional jump
+    
     private final RouteOptimizerDataProvider dataProvider;
 
     /**
-     * Creates the greedy service with the mandatory data provider dependency.
+     * Creates the improved greedy service with the mandatory data provider dependency.
      *
      * @param dataProvider abstraction that supplies construction site and market data
      */
@@ -66,26 +72,18 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             throw new IllegalArgumentException("constructionSiteId must be provided");
         }
         if (request.getCargoCapacityTons() <= 0) {
-            RoutePlanDto emptyPlan = new RoutePlanDto();
-            emptyPlan.setConstructionSiteId(request.getConstructionSiteId());
-            emptyPlan.setCoverageFraction(0);
-            emptyPlan.setRuns(Collections.emptyList());
-            return emptyPlan;
+            return emptyPlan(request.getConstructionSiteId(), 0);
         }
 
         ConstructionSiteDto site = loadConstructionSite(request.getConstructionSiteId());
         if (site == null) {
-            return emptyPlan(request.getConstructionSiteId());
+            return emptyPlan(request.getConstructionSiteId(), 0);
         }
 
         Map<String, MaterialDemand> demands = buildMaterialDemands(site);
         double initialDemand = initialDemand(demands.values());
         if (initialDemand <= EPSILON) {
-            RoutePlanDto completed = new RoutePlanDto();
-            completed.setConstructionSiteId(request.getConstructionSiteId());
-            completed.setCoverageFraction(1.0);
-            completed.setRuns(Collections.emptyList());
-            return completed;
+            return emptyPlan(request.getConstructionSiteId(), 1.0);
         }
 
         List<MarketDto> candidateMarkets = loadCandidateMarkets(request.getConstructionSiteId());
@@ -214,6 +212,16 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         return inventories;
     }
 
+    /**
+     * Builds a single delivery run with proper inter-system jump tracking.
+     * 
+     * @param runIndex the sequential run number
+     * @param inventories available market inventories
+     * @param demands remaining material demands
+     * @param request optimization parameters
+     * @param siteSystemName the construction site's system name
+     * @return computation result with the run and delivered tonnage, or null if no valid run
+     */
     private RunComputationResult buildSingleRun(int runIndex,
                                                 List<MarketInventory> inventories,
                                                 Map<String, MaterialDemand> demands,
@@ -225,8 +233,12 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         List<RunLegDto> legs = new ArrayList<>();
         Map<String, Double> materialsSummary = new HashMap<>();
         double delivered = 0;
+        
+        // Track the current system location and jump count
+        RouteContext context = new RouteContext(siteSystemName);
 
-        MarketInventory primary = selectBestMarket(inventories, demands, capacity, visited, true, siteSystemName);
+        // Select and plan primary market (first leg)
+        MarketInventory primary = selectBestMarket(inventories, demands, capacity, visited, context);
         if (primary == null) {
             return null;
         }
@@ -236,11 +248,13 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             delivered += primaryLeg.loadedTons;
             legs.add(primaryLeg.legDto);
             mergeSummary(materialsSummary, primaryLeg.legDto.getPurchases());
+            context.moveToMarket(primary); // Update current location
         }
         double remainingCapacity = capacity - delivered;
 
+        // Add secondary markets (additional legs)
         while (legs.size() < maxMarkets && remainingCapacity > EPSILON) {
-            MarketInventory secondary = selectBestMarket(inventories, demands, remainingCapacity, visited, false, siteSystemName);
+            MarketInventory secondary = selectBestMarket(inventories, demands, remainingCapacity, visited, context);
             if (secondary == null) {
                 break;
             }
@@ -253,6 +267,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             remainingCapacity -= legPlan.loadedTons;
             legs.add(legPlan.legDto);
             mergeSummary(materialsSummary, legPlan.legDto.getPurchases());
+            context.moveToMarket(secondary); // Update current location
         }
 
         if (legs.isEmpty()) {
@@ -267,25 +282,44 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         return new RunComputationResult(runDto, delivered);
     }
 
+    /**
+     * Selects the best market considering:
+     * 1. Potential cargo load
+     * 2. Scarcity of materials
+     * 3. System jump penalties (accumulated throughout the route)
+     * 
+     * @param inventories available markets
+     * @param demands remaining demands
+     * @param capacityLimit remaining cargo capacity
+     * @param visited already visited markets in this run
+     * @param context current route context with system location and jump count
+     * @return best market to visit next, or null if none suitable
+     */
     private MarketInventory selectBestMarket(List<MarketInventory> inventories,
                                              Map<String, MaterialDemand> demands,
                                              double capacityLimit,
                                              Set<MarketInventory> visited,
-                                             boolean primary,
-                                             String siteSystemName) {
+                                             RouteContext context) {
         double bestScore = 0;
         MarketInventory best = null;
+        
         for (MarketInventory inventory : inventories) {
             if (visited.contains(inventory)) {
                 continue;
             }
+            
             double potentialLoad = computePotentialLoad(inventory, demands, capacityLimit);
             if (potentialLoad <= EPSILON) {
                 continue;
             }
+            
             double scarcityBonus = computeScarcityBonus(inventory, demands);
-            double score = potentialLoad * computeSystemMultiplier(inventory, siteSystemName)
-                + (primary ? SCARCITY_WEIGHT_FACTOR : SCARCITY_WEIGHT_FACTOR / 2.0) * scarcityBonus;
+            double systemMultiplier = computeSystemMultiplier(inventory, context);
+            
+            // Score combines load potential, scarcity, and system jump considerations
+            double score = potentialLoad * systemMultiplier
+                + SCARCITY_WEIGHT_FACTOR * scarcityBonus;
+            
             if (score > bestScore) {
                 bestScore = score;
                 best = inventory;
@@ -367,18 +401,33 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         return bonus;
     }
 
-    private double computeSystemMultiplier(MarketInventory inventory, String siteSystemName) {
-        if (siteSystemName == null) {
-            return 1.0;
-        }
+    /**
+     * Computes the system multiplier based on whether moving to this market requires a jump.
+     * 
+     * Key improvements:
+     * - Checks if the market is in the CURRENT system (not just construction site)
+     * - Applies progressive penalties for accumulated jumps
+     * - Strongly prefers staying in the current system
+     * 
+     * @param inventory the candidate market
+     * @param context current route context with location and jump history
+     * @return multiplier to apply to the market's score
+     */
+    private double computeSystemMultiplier(MarketInventory inventory, RouteContext context) {
         String marketSystem = inventory.market.getSystemName();
-        if (marketSystem == null) {
+        if (marketSystem == null || context.currentSystem == null) {
             return 1.0;
         }
-        if (marketSystem.equalsIgnoreCase(siteSystemName)) {
-            return SAME_SYSTEM_MULTIPLIER;
+        
+        // Check if this market is in the same system as our current location
+        if (marketSystem.equalsIgnoreCase(context.currentSystem)) {
+            return SAME_SYSTEM_BONUS; // Strong bonus for staying in current system
         }
-        return DIFFERENT_SYSTEM_MULTIPLIER;
+        
+        // This market requires a jump to a different system
+        // Apply base penalty, with additional penalty based on accumulated jumps
+        double jumpPenalty = JUMP_BASE_PENALTY * Math.pow(ADDITIONAL_JUMP_PENALTY, context.jumpCount);
+        return jumpPenalty;
     }
 
     private void mergeSummary(Map<String, Double> summary, List<PurchaseDto> purchases) {
@@ -408,10 +457,10 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         return demands.stream().mapToDouble(d -> d.remaining).sum();
     }
 
-    private RoutePlanDto emptyPlan(Long constructionSiteId) {
+    private RoutePlanDto emptyPlan(Long constructionSiteId, double coverage) {
         RoutePlanDto plan = new RoutePlanDto();
         plan.setConstructionSiteId(constructionSiteId);
-        plan.setCoverageFraction(0);
+        plan.setCoverageFraction(coverage);
         plan.setRuns(Collections.emptyList());
         return plan;
     }
@@ -443,6 +492,33 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             return "Commodity-" + commodity.getId();
         }
         return "Commodity";
+    }
+
+    /**
+     * Tracks the current state of the route being built.
+     * Maintains current system location and accumulated jump count.
+     */
+    private static class RouteContext {
+        private String currentSystem;
+        private int jumpCount;
+        
+        RouteContext(String startingSystem) {
+            this.currentSystem = startingSystem;
+            this.jumpCount = 0;
+        }
+        
+        /**
+         * Updates the context when moving to a new market.
+         * Increments jump count if changing systems.
+         */
+        void moveToMarket(MarketInventory market) {
+            String marketSystem = market.market.getSystemName();
+            if (marketSystem != null && currentSystem != null 
+                && !marketSystem.equalsIgnoreCase(currentSystem)) {
+                jumpCount++;
+            }
+            currentSystem = marketSystem;
+        }
     }
 
     private static class MaterialDemand {
