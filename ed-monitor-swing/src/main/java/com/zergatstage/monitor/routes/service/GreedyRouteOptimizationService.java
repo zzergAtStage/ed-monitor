@@ -45,6 +45,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
     private static final double EPSILON = 1.0e-6;
     private static final double SCARCITY_WEIGHT_FACTOR = 0.25;
+    private static final double SAME_SYSTEM_MULTIPLIER = 1.2;
+    private static final double DIFFERENT_SYSTEM_MULTIPLIER = 0.7;
 
     private final RouteOptimizerDataProvider dataProvider;
 
@@ -87,20 +89,18 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         }
 
         List<MarketDto> candidateMarkets = loadCandidateMarkets(request.getConstructionSiteId());
+        String siteSystemName = resolveConstructionSiteSystem(site.getMarketId());
         enrichSellerCounts(demands, candidateMarkets);
         List<MarketInventory> inventories = buildMarketInventories(candidateMarkets, demands.keySet());
 
         List<DeliveryRunDto> runs = new ArrayList<>();
         int runIndex = 1;
-        double deliveredTotal = 0;
-
         while (hasRemainingDemand(demands) && hasUsefulMarkets(inventories, demands)) {
-            RunComputationResult runResult = buildSingleRun(runIndex, inventories, demands, request);
+            RunComputationResult runResult = buildSingleRun(runIndex, inventories, demands, request, siteSystemName);
             if (runResult == null || runResult.deliveredTonnage <= EPSILON) {
                 break;
             }
             runs.add(runResult.runDto);
-            deliveredTotal += runResult.deliveredTonnage;
             runIndex++;
         }
 
@@ -126,6 +126,18 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             return dataProvider.loadCandidateMarkets(constructionSiteId);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load candidate markets for site " + constructionSiteId, e);
+        }
+    }
+
+    private String resolveConstructionSiteSystem(Long marketId) {
+        if (marketId == null) {
+            return null;
+        }
+        try {
+            MarketDto market = dataProvider.loadMarket(marketId);
+            return market != null ? market.getSystemName() : null;
+        } catch (IOException ignored) {
+            return null;
         }
     }
 
@@ -205,7 +217,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
     private RunComputationResult buildSingleRun(int runIndex,
                                                 List<MarketInventory> inventories,
                                                 Map<String, MaterialDemand> demands,
-                                                RouteOptimizationRequest request) {
+                                                RouteOptimizationRequest request,
+                                                String siteSystemName) {
         double capacity = request.getCargoCapacityTons();
         int maxMarkets = Math.max(1, request.getMaxMarketsPerRun());
         Set<MarketInventory> visited = new HashSet<>();
@@ -213,7 +226,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         Map<String, Double> materialsSummary = new HashMap<>();
         double delivered = 0;
 
-        MarketInventory primary = selectBestMarket(inventories, demands, capacity, visited, true);
+        MarketInventory primary = selectBestMarket(inventories, demands, capacity, visited, true, siteSystemName);
         if (primary == null) {
             return null;
         }
@@ -227,7 +240,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         double remainingCapacity = capacity - delivered;
 
         while (legs.size() < maxMarkets && remainingCapacity > EPSILON) {
-            MarketInventory secondary = selectBestMarket(inventories, demands, remainingCapacity, visited, false);
+            MarketInventory secondary = selectBestMarket(inventories, demands, remainingCapacity, visited, false, siteSystemName);
             if (secondary == null) {
                 break;
             }
@@ -258,7 +271,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
                                              Map<String, MaterialDemand> demands,
                                              double capacityLimit,
                                              Set<MarketInventory> visited,
-                                             boolean primary) {
+                                             boolean primary,
+                                             String siteSystemName) {
         double bestScore = 0;
         MarketInventory best = null;
         for (MarketInventory inventory : inventories) {
@@ -270,7 +284,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
                 continue;
             }
             double scarcityBonus = computeScarcityBonus(inventory, demands);
-            double score = potentialLoad + (primary ? SCARCITY_WEIGHT_FACTOR : SCARCITY_WEIGHT_FACTOR / 2.0) * scarcityBonus;
+            double score = potentialLoad * computeSystemMultiplier(inventory, siteSystemName)
+                + (primary ? SCARCITY_WEIGHT_FACTOR : SCARCITY_WEIGHT_FACTOR / 2.0) * scarcityBonus;
             if (score > bestScore) {
                 bestScore = score;
                 best = inventory;
@@ -352,6 +367,20 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         return bonus;
     }
 
+    private double computeSystemMultiplier(MarketInventory inventory, String siteSystemName) {
+        if (siteSystemName == null) {
+            return 1.0;
+        }
+        String marketSystem = inventory.market.getSystemName();
+        if (marketSystem == null) {
+            return 1.0;
+        }
+        if (marketSystem.equalsIgnoreCase(siteSystemName)) {
+            return SAME_SYSTEM_MULTIPLIER;
+        }
+        return DIFFERENT_SYSTEM_MULTIPLIER;
+    }
+
     private void mergeSummary(Map<String, Double> summary, List<PurchaseDto> purchases) {
         for (PurchaseDto purchase : purchases) {
             summary.merge(purchase.getMaterialName(), purchase.getAmountTons(), Double::sum);
@@ -417,7 +446,6 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
     }
 
     private static class MaterialDemand {
-        private final String key;
         private final String displayName;
         private double remaining;
         private double initialRequired;
@@ -425,7 +453,6 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         private double scarcityWeight = 1.0;
 
         MaterialDemand(String key, String displayName) {
-            this.key = key;
             this.displayName = displayName;
         }
 

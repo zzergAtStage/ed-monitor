@@ -335,3 +335,38 @@ Define server-side DTOs and REST endpoint signature that mirrors the client-side
 
 **Notes**:
 - This is a preparatory design step that allows OpenAI Codex or developers to later move the optimizer to the server without breaking the Swing client.
+
+### T-420: Prefer Markets in Same System as Construction Site
+
+**Description**:  
+Adjust the route optimization algorithm so that markets in the **same star system** as the selected Construction Site are preferred over markets in other systems. If a Market is located in a different system, it effectively requires at least one additional jump and should therefore have a higher "cost" / lower score in the heuristic. The UI and interaction model remain unchanged; only the resulting routes (ordering of markets and run composition) may differ.
+
+**Acceptance Criteria**:
+- [x] Route planning logic inspects `Market.systemName` (or equivalent `System_Name` attribute) for each candidate Market.
+- [x] Markets in the **same system** as the Construction Site are favored by the heuristic (e.g., via positive bonus or reduced penalty) compared to markets in other systems, all else being equal.
+- [x] When two markets offer similar material coverage and scarcity contribution, the optimizer chooses the market in the same system as the Construction Site more often than one in a different system.
+- [x] No changes to existing Swing UI classes or user-facing controls (dialogs, buttons, fields).
+- [x] Existing unit tests still pass, plus at least one new test verifies the system-based preference behavior.
+
+**Scope**:
+- Files involved:
+  - `**/routes/alg/MarketScoring.java`
+  - `**/routes/alg/RoutePlannerGreedy.java`
+  - Test files under `src/test/**/routes/alg/*` (new/updated tests)
+- Modules: `ed-monitor-swing`
+- Estimated complexity: Medium
+
+**Constraints & Assumptions**:
+- Construction Site system name is available from the existing DTO used by `RoutePlannerGreedy` (e.g., `site.getSystemName()` or similar). If not, extend only the **internal data flow** between caller and planner; do not add new REST endpoints or UI fields.
+- The cost model remains **conceptually uniform per leg**; system-based preference is implemented purely as a heuristic/scoring adjustment, not as an explicit distance calculation.
+- No changes to REST API contracts with `ed-monitor-server`.
+- No changes to DTO formats serialized over the network (only in-memory usage and scoring).
+
+**Priority**: P1 (high)
+
+**Notes**:
+- Prefer implementing this as a **scoring bonus/penalty** in `MarketScoring`, e.g.:
+  - Same-system market: `score += sameSystemBonus`
+  - Different-system market: `score -= otherSystemPenalty`
+- The exact numeric values of bonuses/penalties should be chosen conservatively to **influence** but not fully override material scarcity and coverage.
+- Keep behavior deterministic and reproducible: same inputs → same plan.
