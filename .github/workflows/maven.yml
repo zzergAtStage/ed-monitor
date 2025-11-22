@@ -1,11 +1,6 @@
 # This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
 name: Java CI with Maven
 
 on:
@@ -26,14 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # ensure tags are available for release builds
+        fetch-depth: 0
 
     - name: Set up JDK ${{ env.JAVA_VERSION }}
       uses: actions/setup-java@v4
@@ -45,7 +40,6 @@ jobs:
     - name: Build and test with Maven
       run: mvn clean verify -B -ntp
 
-    # Upload test reports
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
@@ -54,7 +48,6 @@ jobs:
         path: '**/target/surefire-reports/'
         retention-days: 30
 
-    # Upload build artifacts
     - name: Upload build artifacts
       if: success()
       uses: actions/upload-artifact@v4
@@ -63,12 +56,10 @@ jobs:
         path: '**/target/*.jar'
         retention-days: 7
 
-    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
-      uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
+      uses: advanced-security/maven-dependency-submission-action@v4
       if: always()
 
-  # Create release when tags are pushed to master
   release:
     needs: build
     runs-on: ubuntu-latest
