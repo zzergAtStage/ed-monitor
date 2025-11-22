@@ -13,7 +13,9 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -126,8 +128,57 @@ class GreedyRouteOptimizationServiceTest {
         assertEquals(0.0, plan.getCoverageFraction(), EPS);
     }
 
+    @Test
+    void prefersMarketsInSameSystem() {
+        CommodityDto metals = commodity(51, "Metals");
+
+        ConstructionSiteDto site = siteDto(105L, requirement(51, metals, 60));
+
+        MarketDto localMarket = market(601L, "Local Depot", item(metals, 60));
+        localMarket.setSystemName("Sol");
+
+        MarketDto distantMarket = market(602L, "Distant Depot", item(metals, 60));
+        distantMarket.setSystemName("Achenar");
+
+        MarketDto siteMarket = market(105L, "Construction Hub");
+        siteMarket.setSystemName("Sol");
+
+        GreedyRouteOptimizationService service =
+            serviceWithSiteMarket(site, siteMarket, localMarket, distantMarket);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(105L, 30);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals("Local Depot", plan.getRuns().get(0).getLegs().get(0).getMarketName());
+    }
+
+    @Test
+    void infersConstructionSiteSystemFromDominantMarkets() {
+        CommodityDto metals = commodity(61, "Metals");
+        ConstructionSiteDto site = siteDto(111L, requirement(61, metals, 60));
+
+        MarketDto local = market(701L, "Local Hub", item(metals, 60));
+        local.setSystemName("Colonia");
+
+        MarketDto remote = market(702L, "Remote Hub", item(metals, 5));
+        remote.setSystemName("Beagle Point");
+
+        GreedyRouteOptimizationService service = service(site, local, remote);
+        RoutePlanDto plan = service.buildRoutePlan(new RouteOptimizationRequest(111L, 60));
+
+        assertEquals("Local Hub", plan.getRuns().get(0).getLegs().get(0).getMarketName());
+    }
+
     private GreedyRouteOptimizationService service(ConstructionSiteDto site, MarketDto... markets) {
-        return new GreedyRouteOptimizationService(new FakeDataProvider(site, Arrays.asList(markets)));
+        return new GreedyRouteOptimizationService(
+            new FakeDataProvider(site, Arrays.asList(markets), null));
+    }
+
+    private GreedyRouteOptimizationService serviceWithSiteMarket(ConstructionSiteDto site,
+                                                                 MarketDto siteMarket,
+                                                                 MarketDto... markets) {
+        return new GreedyRouteOptimizationService(
+            new FakeDataProvider(site, Arrays.asList(markets), siteMarket));
     }
 
     private static CommodityDto commodity(long id, String name) {
@@ -163,10 +214,19 @@ class GreedyRouteOptimizationServiceTest {
     private static final class FakeDataProvider implements RouteOptimizerDataProvider {
         private final ConstructionSiteDto site;
         private final List<MarketDto> markets;
+        private final Map<Long, MarketDto> marketsById = new HashMap<>();
 
-        private FakeDataProvider(ConstructionSiteDto site, List<MarketDto> markets) {
+        private FakeDataProvider(ConstructionSiteDto site, List<MarketDto> markets, MarketDto siteMarket) {
             this.site = site;
             this.markets = markets;
+            if (siteMarket != null && siteMarket.getMarketId() != null) {
+                marketsById.put(siteMarket.getMarketId(), siteMarket);
+            }
+            for (MarketDto market : markets) {
+                if (market != null && market.getMarketId() != null) {
+                    marketsById.put(market.getMarketId(), market);
+                }
+            }
         }
 
         @Override
@@ -177,6 +237,11 @@ class GreedyRouteOptimizationServiceTest {
         @Override
         public List<MarketDto> loadCandidateMarkets(long constructionSiteId) throws IOException {
             return markets;
+        }
+
+        @Override
+        public MarketDto loadMarket(long marketId) throws IOException {
+            return marketsById.get(marketId);
         }
     }
 }

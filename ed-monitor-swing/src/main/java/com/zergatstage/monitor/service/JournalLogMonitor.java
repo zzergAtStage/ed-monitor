@@ -122,7 +122,7 @@ public class JournalLogMonitor {
     private void processAppendedLines(String newContent, Map<String, LogEventHandler> handlers) {
         // instead of split() → array, stream each line:
         try (BufferedReader reader = new BufferedReader(new StringReader(newContent))) {
-            log.debug("processAppendedLines: processing new content of length {}", newContent.length());
+            log.trace("processAppendedLines: processing new content of length {}", newContent.length());
             reader.lines().forEach(line ->
                     parsingPool.submit(() -> processLine(handlers, line))
             );
@@ -138,7 +138,7 @@ public class JournalLogMonitor {
             // Dispatch to all handlers that claim they can handle this event
             LogEventHandler logEventHandler = handlers.get(eventType);
             if (logEventHandler != null) {
-                log.debug("Dispatching event '{}' to handler: {}", eventType, logEventHandler.getClass().getName());
+                log.trace("Dispatching event '{}' to handler: {}", eventType, logEventHandler.getClass().getName());
                 dispatcher.dispatch(json, logEventHandler);
             }
 

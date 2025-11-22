@@ -55,3 +55,4 @@ data/marketdb-dev.trace.db
 data/ed-monitor-server.log
 *.log
 **/logs/
+
