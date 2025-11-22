@@ -1,372 +1,86 @@
-
-# TASKS — ED-Monitor Route Optimizer (v1)
-
-Project: **ED-Monitor — Route Optimizer (v1)**  
-Goal: Implement a local greedy optimizer that builds delivery runs for supplying materials from Markets to a single Construction Site, minimizing the number of travels (runs and legs), using existing `ed-monitor-server` API data.
-
----
-
-### T-100: Introduce Route Optimization DTOs (client-side)
+### T-201: Implement Dark/Light Theme System for ed-monitor Swing UI
 
 **Description**:  
-Add DTO classes for route optimization results and requests on the Swing client side. These DTOs will be used by the optimizer service and the UI, and will later match a potential server REST contract.
+Design and implement a dark/light theming system for the existing `ed-monitor` Java Swing desktop application. The UI should use a flat, modern style similar to IntelliJ IDEA’s light and dark themes, with support for Windows 11 system theme detection on startup and an in-app Settings toggle to switch themes at runtime.
 
 **Acceptance Criteria**:
-- [x] New DTOs created in `ed-monitor-swing` under package `com.zergatstage.monitor.routes.dto` (or equivalent routes-related package):
-  - [x] `RouteOptimizationRequest`
-  - [x] `RoutePlanDto`
-  - [x] `DeliveryRunDto`
-  - [x] `RunLegDto`
-  - [x] `PurchaseDto`
-- [x] `RouteOptimizationRequest` contains at least:
-  - [x] `Long constructionSiteId`
-  - [x] `double cargoCapacityTons`
-  - [x] `int maxMarketsPerRun` with default value `2` (e.g. via constructor or builder)
-- [x] `RoutePlanDto` contains at least:
-  - [x] `Long constructionSiteId`
-  - [x] `List<DeliveryRunDto> runs` (initialized to empty list)
-  - [x] `double coverageFraction` (0–1 of remaining demand covered by plan)
-- [x] `DeliveryRunDto` contains at least:
-  - [x] `int runIndex`
-  - [x] `List<RunLegDto> legs`
-  - [x] `double totalTonnage`
-  - [x] `Map<String, Double> materialsSummaryTons` (key = materialName)
-- [x] `RunLegDto` contains at least:
-  - [x] `Long marketId`
-  - [x] `String marketName`
-  - [x] `List<PurchaseDto> purchases`
-- [x] `PurchaseDto` contains at least:
-  - [x] `String materialName`
-  - [x] `double amountTons`
-- [x] All DTOs are simple POJOs (getters/setters, equals/hashCode/toString where useful) with no business logic.
-- [x] All DTO classes and public fields/methods have JavaDoc comments explaining their purpose.
-- [x] DTOs do **not** depend on Swing UI classes.
-
-**Scope**:
-- Files involved: `ed-monitor-swing/src/main/java/com/zergatstage/monitor/routes/dto/*.java`
-- Modules: `ed-monitor-swing`
-- Estimated complexity: **Simple**
-
-**Constraints & Assumptions**:
-- This is a client-side model for now; later it may be mirrored on the server.
-- DTOs are designed to be serializable if needed (e.g. Jackson annotations can be added later).
-
-**Priority**: **P1**
-
-**Notes**:
-- These DTOs are the contract between the greedy optimizer and the UI and will later align with a REST API in `ed-monitor-server`.
-
----
-
-### T-110: Define RouteOptimizationService interface (client-side domain boundary)
-
-**Description**:  
-Introduce a `RouteOptimizationService` interface as the abstraction for building route plans. This service encapsulates the optimization algorithm behind a stable boundary so that v1 can run in the Swing client, while v2+ can be moved to the server without changing the UI.
-
-**Acceptance Criteria**:
-- [x] New interface `RouteOptimizationService` created in `ed-monitor-swing` under a domain/service package, e.g. `com.zergatstage.monitor.routes.service`.
-- [x] Interface contains at least:
-  - [x] `RoutePlanDto buildRoutePlan(RouteOptimizationRequest request);`
-- [x] JavaDoc on the interface explains:
-  - [x] Purpose: build near-optimal delivery routes for a single Construction Site.
-  - [x] Current assumptions: uniform leg cost, single Construction Site, offline accumulated market data.
-- [x] JavaDoc on the method documents:
-  - [x] Input parameters.
-  - [x] Behavior when there are no remaining requirements or no suitable markets (returns empty plan).
-  - [x] That it is *pure* with respect to input data (no side effects).
-- [x] No Swing UI classes are referenced from the interface.
-
-**Scope**:
-- Files involved:  
-  - `ed-monitor-swing/src/main/java/com/zergatstage/monitor/routes/service/RouteOptimizationService.java`
-- Modules: `ed-monitor-swing`
-- Estimated complexity: **Simple**
-
-**Constraints & Assumptions**:
-- For v1 the implementation will live in the Swing client; interface location is chosen to avoid circular dependencies with existing modules.
-
-**Priority**: **P1**
-
-**Notes**:
-- This interface will be implemented by the greedy planner in T-130.
-
----
-
-### T-120: Implement data access facade for optimizer (client-side)
-
-**Description**:  
-Create a small data access facade that hides details of calling `ed-monitor-server` APIs and provides the optimizer with a clean in-memory view of Construction Sites, required materials, and candidate markets with their commodity stocks.
-
-**Acceptance Criteria**:
-- [x] New interface `RouteOptimizerDataProvider` created under e.g. `com.zergatstage.monitor.routes.spi`.
-- [x] Interface provides at least:
-  - [x] Method to load a `ConstructionSiteDto` by `constructionSiteId`.
-  - [x] Method to load a list of candidate markets that sell at least one required material for that construction site, returning market + commodity information.
-- [x] A default implementation is created in `ed-monitor-swing` that uses existing REST client / service classes to call the server.
-- [x] If there is no dedicated “candidate markets” endpoint yet, implementation:
-  - [x] Uses available server data (e.g. all markets + their commodities) and filters client-side.
-  - [x] Has clear TODO comments pointing to a future dedicated endpoint task.
-- [x] All methods have JavaDoc describing their role and assumptions (offline accumulated data, no real-time refresh during optimization run).
-- [x] No optimization logic is implemented inside this facade; it only fetches and adapts data.
+- [ ] The application exposes at least two distinct visual themes at runtime: a light theme and a dark theme, applied consistently across all main windows, dialogs, menus, buttons, tables, trees, and text components.
+- [ ] A centralized theme management layer exists (e.g. a dedicated “theme manager” + simple `AppTheme` representation) that:
+  - Tracks the current theme.
+  - Can initialize the theme during application startup.
+  - Can change the theme at runtime.
+  - Can report the currently active theme to other UI code.
+- [ ] Changing the theme at runtime triggers a full UI refresh on all currently open frames, dialogs, and main panels so that components visually update immediately without requiring an application restart.
+- [ ] On Windows 11:
+  - The application detects the OS theme (dark vs. light) at startup using a suitable mechanism (e.g. registry or system APIs).
+  - If no user preference is stored, the default theme on startup matches the Windows 11 system theme.
+  - If detection fails or the OS is not recognized as Windows 11, the application falls back to the light theme without crashing or logging severe errors.
+- [ ] A Settings menu entry (e.g. under “Settings”, “Preferences”, or similar) provides a user-facing theme toggle or selector that:
+  - Reflects the currently active theme when the menu is opened.
+  - Allows the user to switch between dark and light themes.
+  - Invokes the shared theme manager to perform the switch, and the UI updates immediately.
+- [ ] Theme choice is persisted locally (e.g. via Java preferences or a small config file) so that:
+  - On startup, if a stored user preference exists, it overrides system theme detection.
+  - On startup, if no stored preference exists, the theme is derived from Windows 11 system theme when available; otherwise it defaults to light.
+- [ ] The visual style is flat and modern, broadly aligned with IntelliJ IDEA’s default and Darcula-like look:
+  - Minimal 3D effects and gradients; primarily flat component surfaces.
+  - Consistent background/foreground/selection colors across controls.
+  - Reasonable, consistent typography (font family and sizes) across menus, buttons, and content components.
+  - Harmonized padding and margins for menus, toolbars, dialogs, and form controls.
+- [ ] The code that detects Windows 11 theme is isolated in a dedicated helper (e.g. a Windows-specific theme detector) so that:
+  - It can be disabled or bypassed when running on non-Windows systems.
+  - It fails safely (no crashes) when system APIs/registry keys are not present.
+- [ ] Theme-related logic is not coupled to business logic:
+  - The main theme manager and any OS-specific helpers live in dedicated UI/utility classes.
+  - Business logic classes remain unaware of theme details.
+- [ ] The implementation is reasonably documented with short comments or Javadoc explaining:
+  - Where and how the initial theme is selected.
+  - How to add additional themes in the future (e.g. high-contrast theme).
+  - Any OS-specific assumptions (especially for Windows 11 detection).
 
 **Scope**:
 - Files involved:
-  - `RouteOptimizerDataProvider.java`
-  - `DefaultRouteOptimizerDataProvider.java` (name may vary, but intent must be clear)
-- Modules: `ed-monitor-swing`
-- Estimated complexity: **Medium**
+  - Main Swing application entry point and main window / frame classes (search for the class that creates and shows the primary UI).
+  - Menu bar and Settings/Preferences menu code (search for “Settings”, “Preferences”, or similar).
+  - Any existing Look & Feel or UI utility classes (search for `UIManager`, `LookAndFeel`, or LAF-related helpers).
+  - New theme-management and Windows-theme-detection classes as needed.
+- Modules:
+  - `swing` / desktop client module only (no changes required to server, Spring Boot, JPA, or H2 logic).
+- Estimated complexity: Medium–Complex (cross-cutting UI change with OS-specific behavior and persistence).
 
 **Constraints & Assumptions**:
-- Uses existing DTOs coming from `ed-monitor-server` (`ConstructionSiteDto`, `MarketDto`, etc.).
-- Network errors are handled by propagating a checked/unchecked exception up to the controller (no retries here).
-
-**Priority**: **P1**
-
-**Notes**:
-- This facade decouples the greedy algorithm from HTTP details and will be reused when/if the optimizer is moved server-side.
-
----
-
-### T-130: Implement greedy RouteOptimizationService (single construction site, client-side)
-
-**Description**:  
-Implement a greedy algorithm for route planning for a single Construction Site using the design described in the ADR: prioritize scarce materials, limit max markets per run, and build runs until there is no demand or no stock left.
-
-**Acceptance Criteria**:
-- [x] New class `GreedyRouteOptimizationService` implements `RouteOptimizationService` in `ed-monitor-swing` (e.g. package `com.zergatstage.monitor.routes.service`).
-- [x] Implementation uses `RouteOptimizerDataProvider` to load:
-  - [x] Construction Site requirements.
-  - [x] Candidate markets and their commodity stocks.
-- [x] Algorithm behavior:
-  - [x] Works only for a single `constructionSiteId` from `RouteOptimizationRequest`.
-  - [x] Obeys cargo capacity `C = cargoCapacityTons` and `maxMarketsPerRun` from the request.
-  - [x] Computes remaining requirements `remaining[m]` for all materials with remaining > 0.
-  - [x] Classifies materials by scarcity based on seller count (few sellers = scarce).
-  - [x] Iteratively builds runs while there is remaining demand and markets with stock.
-  - [x] In each run:
-    - [x] Chooses a primary market using a scoring function (coverage + scarcity).
-    - [x] Fills cargo greedily at the primary market, respecting capacity and stock.
-    - [x] Optionally adds secondary markets up to `maxMarketsPerRun` to fill remaining capacity.
-  - [x] Stops when either demand is fully covered, or no more stock is available.
-- [x] Produces a `RoutePlanDto` with:
-  - [x] `constructionSiteId` set.
-  - [x] `runs` containing one `DeliveryRunDto` per run, with ordered `RunLegDto` list ending at the Construction Site.
-  - [x] `coverageFraction` between 0 and 1 representing share of remaining demand covered.
-- [x] JavaDoc on the class and main methods describes:
-  - [x] The high-level greedy strategy.
-  - [x] Known limitations (heuristic, not globally optimal).
-  - [x] Complexity expectations (tens of markets, up to ~20 materials).
-- [x] No Swing UI classes are referenced.
-- [x] No network calls are made directly; all external data is obtained through `RouteOptimizerDataProvider`.
-
-**Scope**:
-- Files involved:  
-  - `GreedyRouteOptimizationService.java`
-- Modules: `ed-monitor-swing`
-- Estimated complexity: **Complex**
-
-**Constraints & Assumptions**:
-- Cost per leg is uniform; distance/time is ignored in v1.
-- Only one Construction Site is supported; multi-site will be handled in later versions.
-
-**Priority**: **P0 (critical)**
-
-**Notes**:
-- Implementation should favor readability and traceability over micro-optimizations.
-
----
-
-### T-140: Add unit tests for GreedyRouteOptimizationService
-
-**Description**:  
-Cover the greedy optimizer with unit tests using in-memory stub data providers to ensure predictable behavior and protect against regressions.
-
-**Acceptance Criteria**:
-- [x] Test class `GreedyRouteOptimizationServiceTest` (or equivalent) created under `src/test/java` in `ed-monitor-swing`.
-- [x] Tests use a fake or stub implementation of `RouteOptimizerDataProvider` with in-memory data (no real HTTP calls).
-- [x] Test cases cover at least:
-  - [x] Single market providing all materials, capacity large enough → single run with one leg + site.
-  - [x] Multiple markets, scarce material available in only one market → optimizer chooses that market as primary in the first run.
-  - [x] Capacity smaller than total remaining demand → multiple runs created.
-  - [x] Market stock exhausted before demand → remaining requirements not fully covered; `coverageFraction < 1.0`.
-  - [x] No candidate markets → plan with `runs.isEmpty()` and `coverageFraction == 0.0`.
-- [x] Assertions verify:
-  - [x] Number of runs.
-  - [x] Sequence of markets in each run.
-  - [x] Total tonnage per run.
-  - [x] Materials distribution matches expectations.
-- [x] Tests are stable (no randomness) and run successfully via Maven (`mvn test`) without external dependencies.
-
-**Scope**:
-- Files involved: `GreedyRouteOptimizationServiceTest.java` (plus any small helper test fixtures).
-- Modules: `ed-monitor-swing`
-- Estimated complexity: **Medium**
-
-**Constraints & Assumptions**:
-- JUnit and existing test stack are reused (no new test framework introduced).
-- No network, database, or file system I/O in tests.
-
-**Priority**: **P1**
-
-**Notes**:
-- These tests describe the intended behavior of the heuristic and serve as executable documentation.
-
----
-
-### T-150: Introduce RouteOptimizerModel and Controller (Swing client)
-
-**Description**:  
-Add a dedicated MVC model and controller for the Route Optimizer in the Swing application. This layer coordinates UI state, calls the optimizer service, and exposes data for rendering, without embedding business logic in UI components.
-
-**Acceptance Criteria**:
-- [x] New class `RouteOptimizerModel` created under a UI/model package, e.g. `com.zergatstage.monitor.routes.ui`.
-  - [x] Holds:
-    - [x] Current `ConstructionSiteDto` (or its id).
-    - [x] Current `RouteOptimizationRequest` parameters (capacity, maxMarketsPerRun, etc.).
-    - [x] Latest `RoutePlanDto` result.
-  - [x] Provides getters/setters and listener or event mechanism compatible with existing UI patterns (e.g. `PropertyChangeSupport` or custom listeners).
-- [x] New class `RouteOptimizerController` created in the same package.
-  - [x] Depends on:
-    - [x] `RouteOptimizerDataProvider`
-    - [x] `RouteOptimizationService`
-    - [x] `RouteOptimizerModel`
-  - [x] Responsibilities:
-    - [x] Load Construction Site and candidate markets from server via data provider.
-    - [x] Construct and update `RouteOptimizationRequest` based on UI inputs.
-    - [x] Invoke `RouteOptimizationService.buildRoutePlan(...)` and store the result in the model.
-    - [x] Handle errors (e.g. show error dialogs via existing UI error reporting pattern, or propagate status).
-- [x] No route-planning heuristic is implemented in the controller or model (it lives only in the service).
-- [x] JavaDoc documents responsibilities and collaboration between model and controller.
-
-**Scope**:
-- Files involved:
-  - `RouteOptimizerModel.java`
-  - `RouteOptimizerController.java`
-- Modules: `ed-monitor-swing`
-- Estimated complexity: **Medium**
-
-**Constraints & Assumptions**:
-- Must follow existing Swing UI architectural style used in ED-Monitor (no new UI framework).
-- Threading must be considered: long-running operations use background threads / workers, not the EDT (details can be filled according to current app conventions).
-
-**Priority**: **P1**
-
-**Notes**:
-- This task prepares the ground for the dedicated Route Optimizer view in T-160.
-
----
-
-### T-160: Implement Route Optimizer Swing UI and integrate with Construction Sites tab
-
-**Description**:  
-Create a Swing UI for the Route Optimizer (view) and integrate it with the existing Construction Sites tab – for example, as a “Plan Route…” action/dialog. The UI allows the user to configure parameters and inspect the generated runs.
-
-**Acceptance Criteria**:
-- [x] New Swing view panel/dialog created, e.g. `RouteOptimizerDialog` or `RouteOptimizerPanel` in `com.zergatstage.monitor.routes.ui`.
-- [x] UI elements include at least:
-  - [x] Display of selected Construction Site (name, summary of delivered/remaining tonnage).
-  - [x] Field (spinner/text) for cargo capacity in tons.
-  - [x] Field (spinner) for `maxMarketsPerRun` (default 2).
-  - [x] Table of planned runs:
-    - [x] Columns like: `Run`, `Route (Markets → Site)`, `Total t`, `Materials summary`.
-  - [x] Detail view for selected run:
-    - [x] Table of legs with columns: `Leg`, `Market`, `Material`, `t`.
-  - [x] A visual indicator (e.g. label or progress bar) for `coverageFraction` (“Plan covers 85% of remaining demand”).
-  - [x] Buttons: `Recalculate`, `Close` (and optionally `Export` in future).
-- [x] View is wired to `RouteOptimizerModel` and `RouteOptimizerController` from T-150:
-  - [x] When user changes capacity or `maxMarketsPerRun`, controller is invoked to recompute plan.
-  - [x] When a new `RoutePlanDto` is available in the model, UI refreshes tables and summary.
-- [x] Integration with Construction Sites tab:
-  - [x] A button or menu item (e.g. “Plan Route…”) is added and enabled when a Construction Site is selected.
-  - [x] Clicking it opens the Route Optimizer view pre-loaded with that site.
-- [x] No business logic in Swing components beyond simple formatting.
-- [x] JavaDoc and/or inline comments describe key UI behaviors.
-
-**Scope**:
-- Files involved:
-  - `RouteOptimizerDialog.java` / `RouteOptimizerPanel.java`
-  - Modifications in existing Construction Sites view/controller to add entry point.
-- Modules: `ed-monitor-swing`
-- Estimated complexity: **Medium**
-
-**Constraints & Assumptions**:
-- Respect existing look & feel and localization strategy (if any).
-- Long-running recalculation must not block the EDT.
-
-**Priority**: **P2**
-
-**Notes**:
-- Further UX improvements (sorting, filtering, export) can be handled in follow-up tasks.
-
----
-
-### T-170: Prepare server-side contract for future route planning endpoint (design-only)
-
-**Description**:  
-Define server-side DTOs and REST endpoint signature that mirrors the client-side optimizer DTOs, without implementing server-side optimization logic yet. This makes a future migration of the algorithm to `ed-monitor-server` straightforward.
-
-**Acceptance Criteria**:
-- [x] New DTOs created in `ed-monitor-server` (package name to match project conventions, e.g. `com.zergatstage.monitor.routes.dto`):
-  - [x] `RouteOptimizationRequestDto`
-  - [x] `RoutePlanDto`
-  - [x] `DeliveryRunDto`
-  - [x] `RunLegDto`
-  - [x] `PurchaseDto`
-- [x] DTOs are structurally aligned with client-side equivalents created in T-100 (names and semantics match as much as possible).
-- [x] New Spring MVC controller skeleton added, e.g. `RouteOptimizationController` with:
-  - [x] `@PostMapping("/api/v1/construction-sites/{id}/route-plan")`
-  - [x] Method signature accepting `@PathVariable Long id` and `@RequestBody RouteOptimizationRequestDto` and returning `RoutePlanDto`.
-  - [x] JavaDoc clearly states that for now this endpoint is **not implemented** and should return HTTP 501 (Not Implemented) or similar.
-- [x] No business logic implemented; only contract and placeholder response with clear TODO.
-- [x] Controller and DTOs are covered by minimal Spring MVC test or at least compile and are picked up by the application context.
-
-**Scope**:
-- Files involved:
-  - `RouteOptimizationController.java`
-  - DTO files under `ed-monitor-server` routes package
-- Modules: `ed-monitor-server`
-- Estimated complexity: **Medium**
-
-**Constraints & Assumptions**:
-- Follows existing `ed-monitor-server` REST conventions (versioning, base path, error handling).
-- Actual optimization will still run client-side until a dedicated task migrates it.
-
-**Priority**: **P3 (low)**
-
-**Notes**:
-- This is a preparatory design step that allows OpenAI Codex or developers to later move the optimizer to the server without breaking the Swing client.
-
-### T-420: Prefer Markets in Same System as Construction Site
-
-**Description**:  
-Adjust the route optimization algorithm so that markets in the **same star system** as the selected Construction Site are preferred over markets in other systems. If a Market is located in a different system, it effectively requires at least one additional jump and should therefore have a higher "cost" / lower score in the heuristic. The UI and interaction model remain unchanged; only the resulting routes (ordering of markets and run composition) may differ.
-
-**Acceptance Criteria**:
-- [x] Route planning logic inspects `Market.systemName` (or equivalent `System_Name` attribute) for each candidate Market.
-- [x] Markets in the **same system** as the Construction Site are favored by the heuristic (e.g., via positive bonus or reduced penalty) compared to markets in other systems, all else being equal.
-- [x] When two markets offer similar material coverage and scarcity contribution, the optimizer chooses the market in the same system as the Construction Site more often than one in a different system.
-- [x] No changes to existing Swing UI classes or user-facing controls (dialogs, buttons, fields).
-- [x] Existing unit tests still pass, plus at least one new test verifies the system-based preference behavior.
-
-**Scope**:
-- Files involved:
-  - `**/routes/alg/MarketScoring.java`
-  - `**/routes/alg/RoutePlannerGreedy.java`
-  - Test files under `src/test/**/routes/alg/*` (new/updated tests)
-- Modules: `ed-monitor-swing`
-- Estimated complexity: Medium
-
-**Constraints & Assumptions**:
-- Construction Site system name is available from the existing DTO used by `RoutePlannerGreedy` (e.g., `site.getSystemName()` or similar). If not, extend only the **internal data flow** between caller and planner; do not add new REST endpoints or UI fields.
-- The cost model remains **conceptually uniform per leg**; system-based preference is implemented purely as a heuristic/scoring adjustment, not as an explicit distance calculation.
-- No changes to REST API contracts with `ed-monitor-server`.
-- No changes to DTO formats serialized over the network (only in-memory usage and scoring).
+- The coding agent can read and modify repository files directly; do not require manual code pasting in the prompt or placeholders.
+- Favor a modern, flat Swing Look & Feel (IntelliJ-like) using:
+  - Either a well-known flat LAF library already present in the project, or
+  - A new dependency chosen to be compatible with Swing and cross-platform. If a new dependency is introduced, keep configuration minimal and document the choice.
+- The solution must remain cross-platform:
+  - Windows 11 theme detection is optional behavior that enhances startup defaults, but the application must still run correctly on non-Windows systems.
+  - Any Windows-specific logic must be guarded by OS checks and fail safely.
+- Do not introduce heavy refactoring of business logic; keep changes localized to UI, configuration, and theming utilities.
+- Maintain existing application behavior and workflows; only visual appearance and theme switching should change.
 
 **Priority**: P1 (high)
 
 **Notes**:
-- Prefer implementing this as a **scoring bonus/penalty** in `MarketScoring`, e.g.:
-  - Same-system market: `score += sameSystemBonus`
-  - Different-system market: `score -= otherSystemPenalty`
-- The exact numeric values of bonuses/penalties should be chosen conservatively to **influence** but not fully override material scarcity and coverage.
-- Keep behavior deterministic and reproducible: same inputs → same plan.
+- **Role & mindset for the coding agent**:
+  - Act as a senior Java desktop engineer experienced with Swing Look & Feel customization and cross-platform UI.
+  - Before making changes, scan the codebase to identify:
+    - The main app entry point (where the initial Look & Feel and main frame are configured).
+    - Existing menu bar / Settings or Preferences implementation.
+    - Any existing UI utility or LAF-related classes that should be extended rather than duplicated.
+  - Implement the theming system in a modular way so that adding future themes (e.g. high-contrast) is straightforward.
+- **Startup behavior (intended)**:
+  1. On application start, load any stored user theme preference.
+  2. If none exists and the OS is Windows 11, derive a default theme from the system’s dark/light setting.
+  3. If detection is unavailable or fails, use the light theme.
+  4. Initialize the global Look & Feel and theme-related UI defaults accordingly, then show the main UI.
+- **Runtime switching behavior (intended)**:
+  - When the user toggles the theme from the Settings menu:
+    - Update the centralized theme manager.
+    - Apply the new theme and refresh all open windows/dialogs.
+    - Persist the new choice so the next startup uses it by default.
+- **IntelliJ-style look reference (conceptual)**:
+  - Flat, clean surfaces with subtle separators.
+  - Clear, readable font and spacing.
+  - High-contrast dark theme with carefully chosen accent and selection colors.
+  - Calm, uncluttered light theme with consistent use of grays and neutral tones.

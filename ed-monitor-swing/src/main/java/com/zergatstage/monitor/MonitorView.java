@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import javax.imageio.ImageIO;
+import javax.swing.ButtonGroup;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -20,28 +21,35 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JTabbedPane;
 import javax.swing.WindowConstants;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 import com.zergatstage.monitor.component.ConstructionSitePanel;
 import com.zergatstage.monitor.component.DictionaryManagerDialog;
 import com.zergatstage.monitor.component.DroneProvisionerPanel;
 import com.zergatstage.monitor.component.ServerManagementMenu;
 import com.zergatstage.monitor.config.UiConstants;
+import com.zergatstage.monitor.theme.AppTheme;
+import com.zergatstage.monitor.theme.ThemeManager;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MonitorView {
     private final MonitorController controller;
+    private final ThemeManager themeManager;
     private final JFrame frame;
     private final DroneProvisionerPanel droneProvisionerPanel;
     private final ConstructionSitePanel constructionSitePanel;
     private float currentOpacity = 0.6f;
     private boolean overlayMode = false;
 
-    public MonitorView(MonitorController controller, Path logDirectory) {
+    public MonitorView(MonitorController controller, Path logDirectory, ThemeManager themeManager) {
         this.controller = controller;
+        this.themeManager = themeManager;
         this.frame = new JFrame(UiConstants.TITLE);
 
         droneProvisionerPanel = new DroneProvisionerPanel();
@@ -148,9 +156,53 @@ public class MonitorView {
 
         menuBar.add(file);
         menuBar.add(tools);
+        menuBar.add(createSettingsMenu());
         menuBar.add(new ServerManagementMenu(frame, controller.getServerLifecycleService()).build());
         menuBar.add(dict);
         return menuBar;
+    }
+
+    private JMenu createSettingsMenu() {
+        JMenu settings = new JMenu(UiConstants.SETTINGS_MENU);
+        JMenu themeMenu = new JMenu(UiConstants.THEME_SUBMENU);
+
+        ButtonGroup group = new ButtonGroup();
+        JRadioButtonMenuItem light = new JRadioButtonMenuItem(UiConstants.THEME_LIGHT);
+        JRadioButtonMenuItem dark = new JRadioButtonMenuItem(UiConstants.THEME_DARK);
+        group.add(light);
+        group.add(dark);
+
+        MenuListener syncSelection = new MenuListener() {
+            @Override
+            public void menuSelected(MenuEvent e) {
+                syncThemeSelection(light, dark);
+            }
+
+            @Override
+            public void menuDeselected(MenuEvent e) { }
+
+            @Override
+            public void menuCanceled(MenuEvent e) { }
+        };
+
+        settings.addMenuListener(syncSelection);
+        themeMenu.addMenuListener(syncSelection);
+
+        light.addActionListener(e -> themeManager.applyTheme(AppTheme.LIGHT));
+        dark.addActionListener(e -> themeManager.applyTheme(AppTheme.DARK));
+
+        themeMenu.add(light);
+        themeMenu.add(dark);
+        settings.add(themeMenu);
+
+        syncThemeSelection(light, dark);
+        return settings;
+    }
+
+    private void syncThemeSelection(JRadioButtonMenuItem light, JRadioButtonMenuItem dark) {
+        AppTheme activeTheme = themeManager.getCurrentTheme();
+        light.setSelected(activeTheme == AppTheme.LIGHT);
+        dark.setSelected(activeTheme == AppTheme.DARK);
     }
 
     private void setOverlayMode(boolean enable) {

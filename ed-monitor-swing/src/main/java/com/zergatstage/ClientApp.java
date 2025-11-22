@@ -8,6 +8,7 @@ import com.zergatstage.monitor.factory.MonitorServiceFactoryImpl;
 import com.zergatstage.monitor.handlers.DefaultExitHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.StatusMonitor;
+import com.zergatstage.monitor.theme.ThemeManager;
 import lombok.extern.log4j.Log4j2;
 import java.nio.file.Path;
 
@@ -25,6 +26,8 @@ public class ClientApp {
 
         log.info("Debug enabled? {}", log.isDebugEnabled());
 
+        ThemeManager themeManager = ThemeManager.getInstance();
+        themeManager.initialize();
 
         // 2) hand it to the factory
         MonitorServiceFactory factory =
@@ -43,6 +46,6 @@ public class ClientApp {
                 new MonitorController(logService, statusService, new DefaultExitHandler());
 
         // 5) build the UI
-        new MonitorView(controller, logDir);
+        new MonitorView(controller, logDir, themeManager);
     }
 }
