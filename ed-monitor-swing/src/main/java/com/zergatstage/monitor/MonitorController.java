@@ -19,6 +19,7 @@ import com.zergatstage.monitor.service.MarketDataIOService;
 import com.zergatstage.monitor.service.StatusMonitor;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
+import com.zergatstage.monitor.service.server.ServerCommandResult;
 import com.zergatstage.monitor.service.server.ServerLifecycleService;
 
 import lombok.Getter;
@@ -76,6 +77,7 @@ public class MonitorController {
         logService.stopMonitoring();
         statusService.stop();
         marketDataIOService.stop();
+        stopBackendOnShutdown();
         serverLifecycleService.close();
     }
 
@@ -104,7 +106,6 @@ public class MonitorController {
     private void onMarketDataUpdate(MarketDataUpdateEvent event) {
         // TODO: replace with factory
 
-
         //marketDataUpdateService.onMarketDataUpdate(event);
         scheduler.schedule(() -> marketDataUpdateService.onMarketDataUpdate(event)
                 , 0, TimeUnit.SECONDS);
@@ -113,5 +114,14 @@ public class MonitorController {
 
     public ServerLifecycleService getServerLifecycleService() {
         return serverLifecycleService;
+    }
+
+    private void stopBackendOnShutdown() {
+        ServerCommandResult result = serverLifecycleService.stopBackendAndWait();
+        if (result.success()) {
+            log.info("Backend stop on shutdown: {}", result.message());
+        } else {
+            log.warn("Backend stop on shutdown: {}", result.message());
+        }
     }
 }

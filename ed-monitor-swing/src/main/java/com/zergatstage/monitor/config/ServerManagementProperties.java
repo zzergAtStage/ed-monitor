@@ -93,6 +93,14 @@ public final class ServerManagementProperties {
         return List.copyOf(command);
     }
 
+    public String javaCommand() {
+        return javaCommand;
+    }
+
+    public List<String> additionalArgs() {
+        return additionalArgs;
+    }
+
     public Optional<Path> workingDirectory() {
         return Optional.ofNullable(workingDirectory);
     }
@@ -119,6 +127,10 @@ public final class ServerManagementProperties {
 
     public boolean hasCommandOverride() {
         return !commandOverride.isEmpty();
+    }
+
+    public List<String> commandOverride() {
+        return commandOverride;
     }
 
     private static Properties readProperties() {
