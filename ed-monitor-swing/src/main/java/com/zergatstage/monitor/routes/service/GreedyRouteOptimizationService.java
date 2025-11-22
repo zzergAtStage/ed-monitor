@@ -11,6 +11,8 @@ import com.zergatstage.monitor.routes.dto.RouteOptimizationRequest;
 import com.zergatstage.monitor.routes.dto.RoutePlanDto;
 import com.zergatstage.monitor.routes.dto.RunLegDto;
 import com.zergatstage.monitor.routes.spi.RouteOptimizerDataProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,12 +21,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Improved Greedy {@link RouteOptimizationService} implementation with proper inter-system jump tracking.
@@ -48,6 +53,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
     private static final double EPSILON = 1.0e-6;
     private static final double SCARCITY_WEIGHT_FACTOR = 0.25;
+
+    private static final Logger log = LoggerFactory.getLogger(GreedyRouteOptimizationService.class);
     
     // System preference multipliers
     private static final double SAME_SYSTEM_BONUS = 1.3;
@@ -68,37 +75,55 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
     @Override
     public RoutePlanDto buildRoutePlan(RouteOptimizationRequest request) {
         Objects.requireNonNull(request, "request");
+        String requestId = UUID.randomUUID().toString();
+        logRouteRequestStart(requestId, request);
         if (request.getConstructionSiteId() == null) {
+            logRouteWarning(requestId, "MISSING_SITE_ID",
+                "constructionSiteId must be provided for optimization");
             throw new IllegalArgumentException("constructionSiteId must be provided");
         }
         if (request.getCargoCapacityTons() <= 0) {
+            logRouteWarning(requestId, "NO_CAPACITY",
+                "cargo capacity is non-positive, returning empty plan");
             return emptyPlan(request.getConstructionSiteId(), 0);
         }
 
         ConstructionSiteDto site = loadConstructionSite(request.getConstructionSiteId());
         if (site == null) {
+            logRouteWarning(requestId, "SITE_NOT_FOUND",
+                "construction site %s not found".formatted(request.getConstructionSiteId()));
             return emptyPlan(request.getConstructionSiteId(), 0);
         }
+        logConstructionSite(requestId, site);
 
         Map<String, MaterialDemand> demands = buildMaterialDemands(site);
+        logDemandSnapshot(requestId, "INITIAL", demands);
         double initialDemand = initialDemand(demands.values());
         if (initialDemand <= EPSILON) {
+            logRouteWarning(requestId, "NO_DEMAND",
+                "construction site %s has no outstanding demand".formatted(request.getConstructionSiteId()));
             return emptyPlan(request.getConstructionSiteId(), 1.0);
         }
 
         List<MarketDto> candidateMarkets = loadCandidateMarkets(request.getConstructionSiteId());
-        String siteSystemName = resolveConstructionSiteSystem(site.getMarketId());
+        String siteSystemName = resolveConstructionSiteSystem(site, candidateMarkets);
         enrichSellerCounts(demands, candidateMarkets);
         List<MarketInventory> inventories = buildMarketInventories(candidateMarkets, demands.keySet());
+        logCandidateMarkets(requestId, candidateMarkets, inventories);
 
         List<DeliveryRunDto> runs = new ArrayList<>();
         int runIndex = 1;
         while (hasRemainingDemand(demands) && hasUsefulMarkets(inventories, demands)) {
-            RunComputationResult runResult = buildSingleRun(runIndex, inventories, demands, request, siteSystemName);
+            logRunStart(requestId, runIndex, demands, request);
+            RunComputationResult runResult = buildSingleRun(requestId, runIndex, inventories, demands, request, siteSystemName);
             if (runResult == null || runResult.deliveredTonnage <= EPSILON) {
+                logRouteWarning(requestId, "RUN_ABORTED",
+                    "run %d delivered no tonnage; stopping optimization".formatted(runIndex));
                 break;
             }
             runs.add(runResult.runDto);
+            logRunCompletion(requestId, runResult);
+            logDemandSnapshot(requestId, "POST_RUN_" + runIndex, demands);
             runIndex++;
         }
 
@@ -108,6 +133,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         double remainingDemand = remainingDemand(demands.values());
         double coverage = initialDemand <= EPSILON ? 1.0 : (initialDemand - remainingDemand) / initialDemand;
         plan.setCoverageFraction(Math.max(0, Math.min(1, coverage)));
+        logRouteSummary(requestId, runs, coverage, demands, inventories, initialDemand);
         return plan;
     }
 
@@ -127,16 +153,43 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         }
     }
 
-    private String resolveConstructionSiteSystem(Long marketId) {
-        if (marketId == null) {
-            return null;
-        }
+    private String resolveConstructionSiteSystem(ConstructionSiteDto site, List<MarketDto> candidateMarkets) {
+        Long marketId = site != null ? site.getMarketId() : null;
         try {
             MarketDto market = dataProvider.loadMarket(marketId);
-            return market != null ? market.getSystemName() : null;
+            if (market != null && market.getSystemName() != null && !market.getSystemName().isBlank()) {
+                return market.getSystemName();
+            }
         } catch (IOException ignored) {
+            // fall through to candidate-derived inference below
+        }
+        return inferSystemFromCandidates(candidateMarkets);
+    }
+
+    private String inferSystemFromCandidates(List<MarketDto> candidateMarkets) {
+        if (candidateMarkets == null || candidateMarkets.isEmpty()) {
             return null;
         }
+        Map<String, SystemStats> stats = new HashMap<>();
+        for (MarketDto market : candidateMarkets) {
+            if (market == null) {
+                continue;
+            }
+            String system = market.getSystemName();
+            if (system == null || system.isBlank()) {
+                continue;
+            }
+            String normalized = system.toLowerCase(Locale.ROOT);
+            stats.computeIfAbsent(normalized, key -> new SystemStats(system))
+                .accumulate(market);
+        }
+        return stats.values().stream()
+            .max(Comparator
+                .comparingInt(SystemStats::getCount)
+                .thenComparingDouble(SystemStats::getTotalStock)
+                .thenComparing(SystemStats::getDisplayName, String.CASE_INSENSITIVE_ORDER))
+            .map(SystemStats::getDisplayName)
+            .orElse(null);
     }
 
     private Map<String, MaterialDemand> buildMaterialDemands(ConstructionSiteDto site) {
@@ -222,7 +275,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
      * @param siteSystemName the construction site's system name
      * @return computation result with the run and delivered tonnage, or null if no valid run
      */
-    private RunComputationResult buildSingleRun(int runIndex,
+    private RunComputationResult buildSingleRun(String requestId,
+                                                int runIndex,
                                                 List<MarketInventory> inventories,
                                                 Map<String, MaterialDemand> demands,
                                                 RouteOptimizationRequest request,
@@ -238,7 +292,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         RouteContext context = new RouteContext(siteSystemName);
 
         // Select and plan primary market (first leg)
-        MarketInventory primary = selectBestMarket(inventories, demands, capacity, visited, context);
+        SelectionTrace primaryTrace = new SelectionTrace(requestId, runIndex, 1, context.getCurrentSystem());
+        MarketInventory primary = selectBestMarket(inventories, demands, capacity, visited, context, primaryTrace);
         if (primary == null) {
             return null;
         }
@@ -248,13 +303,14 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             delivered += primaryLeg.loadedTons;
             legs.add(primaryLeg.legDto);
             mergeSummary(materialsSummary, primaryLeg.legDto.getPurchases());
-            context.moveToMarket(primary); // Update current location
+            logPlannedLeg(primaryTrace, primary, primaryLeg, context.moveToMarket(primary));
         }
         double remainingCapacity = capacity - delivered;
 
         // Add secondary markets (additional legs)
         while (legs.size() < maxMarkets && remainingCapacity > EPSILON) {
-            MarketInventory secondary = selectBestMarket(inventories, demands, remainingCapacity, visited, context);
+            SelectionTrace trace = new SelectionTrace(requestId, runIndex, legs.size() + 1, context.getCurrentSystem());
+            MarketInventory secondary = selectBestMarket(inventories, demands, remainingCapacity, visited, context, trace);
             if (secondary == null) {
                 break;
             }
@@ -267,7 +323,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             remainingCapacity -= legPlan.loadedTons;
             legs.add(legPlan.legDto);
             mergeSummary(materialsSummary, legPlan.legDto.getPurchases());
-            context.moveToMarket(secondary); // Update current location
+            logPlannedLeg(trace, secondary, legPlan, context.moveToMarket(secondary));
         }
 
         if (legs.isEmpty()) {
@@ -299,17 +355,22 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
                                              Map<String, MaterialDemand> demands,
                                              double capacityLimit,
                                              Set<MarketInventory> visited,
-                                             RouteContext context) {
+                                             RouteContext context,
+                                             SelectionTrace trace) {
         double bestScore = 0;
         MarketInventory best = null;
+        int candidateOrder = 0;
         
         for (MarketInventory inventory : inventories) {
+            candidateOrder++;
             if (visited.contains(inventory)) {
+                logCandidateEvaluation(trace, inventory, candidateOrder, 0, 0, 0, 0, false, "ALREADY_VISITED", capacityLimit);
                 continue;
             }
             
             double potentialLoad = computePotentialLoad(inventory, demands, capacityLimit);
             if (potentialLoad <= EPSILON) {
+                logCandidateEvaluation(trace, inventory, candidateOrder, potentialLoad, 0, 0, 0, false, "NO_MATCHING_STOCK", capacityLimit);
                 continue;
             }
             
@@ -319,12 +380,18 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             // Score combines load potential, scarcity, and system jump considerations
             double score = potentialLoad * systemMultiplier
                 + SCARCITY_WEIGHT_FACTOR * scarcityBonus;
+            logCandidateEvaluation(trace, inventory, candidateOrder, potentialLoad, scarcityBonus,
+                systemMultiplier, score, true, "OK", capacityLimit);
             
-            if (score > bestScore) {
+            if (score > bestScore + EPSILON) {
                 bestScore = score;
+                best = inventory;
+            } else if (best != null && Math.abs(score - bestScore) <= EPSILON
+                && isBetterTieCandidate(inventory, best, context)) {
                 best = inventory;
             }
         }
+        logSelectionDecision(trace, best, bestScore, candidateOrder);
         return best;
     }
 
@@ -360,8 +427,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
         RunLegDto leg = new RunLegDto();
         leg.setMarketId(inventory.market.getMarketId());
-        leg.setMarketName(Optional.ofNullable(inventory.market.getStationName())
-            .orElseGet(() -> Optional.ofNullable(inventory.market.getSystemName()).orElse("Unknown Market")));
+        leg.setMarketName(resolveMarketDisplayName(inventory.market));
         leg.setPurchases(purchases);
         return new LegPlan(leg, loaded);
     }
@@ -415,19 +481,65 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
      */
     private double computeSystemMultiplier(MarketInventory inventory, RouteContext context) {
         String marketSystem = inventory.market.getSystemName();
-        if (marketSystem == null || context.currentSystem == null) {
+        if (marketSystem == null) {
             return 1.0;
         }
-        
-        // Check if this market is in the same system as our current location
-        if (marketSystem.equalsIgnoreCase(context.currentSystem)) {
-            return SAME_SYSTEM_BONUS; // Strong bonus for staying in current system
+
+        if (context.currentSystem == null) {
+            if (context.preferredSystem != null
+                && marketSystem.equalsIgnoreCase(context.preferredSystem)) {
+                return SAME_SYSTEM_BONUS;
+            }
+            return 1.0;
         }
-        
+
         // This market requires a jump to a different system
         // Apply base penalty, with additional penalty based on accumulated jumps
         double jumpPenalty = JUMP_BASE_PENALTY * Math.pow(ADDITIONAL_JUMP_PENALTY, context.jumpCount);
         return jumpPenalty;
+    }
+
+    private boolean isBetterTieCandidate(MarketInventory challenger,
+                                         MarketInventory incumbent,
+                                         RouteContext context) {
+        boolean challengerPreferred = isPreferredSystem(challenger, context);
+        boolean incumbentPreferred = isPreferredSystem(incumbent, context);
+        if (challengerPreferred != incumbentPreferred) {
+            return challengerPreferred;
+        }
+
+        boolean challengerHasSystem = hasSystemName(challenger);
+        boolean incumbentHasSystem = hasSystemName(incumbent);
+        if (challengerHasSystem != incumbentHasSystem) {
+            return challengerHasSystem;
+        }
+
+        double challengerStock = challenger.initialTotalStock();
+        double incumbentStock = incumbent.initialTotalStock();
+        if (challengerStock > incumbentStock + EPSILON) {
+            return true;
+        }
+        if (incumbentStock > challengerStock + EPSILON) {
+            return false;
+        }
+
+        String challengerName = resolveMarketDisplayName(challenger.market);
+        String incumbentName = resolveMarketDisplayName(incumbent.market);
+        return challengerName.compareToIgnoreCase(incumbentName) < 0;
+    }
+
+    private boolean isPreferredSystem(MarketInventory inventory, RouteContext context) {
+        if (context == null || context.preferredSystem == null) {
+            return false;
+        }
+        String marketSystem = inventory.market.getSystemName();
+        return marketSystem != null
+            && marketSystem.equalsIgnoreCase(context.preferredSystem);
+    }
+
+    private boolean hasSystemName(MarketInventory inventory) {
+        String system = inventory.market.getSystemName();
+        return system != null && !system.isBlank();
     }
 
     private void mergeSummary(Map<String, Double> summary, List<PurchaseDto> purchases) {
@@ -494,15 +606,332 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         return "Commodity";
     }
 
+    private static String resolveMarketDisplayName(MarketDto market) {
+        if (market == null) {
+            return "Unknown Market";
+        }
+        return Optional.ofNullable(market.getStationName())
+            .orElseGet(() -> Optional.ofNullable(market.getSystemName()).orElse("Unknown Market"));
+    }
+
+    private static String formatDouble(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return String.valueOf(value);
+        }
+        return String.format(Locale.ROOT, "%.3f", value);
+    }
+
+    private static double sumPurchases(List<PurchaseDto> purchases) {
+        if (purchases == null) {
+            return 0;
+        }
+        return purchases.stream()
+            .filter(Objects::nonNull)
+            .mapToDouble(PurchaseDto::getAmountTons)
+            .sum();
+    }
+
+    private void logRouteRequestStart(String requestId, RouteOptimizationRequest request) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug("ROUTE_REQUEST requestId={} phase=START constructionSiteId={} cargoCapacityTons={} maxMarketsPerRun={}",
+            requestId,
+            request.getConstructionSiteId(),
+            formatDouble(request.getCargoCapacityTons()),
+            request.getMaxMarketsPerRun());
+    }
+
+    private void logConstructionSite(String requestId, ConstructionSiteDto site) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug("ROUTE_REQUEST requestId={} phase=SITE siteId={} marketId={} version={} lastUpdated={}",
+            requestId,
+            site.getSiteId(),
+            site.getMarketId(),
+            site.getVersion(),
+            site.getLastUpdated());
+    }
+
+    private void logDemandSnapshot(String requestId, String stage, Map<String, MaterialDemand> demands) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        String snapshot = demands.values().stream()
+            .map(demand -> "{material=%s,remaining=%s,initial=%s,scarcityWeight=%s}"
+                .formatted(demand.displayName, formatDouble(demand.remaining),
+                    formatDouble(demand.initialRequired), formatDouble(demand.scarcityWeight)))
+            .collect(Collectors.joining(",", "[", "]"));
+        log.debug("ROUTE_REQUEST requestId={} phase=DEMAND stage={} snapshot={}",
+            requestId, stage, snapshot);
+    }
+
+    private void logCandidateMarkets(String requestId,
+                                     List<MarketDto> candidateMarkets,
+                                     List<MarketInventory> inventories) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        String marketsSummary = inventories.stream()
+            .map(inventory -> "{marketId=%s,station=%s,system=%s,trackedMaterials=%s,totalStock=%s}"
+                .formatted(inventory.market.getMarketId(),
+                    resolveMarketDisplayName(inventory.market),
+                    inventory.market.getSystemName(),
+                    inventory.stock.keySet(),
+                    formatDouble(inventory.initialTotalStock())))
+            .collect(Collectors.joining(",", "[", "]"));
+        log.debug("ROUTE_REQUEST requestId={} phase=MARKETS candidatesLoaded={} usableMarkets={} markets={}",
+            requestId,
+            candidateMarkets.size(),
+            inventories.size(),
+            marketsSummary);
+    }
+
+    private void logRunStart(String requestId,
+                             int runIndex,
+                             Map<String, MaterialDemand> demands,
+                             RouteOptimizationRequest request) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug("ROUTE_RUN requestId={} phase=START runIndex={} remainingDemandTons={} cargoCapacityTons={} maxMarketsPerRun={}",
+            requestId,
+            runIndex,
+            formatDouble(remainingDemand(demands.values())),
+            formatDouble(request.getCargoCapacityTons()),
+            Math.max(1, request.getMaxMarketsPerRun()));
+    }
+
+    private void logRunCompletion(String requestId, RunComputationResult result) {
+        if (!log.isDebugEnabled() || result == null || result.runDto == null) {
+            return;
+        }
+        DeliveryRunDto run = result.runDto;
+        int legs = run.getLegs() == null ? 0 : run.getLegs().size();
+        log.debug("ROUTE_RUN requestId={} phase=COMPLETE runIndex={} legs={} deliveredTons={} materialsSummary={}",
+            requestId,
+            run.getRunIndex(),
+            legs,
+            formatDouble(result.deliveredTonnage),
+            run.getMaterialsSummaryTons());
+    }
+
+    private void logPlannedLeg(SelectionTrace trace,
+                               MarketInventory market,
+                               LegPlan plan,
+                               RouteContext.SystemTransition transition) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug("ROUTE_LEG requestId={} runIndex={} legIndex={} marketId={} stationName={} loadedTons={} purchases={} fromSystem={} toSystem={} jumped={} totalJumps={}",
+            trace.requestId(),
+            trace.runIndex(),
+            trace.legIndex(),
+            market.market.getMarketId(),
+            resolveMarketDisplayName(market.market),
+            formatDouble(plan.loadedTons),
+            summarizePurchases(plan.legDto.getPurchases()),
+            transition.fromSystem(),
+            transition.toSystem(),
+            transition.jumped(),
+            transition.totalJumps());
+    }
+
+    private void logCandidateEvaluation(SelectionTrace trace,
+                                        MarketInventory inventory,
+                                        int candidateOrder,
+                                        double potentialLoad,
+                                        double scarcityBonus,
+                                        double systemMultiplier,
+                                        double score,
+                                        boolean feasible,
+                                        String reason,
+                                        double capacityLimit) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug("ROUTE_STEP requestId={} runIndex={} legIndex={} candidateOrder={} marketId={} marketSystem={} currentSystem={} potentialLoad={} scarcityBonus={} systemMultiplier={} score={} capacityLimit={} feasible={} reason={}",
+            trace.requestId(),
+            trace.runIndex(),
+            trace.legIndex(),
+            candidateOrder,
+            inventory.market.getMarketId(),
+            inventory.market.getSystemName(),
+            trace.currentSystem(),
+            formatDouble(potentialLoad),
+            formatDouble(scarcityBonus),
+            formatDouble(systemMultiplier),
+            formatDouble(score),
+            formatDouble(capacityLimit),
+            feasible,
+            reason);
+    }
+
+    private void logSelectionDecision(SelectionTrace trace,
+                                      MarketInventory best,
+                                      double bestScore,
+                                      int evaluatedCount) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        if (best == null) {
+            log.debug("ROUTE_DECISION requestId={} runIndex={} legIndex={} status=NO_FEASIBLE_MARKET candidatesEvaluated={}",
+                trace.requestId(),
+                trace.runIndex(),
+                trace.legIndex(),
+                evaluatedCount);
+        } else {
+            log.debug("ROUTE_DECISION requestId={} runIndex={} legIndex={} chosenMarketId={} stationName={} score={} candidatesEvaluated={}",
+                trace.requestId(),
+                trace.runIndex(),
+                trace.legIndex(),
+                best.market.getMarketId(),
+                resolveMarketDisplayName(best.market),
+                formatDouble(bestScore),
+                evaluatedCount);
+        }
+    }
+
+    private void logRouteSummary(String requestId,
+                                 List<DeliveryRunDto> runs,
+                                 double coverage,
+                                 Map<String, MaterialDemand> demands,
+                                 List<MarketInventory> inventories,
+                                 double initialDemand) {
+        double totalDelivered = runs.stream()
+            .filter(Objects::nonNull)
+            .map(DeliveryRunDto::getTotalTonnage)
+            .filter(Objects::nonNull)
+            .mapToDouble(Double::doubleValue)
+            .sum();
+        double remaining = remainingDemand(demands.values());
+        String status;
+        if (runs.isEmpty()) {
+            status = "FAILED";
+        } else if (remaining <= EPSILON) {
+            status = "SUCCESS";
+        } else {
+            status = "PARTIAL";
+        }
+        String unassigned = demands.values().stream()
+            .filter(MaterialDemand::hasRemaining)
+            .map(demand -> "{material=%s,remaining=%s}"
+                .formatted(demand.displayName, formatDouble(demand.remaining)))
+            .collect(Collectors.joining(",", "[", "]"));
+        String stationStats = buildStationStats(runs, inventories);
+        log.debug("ROUTE_SUMMARY requestId={} status={} coverage={} totalDeliveredTons={} initialDemandTons={} remainingDemandTons={} runs={} stationStats={} unassignedDemands={}",
+            requestId,
+            status,
+            formatDouble(coverage),
+            formatDouble(totalDelivered),
+            formatDouble(initialDemand),
+            formatDouble(remaining),
+            runs.size(),
+            stationStats,
+            unassigned);
+        if (remaining > EPSILON) {
+            logRouteWarning(requestId, "UNFULFILLED_DEMAND",
+                "remainingDemandTons=" + formatDouble(remaining));
+        }
+    }
+
+    private String buildStationStats(List<DeliveryRunDto> runs, List<MarketInventory> inventories) {
+        Map<Long, StationSnapshot> snapshot = new LinkedHashMap<>();
+        for (MarketInventory inventory : inventories) {
+            if (inventory.market.getMarketId() == null) {
+                continue;
+            }
+            snapshot.put(inventory.market.getMarketId(),
+                new StationSnapshot(
+                    inventory.market.getMarketId(),
+                    resolveMarketDisplayName(inventory.market),
+                    inventory.market.getSystemName(),
+                    inventory.initialTotalStock(),
+                    inventory.remainingTotalStock()));
+        }
+        for (DeliveryRunDto run : runs) {
+            if (run.getLegs() == null) {
+                continue;
+            }
+            for (RunLegDto leg : run.getLegs()) {
+                Long marketId = leg.getMarketId();
+                double delivered = sumPurchases(leg.getPurchases());
+                StationSnapshot stats = snapshot.computeIfAbsent(marketId,
+                    id -> new StationSnapshot(id, leg.getMarketName(), null, 0, 0));
+                stats.recordVisit(delivered);
+            }
+        }
+        return snapshot.values().stream()
+            .map(StationSnapshot::toLogString)
+            .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private String summarizePurchases(List<PurchaseDto> purchases) {
+        if (purchases == null || purchases.isEmpty()) {
+            return "[]";
+        }
+        return purchases.stream()
+            .map(p -> "{material=%s,tons=%s}"
+                .formatted(p.getMaterialName(), formatDouble(p.getAmountTons())))
+            .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private void logRouteWarning(String requestId, String code, String message) {
+        log.warn("ROUTE_WARNING requestId={} code={} message={}", requestId, code, message);
+    }
+
+    private record SelectionTrace(String requestId, int runIndex, int legIndex, String currentSystem) {}
+
+    private static class StationSnapshot {
+        private final Long marketId;
+        private final String marketName;
+        private final String systemName;
+        private final double initialStock;
+        private final double remainingStock;
+        private double delivered;
+        private int visits;
+
+        StationSnapshot(Long marketId,
+                        String marketName,
+                        String systemName,
+                        double initialStock,
+                        double remainingStock) {
+            this.marketId = marketId;
+            this.marketName = marketName != null ? marketName : "Unknown Market";
+            this.systemName = systemName != null ? systemName : "Unknown System";
+            this.initialStock = initialStock;
+            this.remainingStock = remainingStock;
+        }
+
+        void recordVisit(double deliveredTons) {
+            this.delivered += deliveredTons;
+            this.visits++;
+        }
+
+        String toLogString() {
+            return "{marketId=%s,name=%s,system=%s,initialStock=%s,remainingStock=%s,delivered=%s,visits=%s}"
+                .formatted(marketId,
+                    marketName,
+                    systemName,
+                    formatDouble(initialStock),
+                    formatDouble(remainingStock),
+                    formatDouble(delivered),
+                    visits);
+        }
+    }
+
     /**
      * Tracks the current state of the route being built.
      * Maintains current system location and accumulated jump count.
      */
     private static class RouteContext {
+        private final String preferredSystem;
         private String currentSystem;
         private int jumpCount;
         
         RouteContext(String startingSystem) {
+            this.preferredSystem = startingSystem;
             this.currentSystem = startingSystem;
             this.jumpCount = 0;
         }
@@ -511,14 +940,28 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
          * Updates the context when moving to a new market.
          * Increments jump count if changing systems.
          */
-        void moveToMarket(MarketInventory market) {
+        SystemTransition moveToMarket(MarketInventory market) {
             String marketSystem = market.market.getSystemName();
+            String fromSystem = currentSystem;
+            boolean jumped = false;
             if (marketSystem != null && currentSystem != null 
                 && !marketSystem.equalsIgnoreCase(currentSystem)) {
                 jumpCount++;
+                jumped = true;
             }
             currentSystem = marketSystem;
+            return new SystemTransition(fromSystem, currentSystem, jumped, jumpCount);
         }
+
+        String getCurrentSystem() {
+            return currentSystem;
+        }
+
+        String getPreferredSystem() {
+            return preferredSystem;
+        }
+
+        private record SystemTransition(String fromSystem, String toSystem, boolean jumped, int totalJumps) {}
     }
 
     private static class MaterialDemand {
@@ -547,6 +990,39 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         }
     }
 
+    private static final class SystemStats {
+        private final String displayName;
+        private int count;
+        private double totalStock;
+
+        private SystemStats(String displayName) {
+            this.displayName = displayName;
+        }
+
+        void accumulate(MarketDto market) {
+            count++;
+            if (market.getItems() != null) {
+                for (MarketItemDto item : market.getItems()) {
+                    if (item != null) {
+                        totalStock += item.getStock();
+                    }
+                }
+            }
+        }
+
+        String getDisplayName() {
+            return displayName;
+        }
+
+        int getCount() {
+            return count;
+        }
+
+        double getTotalStock() {
+            return totalStock;
+        }
+    }
+
     private static class MarketInventory {
         private final MarketDto market;
         private final Map<String, MaterialStock> stock = new HashMap<>();
@@ -557,6 +1033,18 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
         void addStock(String key, double quantity) {
             stock.put(key, new MaterialStock(key, quantity));
+        }
+
+        double initialTotalStock() {
+            return stock.values().stream()
+                .mapToDouble(MaterialStock::initialStock)
+                .sum();
+        }
+
+        double remainingTotalStock() {
+            return stock.values().stream()
+                .mapToDouble(materialStock -> materialStock.stock)
+                .sum();
         }
 
         boolean hasStock() {
@@ -591,11 +1079,17 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
     private static class MaterialStock {
         private final String key;
+        private final double initialStock;
         private double stock;
 
         MaterialStock(String key, double stock) {
             this.key = key;
             this.stock = stock;
+            this.initialStock = stock;
+        }
+
+        double initialStock() {
+            return initialStock;
         }
     }
 

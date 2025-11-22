@@ -152,6 +152,23 @@ class GreedyRouteOptimizationServiceTest {
         assertEquals("Local Depot", plan.getRuns().get(0).getLegs().get(0).getMarketName());
     }
 
+    @Test
+    void infersConstructionSiteSystemFromDominantMarkets() {
+        CommodityDto metals = commodity(61, "Metals");
+        ConstructionSiteDto site = siteDto(111L, requirement(61, metals, 60));
+
+        MarketDto local = market(701L, "Local Hub", item(metals, 60));
+        local.setSystemName("Colonia");
+
+        MarketDto remote = market(702L, "Remote Hub", item(metals, 5));
+        remote.setSystemName("Beagle Point");
+
+        GreedyRouteOptimizationService service = service(site, local, remote);
+        RoutePlanDto plan = service.buildRoutePlan(new RouteOptimizationRequest(111L, 60));
+
+        assertEquals("Local Hub", plan.getRuns().get(0).getLegs().get(0).getMarketName());
+    }
+
     private GreedyRouteOptimizationService service(ConstructionSiteDto site, MarketDto... markets) {
         return new GreedyRouteOptimizationService(
             new FakeDataProvider(site, Arrays.asList(markets), null));

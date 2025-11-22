@@ -150,7 +150,7 @@ public class CargoInventoryManager extends BaseManager {
             throw new RuntimeException(e);
         }
         shipVariant.setCargoStateKnown(true); // State is now synchronized
-        log.info("Cargo state synchronized. Current cargo count: {}", shipVariant.getCurrentCargoCount());
+        log.debug("Cargo state synchronized. Current cargo count: {}", shipVariant.getCurrentCargoCount());
         notifyListeners();
     }
 

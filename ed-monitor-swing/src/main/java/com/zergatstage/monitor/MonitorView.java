@@ -10,6 +10,7 @@ import java.awt.IllegalComponentStateException;
 import java.awt.Image;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import javax.imageio.ImageIO;
 import javax.swing.JCheckBoxMenuItem;
@@ -49,14 +50,14 @@ public class MonitorView {
         Image icon = null;
         try {
             icon = ImageIO.read(
-                    getClass().getResourceAsStream("/app-logo.png"));
+                    Objects.requireNonNull(getClass().getResourceAsStream("/app-logo.png")));
             frame.setIconImage(icon);
         } catch (IOException e) {
             log.error("Failed to load application icon", e);
         }
 
         // Ensure the app stays on top when not minimized
-        frame.setAlwaysOnTop(true);
+        frame.setAlwaysOnTop(false);
 
         buildUI();
         controller.startAll();

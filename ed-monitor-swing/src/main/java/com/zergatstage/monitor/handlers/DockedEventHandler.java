@@ -64,6 +64,6 @@ public class DockedEventHandler implements LogEventHandler {
         }
         siteManager.addSite(constructionSite);
 
-        log.info("Construction site {} was updated due event {}", (constructionSite).getSiteId(), getEventType());
+        log.debug("Construction site {} was updated due event {}", (constructionSite).getSiteId(), getEventType());
     }
 }
