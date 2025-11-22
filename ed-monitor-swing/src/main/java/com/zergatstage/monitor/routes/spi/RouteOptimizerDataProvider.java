@@ -32,4 +32,13 @@ public interface RouteOptimizerDataProvider {
      * @throws IOException if data cannot be loaded due to network or serialization errors
      */
     List<MarketDto> loadCandidateMarkets(long constructionSiteId) throws IOException;
+
+    /**
+     * Loads a specific market by identifier to provide auxiliary metadata such as system name.
+     *
+     * @param marketId market identifier
+     * @return market DTO or {@code null} if not found
+     * @throws IOException if data cannot be loaded
+     */
+    MarketDto loadMarket(long marketId) throws IOException;
 }

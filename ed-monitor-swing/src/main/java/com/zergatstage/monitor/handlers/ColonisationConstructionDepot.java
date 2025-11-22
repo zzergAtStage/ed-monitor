@@ -45,11 +45,11 @@ public class ColonisationConstructionDepot implements LogEventHandler {
             long marketId = event.getLong("MarketID");
             long currFingerprint = computeFingerprint(event);
             if (currFingerprint == lastFingerprints.getOrDefault(marketId, -1L)) {
-                log.debug("\tskip line processing due the non-unique fingerprint ");
+                log.trace("\tskip line processing due the non-unique fingerprint ");
                 return;
             }
 
-            log.info("Event: ColonisationConstructionDepot -> MarketId: {}, fingerprint: {}", marketId, currFingerprint);
+            log.debug("Event: ColonisationConstructionDepot -> MarketId: {}, fingerprint: {}", marketId, currFingerprint);
             siteManager.updateSite(marketId, event);
             lastFingerprints.put(marketId, currFingerprint);
         }catch (JSONException e) {

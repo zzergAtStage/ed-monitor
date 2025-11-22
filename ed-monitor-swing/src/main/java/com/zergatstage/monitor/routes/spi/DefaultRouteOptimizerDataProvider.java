@@ -108,6 +108,11 @@ public class DefaultRouteOptimizerDataProvider implements RouteOptimizerDataProv
         return candidates;
     }
 
+    @Override
+    public MarketDto loadMarket(long marketId) throws IOException {
+        return marketDataHttpService.getMarket(marketId);
+    }
+
     private boolean matchesRequiredCommodity(MarketItemDto item,
                                              Set<Long> requiredCommodityIds,
                                              Set<String> requiredCommodityNames) {

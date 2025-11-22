@@ -54,7 +54,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private JLabel deliveredLabel;
     private JLabel remainingLabel;
     private JLabel estimatedRunsLabel;
-    private static final int DEFAULT_CARGO_CAPACITY = 1232;
+    private static final int DEFAULT_CARGO_CAPACITY = 1298;
     private static final String ALL_SITES_LABEL = "All Sites";
     private static final String SELECTED_SITES_LABEL = "Selected Sites";
     private final LinkedHashSet<String> selectedSiteIds = new LinkedHashSet<>();
