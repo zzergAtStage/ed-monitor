@@ -15,6 +15,8 @@ import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.ConstructionSiteUpdateListener;
 import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
+import com.zergatstage.monitor.theme.AppTheme;
+import com.zergatstage.monitor.theme.ThemeManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -47,6 +49,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private final ConstructionSiteManager siteManager;
     private final CargoInventoryManager cargoInventoryManager;
     private final MarketDataUpdateService marketDataService;
+    private final ThemeManager themeManager = ThemeManager.getInstance();
     private final JComboBox<MarketComboItem> marketComboBox;
     private final JButton planRouteButton;
     // Summary fields
@@ -54,6 +57,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private JLabel deliveredLabel;
     private JLabel remainingLabel;
     private JLabel estimatedRunsLabel;
+    private JLabel capacityLabel;
     private static final int DEFAULT_CARGO_CAPACITY = 1298;
     private static final String ALL_SITES_LABEL = "All Sites";
     private static final String SELECTED_SITES_LABEL = "Selected Sites";
@@ -187,10 +191,15 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
     }
 
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        applySummaryThemeColors();
+    }
+
     private JPanel createSummaryPanel() {
         summaryPanel = new JPanel(new GridBagLayout());
         summaryPanel.setBorder(BorderFactory.createTitledBorder("Delivery Summary"));
-        summaryPanel.setBackground(new Color(240, 248, 255)); // Light blue background
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
@@ -203,7 +212,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         gbc.gridx = 1;
         deliveredLabel = new JLabel("0 t");
         deliveredLabel.setFont(deliveredLabel.getFont().deriveFont(Font.BOLD, 14f));
-        deliveredLabel.setForeground(new Color(34, 139, 34)); // Forest green
+        deliveredLabel.setForeground(deliveredColor());
         summaryPanel.add(deliveredLabel, gbc);
 
         // Remaining commodities section
@@ -213,7 +222,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         gbc.gridx = 3;
         remainingLabel = new JLabel("0 t");
         remainingLabel.setFont(remainingLabel.getFont().deriveFont(Font.BOLD, 14f));
-        remainingLabel.setForeground(new Color(220, 20, 60)); // Crimson
+        remainingLabel.setForeground(remainingAlertColor());
         summaryPanel.add(remainingLabel, gbc);
 
         // Estimated runs section
@@ -223,16 +232,17 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         gbc.gridx = 5;
         estimatedRunsLabel = new JLabel("0");
         estimatedRunsLabel.setFont(estimatedRunsLabel.getFont().deriveFont(Font.BOLD, 14f));
-        estimatedRunsLabel.setForeground(new Color(30, 144, 255)); // Dodger blue
+        estimatedRunsLabel.setForeground(estimatedRunsColor());
         summaryPanel.add(estimatedRunsLabel, gbc);
 
         // Add cargo capacity info
         gbc.gridx = 6; gbc.gridy = 0;
-        JLabel capacityLabel = new JLabel("(Capacity: " + DEFAULT_CARGO_CAPACITY + "t)");
+        capacityLabel = new JLabel("(Capacity: " + DEFAULT_CARGO_CAPACITY + "t)");
         capacityLabel.setFont(capacityLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        capacityLabel.setForeground(Color.GRAY);
+        capacityLabel.setForeground(capacityLabelColor());
         summaryPanel.add(capacityLabel, gbc);
 
+        applySummaryThemeColors();
         return summaryPanel;
     }
 
@@ -380,7 +390,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 // convert to model row in case of sorting
                 int modelRow = safeConvertViewRowToModel(table, row);
                 if (modelRow < 0) {
-                    setBackground(Color.WHITE);
+                    setBackground(resolveBaseBackground(table, isSelected));
                     return this;
                 }
 
@@ -397,15 +407,31 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 }
 
                 if (remaining != null && remaining != 0 && stock > 0) {
-                    setBackground(new Color(144, 238, 144)); // light green
+                    setBackground(resolveHighlightColor());
                 } else {
-                    setBackground(Color.WHITE);
+                    setBackground(resolveBaseBackground(table, isSelected));
                 }
             } else {
-                setBackground(Color.WHITE);
+                setBackground(resolveBaseBackground(table, isSelected));
             }
 
             return this;
+        }
+
+        private Color resolveHighlightColor() {
+            if (themeManager.getCurrentTheme() == AppTheme.DARK) {
+                // Elite Dangerous-inspired muted cargo green for dark mode
+                return new Color(70, 122, 88);
+            }
+            return new Color(144, 238, 144); // light theme default
+        }
+
+        private Color resolveBaseBackground(JTable table, boolean isSelected) {
+            if (isSelected) {
+                return table.getSelectionBackground();
+            }
+            Color tableBg = table.getBackground();
+            return tableBg != null ? tableBg : UIManager.getColor("Table.background");
         }
     }
     private void updateSummaryPanel() {
@@ -431,12 +457,13 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         deliveredLabel.setText(String.format("%,d t", totalDelivered));
         remainingLabel.setText(String.format("%,d t", totalRemaining));
         estimatedRunsLabel.setText(String.valueOf(estimatedRuns));
+        applySummaryThemeColors();
 
         // Update colors based on progress
         if (totalRemaining == 0 && totalDelivered > 0) {
-            remainingLabel.setForeground(new Color(34, 139, 34)); // Green when complete
+            remainingLabel.setForeground(deliveredColor()); // Green-ish when complete
         } else {
-            remainingLabel.setForeground(new Color(220, 20, 60)); // Red when incomplete
+            remainingLabel.setForeground(remainingAlertColor());
         }
     }
 
@@ -515,6 +542,52 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         } catch (IndexOutOfBoundsException ex) {
             return -1;
         }
+    }
+
+    private void applySummaryThemeColors() {
+        if (summaryPanel == null) {
+            return;
+        }
+        summaryPanel.setBackground(summaryBackground());
+        if (deliveredLabel != null) deliveredLabel.setForeground(deliveredColor());
+        if (estimatedRunsLabel != null) estimatedRunsLabel.setForeground(estimatedRunsColor());
+        if (remainingLabel != null) remainingLabel.setForeground(remainingAlertColor());
+        if (capacityLabel != null) capacityLabel.setForeground(capacityLabelColor());
+    }
+
+    private Color summaryBackground() {
+        if (themeManager.getCurrentTheme() == AppTheme.DARK) {
+            return new Color(38, 44, 50);
+        }
+        return new Color(240, 248, 255); // light blue
+    }
+
+    private Color deliveredColor() {
+        if (themeManager.getCurrentTheme() == AppTheme.DARK) {
+            return new Color(136, 200, 140);
+        }
+        return new Color(34, 139, 34); // Forest green
+    }
+
+    private Color remainingAlertColor() {
+        if (themeManager.getCurrentTheme() == AppTheme.DARK) {
+            return new Color(219, 98, 84);
+        }
+        return new Color(220, 20, 60); // Crimson
+    }
+
+    private Color estimatedRunsColor() {
+        if (themeManager.getCurrentTheme() == AppTheme.DARK) {
+            return new Color(105, 176, 230);
+        }
+        return new Color(30, 144, 255); // Dodger blue
+    }
+
+    private Color capacityLabelColor() {
+        if (themeManager.getCurrentTheme() == AppTheme.DARK) {
+            return new Color(170, 170, 170);
+        }
+        return Color.GRAY;
     }
 
     private static class CommodityAggregate {

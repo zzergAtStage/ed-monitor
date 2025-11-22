@@ -235,7 +235,6 @@ public class RouteOptimizerPanel extends JPanel {
         requirementSummaryLabel.setText(
             String.format(Locale.ROOT, "Delivered: %,d t   Remaining: %,d t", delivered, remaining));
         statusLabel.setText("Site data loaded. Press Recalculate to build plan.");
-        controller.buildRoutePlan();
     }
 
     private void updateCandidateMarketsSummary(List<MarketDto> markets) {

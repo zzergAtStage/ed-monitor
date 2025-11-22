@@ -23,6 +23,7 @@ public class RouteOptimizerDialog extends JDialog {
         setContentPane(panel);
         pack();
         setLocationRelativeTo(owner);
+        com.zergatstage.monitor.util.KeyBindingUtil.installEscapeToClose(this);
     }
 
     public void displaySite(long constructionSiteId, double defaultCapacity, int defaultMaxMarkets) {

@@ -30,8 +30,11 @@ public class ProgressBarCellRenderer extends JProgressBar implements TableCellRe
         // Optionally change color if selected
         if (isSelected) {
             setBackground(table.getSelectionBackground());
+            setForeground(table.getSelectionForeground());
         } else {
-            setBackground(Color.LIGHT_GRAY);
+            Color background = table.getBackground();
+            setBackground(background != null ? background : getBackground());
+            setForeground(table.getForeground());
         }
         return this;
     }
