@@ -29,6 +29,7 @@ public class DictionaryManagerDialog extends JDialog {
         setSize(700, 500);
         setLocationRelativeTo(parent);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        com.zergatstage.monitor.util.KeyBindingUtil.installEscapeToClose(this);
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         // Left panel (category list)

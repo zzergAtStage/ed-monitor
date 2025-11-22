@@ -34,6 +34,7 @@ import com.zergatstage.monitor.component.ServerManagementMenu;
 import com.zergatstage.monitor.config.UiConstants;
 import com.zergatstage.monitor.theme.AppTheme;
 import com.zergatstage.monitor.theme.ThemeManager;
+import com.zergatstage.monitor.util.KeyBindingUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +67,7 @@ public class MonitorView {
 
         // Ensure the app stays on top when not minimized
         frame.setAlwaysOnTop(false);
+        KeyBindingUtil.installDoubleEscapeToMinimize(frame);
 
         buildUI();
         controller.startAll();

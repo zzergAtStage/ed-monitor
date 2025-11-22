@@ -54,6 +54,7 @@ public class StepWizardDialog extends JDialog {
         this.pack();
         this.setLocationRelativeTo(null);
         this.setResizable(false);
+        com.zergatstage.monitor.util.KeyBindingUtil.installEscapeToClose(this);
     }
 
     private void navigateStep(int delta) {
