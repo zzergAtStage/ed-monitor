@@ -1,35 +1,46 @@
-# ed-monitor: Advanced Desktop Application for File Monitoring and User Notifications
+# ed-monitor: Advanced Desktop Application for File Monitoring, Route Planning, and User Notifications
 [![Java CI with Maven](https://github.com/zzergAtStage/ed-monitor/actions/workflows/maven.yml/badge.svg)](https://github.com/zzergAtStage/ed-monitor/actions/workflows/maven.yml)
 ![img.png](Docs/Cobra.png)
 
 # Overview
 
-`ed-monitor` is a sophisticated desktop/server/api application developed in Java that has evolved
-from a simple Swing-based interface to a comprehensive solution incorporating 
-file monitoring, user notifications, and persistent market data management. 
-This project reflects the progressive enhancement of Java application and its capabilities, 
-integrating popular frameworks and adhering to established architectural patterns
-to ensure resilience and scalability.
+`ed-monitor` is a multi-module Java desktop + server application that has grown from a Swing log monitor
+into a full toolkit for Elite Dangerous commanders. It blends file monitoring, user notifications,
+persistent market data, and an integrated route optimizer with modern dark/light theming and
+cross-platform UX polish.
 
 # Features
 
-* File Monitoring: Utilizes Java NIO's WatchService API to efficiently monitor directory and file changes, 
-including creation, modification, and deletion events. This allows for real-time tracking of log-files activities.
+* File Monitoring: Utilizes Java NIO's WatchService API to efficiently monitor directory and file changes,
+  including creation, modification, and deletion events. This allows for real-time tracking of log-file activities.
 
 * User Notifications: Implements a robust notification system that alerts users to specific events or
-changes within the application. This feature enhances user engagement and responsiveness to critical updates.
+  changes within the application. This feature enhances user engagement and responsiveness to critical updates.
 
-* Persistent Market Data Management: Incorporates mechanisms for the persistent storage and retrieval 
-of market data, ensuring data integrity and availability across sessions. This is particularly beneficial 
-for applications requiring reliable data persistence.
+* Persistent Market Data Management: Incorporates mechanisms for the persistent storage and retrieval
+  of market data, ensuring data integrity and availability across sessions. This is particularly beneficial
+  for applications requiring reliable data persistence.
 
-* Modular Architecture: Designed with a modular approach, facilitating maintainability and extensibility. 
-This architecture supports the seamless integration of additional features and components as the application evolves.
-  ### Screenshoots
-![img.png](Docs/ConstructionSiteView-0.1.0.png)
-![img.png](Docs/ConstructionSiteView-0.1.1.png)
-![img.png](Docs/Dictionary-commodity-0.1.0.png)
-![img.png](Docs/Tracking_cargo-0.1.0.png)
+* Route Optimizer: Plan multi-market delivery runs per construction site with capacity + max-market constraints,
+  optimized legs, and candidate market filtering tied to required commodities.
+* Modern Theming: FlatLaf-based dark/light themes with Windows 11 detection, runtime switching from Settings,
+  and safe fallback when OS detection is unavailable. Immediate UI refresh across open windows.
+* UX Shortcuts: Double-press `Esc` to minimize the main window; single `Esc` closes modals consistently.
+* Modular Architecture: Designed with a modular approach, facilitating maintainability and extensibility.
+
+### Screenshots (0.3.0)
+![Construction Site View - Dark](Docs/ConstructionSiteView-0.3.0.png)
+![Construction Site View - Light](Docs/ConstructionSiteViewLight-0.3.0.png)
+![Route Optimizer](Docs/RouteOptimizerView-0.3.0.png)
+![Theme Toggle](Docs/AppSwithDark-LightTheme-0.3.0.png)
+![Overlay Mode](Docs/AppOverlayMode-0.3.0.png)
+![Server Management](Docs/AppServerManagementBeta-0.3.0.png)
+
+### Route Optimizer at a Glance
+- Load construction site context and candidate markets automatically.
+- Tune cargo capacity and max markets per run; rerun with a click.
+- View per-run leg breakdowns and material tonnage coverage.
+- Built-in error surfacing and safer startup so the first plan is ready without manual retries.
 ## Version updates
 * **0.1.0**:
   - Reworked core systems, decoupled `ed-monitor-swing` from Spring, introduced 
@@ -41,6 +52,12 @@ This architecture supports the seamless integration of additional features and c
 * **0.1.1**:
    - Added asteroid provisor: Track most valuable metals for mining
     - Displays metal proportions with color-coded highlighting (orange, violet, gray)
+* **0.3.0 (current)**:
+  - Added FlatLaf dark/light themes with Windows 11 startup detection, Settings toggle, preference persistence, and full UI refresh.
+  - Elite-inspired highlighting for construction materials and delivery summaries in dark mode.
+  - Global keybindings: double `Esc` to minimize main window; single `Esc` closes dialogs.
+  - Route optimizer polish: ensures site context is set before planning to avoid false error popups; improved default run kick-off.
+  - Updated shaded artifacts and server launcher paths to `0.3.0-SNAPSHOT`.
     
 ## To run ed-monitor on your local machine, follow these steps:
 
@@ -71,7 +88,7 @@ mvn clean test -Ptest
 
 ## Prerequisites
 
-* Java Development Kit (JDK): Ensure JDK 17 (22 for latest releases) or higher is installed on your system.
+* Java Development Kit (JDK): Ensure JDK 21 or higher is installed on your system.
 
 * Build Tool: Maven is required for building the project.
 ```bash
@@ -82,7 +99,8 @@ mvn spring-boot:run # for server mode
 # Usage
 
 Upon launching ed-monitor, users can configure monitoring parameters, set up notification preferences, 
-and manage market data through an intuitive graphical user interface.
+and manage market data through an intuitive graphical user interface. Switch between dark/light themes from
+Settings → Theme, double-press `Esc` to minimize the main window, and press `Esc` once to close dialogs.
 
 ## Market Data API (Server)
 
@@ -139,7 +157,7 @@ Run Swing client fat jar:
 ```
 cd ed-monitor-swing
 mvn -q -DskipTests package
-java -Ded.server.baseUrl=http://localhost:8080 -jar target/ed-monitor-swing-0.2.0.jar
+java -Ded.server.baseUrl=http://localhost:8080 -jar target/ed-monitor-swing-0.3.0.jar
 ```
 
 ## Contributing

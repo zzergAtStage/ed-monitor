@@ -84,9 +84,11 @@ public class RouteOptimizerController {
                 }
                 List<MarketDto> markets = dataProvider.loadCandidateMarkets(constructionSiteId);
                 SwingUtilities.invokeLater(() -> {
+                    // Ensure the optimization request knows which site we are working with before UI listeners fire
+                    model.updateRouteOptimizationRequest(request -> request.setConstructionSiteId(site.getMarketId()));
                     model.setConstructionSite(site);
                     model.setCandidateMarkets(markets);
-                    model.updateRouteOptimizationRequest(request -> request.setConstructionSiteId(site.getMarketId()));
+                    buildRoutePlan();
                 });
             } catch (IOException | IllegalStateException e) {
                 handleError(e);
