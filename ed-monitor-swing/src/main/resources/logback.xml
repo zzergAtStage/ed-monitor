@@ -8,6 +8,14 @@
         </encoder>
     </appender>
 
+    <appender name="APP_FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${LOG_DIR}/ed-monitor-app.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>[%d{HH:mm:ss.SSS}] [%-5level] [%thread] %logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <appender name="ROUTE_FILE" class="ch.qos.logback.core.FileAppender">
         <file>${LOG_DIR}/com.zergatstage.monitor.routes.service.log</file>
         <append>true</append>
@@ -16,12 +24,15 @@
         </encoder>
     </appender>
 
-    <!-- set root to DEBUG -->
+    <!-- Overridable at launch via -Ded.route.logLevel=DEBUG (see ED-monitor.vbs) -->
+    <property name="ROUTE_LOG_LEVEL" value="${ed.route.logLevel:-INFO}"/>
+
     <root level="INFO">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="APP_FILE" />
     </root>
     <logger name="com.zergatstage.monitor.routes.service.GreedyRouteOptimizationService"
-        level="INFO">
+        level="${ROUTE_LOG_LEVEL}">
         <appender-ref ref="ROUTE_FILE"/>
         <appender-ref ref="STDOUT"/>
     </logger>

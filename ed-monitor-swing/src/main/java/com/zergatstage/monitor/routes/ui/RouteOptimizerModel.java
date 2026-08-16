@@ -159,10 +159,12 @@ public class RouteOptimizerModel {
         if (source == null) {
             return new RouteOptimizationRequest();
         }
-        return new RouteOptimizationRequest(
+        RouteOptimizationRequest copy = new RouteOptimizationRequest(
             source.getConstructionSiteId(),
             source.getCargoCapacityTons(),
             source.getMaxMarketsPerRun()
         );
+        copy.setOnboardCommodities(source.getOnboardCommodities());
+        return copy;
     }
 }

@@ -110,6 +110,16 @@ public class RouteOptimizerController {
     }
 
     /**
+     * Records commodities already sitting in the ship's cargo hold so the optimizer can
+     * credit them toward outstanding demand instead of planning to purchase them again.
+     *
+     * @param onboardCommodities commodity id -> quantity in tons currently carried
+     */
+    public void setOnboardCommodities(java.util.Map<Long, Integer> onboardCommodities) {
+        model.updateRouteOptimizationRequest(request -> request.setOnboardCommodities(onboardCommodities));
+    }
+
+    /**
      * Triggers the greedy optimizer using the current model state. Work is executed off
      * the EDT and the resulting plan is stored back on success.
      */

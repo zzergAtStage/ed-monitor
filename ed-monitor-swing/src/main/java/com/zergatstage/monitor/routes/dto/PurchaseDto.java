@@ -9,6 +9,7 @@ public class PurchaseDto {
 
     private String materialName;
     private double amountTons;
+    private String category;
 
     /**
      * Creates an empty purchase entry.
@@ -25,6 +26,20 @@ public class PurchaseDto {
     public PurchaseDto(String materialName, double amountTons) {
         this.materialName = materialName;
         this.amountTons = amountTons;
+    }
+
+    /**
+     * Creates a fully populated purchase entry including the commodity's market category,
+     * used to sort/group purchases in the UI the same way the in-game commodity market does.
+     *
+     * @param materialName name of the purchased material
+     * @param amountTons   amount of the material in tons
+     * @param category     commodity market category (e.g. "Chemicals", "Metals")
+     */
+    public PurchaseDto(String materialName, double amountTons, String category) {
+        this.materialName = materialName;
+        this.amountTons = amountTons;
+        this.category = category;
     }
 
     /**
@@ -53,6 +68,20 @@ public class PurchaseDto {
      */
     public void setAmountTons(double amountTons) {
         this.amountTons = amountTons;
+    }
+
+    /**
+     * @return commodity market category, or null if unknown
+     */
+    public String getCategory() {
+        return category;
+    }
+
+    /**
+     * @param category commodity market category
+     */
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     @Override

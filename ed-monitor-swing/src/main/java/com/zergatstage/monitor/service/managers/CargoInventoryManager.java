@@ -1,5 +1,6 @@
 package com.zergatstage.monitor.service.managers;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -198,5 +199,26 @@ public class CargoInventoryManager extends BaseManager {
                 return cargoItem; // Update the count
             }
         });
+    }
+
+    public int getCargoCapacity() {
+        return (shipVariant != null) ? shipVariant.getCargoCapacity() : 0;
+    }
+
+    /**
+     * Snapshots the commodities currently in the cargo hold as a commodity-id-to-tons map,
+     * for handing off to the Route Optimizer so already-carried cargo counts toward deliverability.
+     *
+     * @return map of commodity id to quantity in tons; empty if the cargo state is unknown
+     */
+    public Map<Long, Integer> getOnboardCommoditySnapshot() {
+        if (shipVariant == null || !shipVariant.isCargoStateKnown()) {
+            return Map.of();
+        }
+        Map<Long, Integer> snapshot = new HashMap<>();
+        for (CargoItem item : shipVariant.getCommodities().values()) {
+            snapshot.put(item.getId(), item.getCount());
+        }
+        return snapshot;
     }
 }

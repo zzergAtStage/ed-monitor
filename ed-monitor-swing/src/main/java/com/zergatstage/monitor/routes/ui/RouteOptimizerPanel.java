@@ -31,6 +31,7 @@ import java.awt.Window;
 import java.beans.PropertyChangeListener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class RouteOptimizerPanel extends JPanel {
                 return false;
             }
         };
-        legsTableModel = new DefaultTableModel(new Object[]{"Leg", "Market", "Material", "t"}, 0) {
+        legsTableModel = new DefaultTableModel(new Object[]{"Leg", "Market", "Category", "Material", "t"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -285,10 +286,19 @@ public class RouteOptimizerPanel extends JPanel {
         legsTableModel.setRowCount(0);
         int legIndex = 1;
         for (RunLegDto leg : run.getLegs()) {
-            for (PurchaseDto purchase : leg.getPurchases()) {
+            // Display order only: purchases stay in the algorithm's scarcity-priority order
+            // internally, but the player is shopping in-game where the market groups
+            // commodities by category then name, so sort a copy for the view to match.
+            List<PurchaseDto> purchasesForDisplay = new ArrayList<>(leg.getPurchases());
+            purchasesForDisplay.sort(
+                Comparator.comparing((PurchaseDto p) -> p.getCategory() == null ? "" : p.getCategory(),
+                        String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(PurchaseDto::getMaterialName, String.CASE_INSENSITIVE_ORDER));
+            for (PurchaseDto purchase : purchasesForDisplay) {
                 legsTableModel.addRow(new Object[]{
                     legIndex,
                     leg.getMarketName(),
+                    purchase.getCategory() == null ? "" : purchase.getCategory(),
                     purchase.getMaterialName(),
                     TONNAGE_FORMAT.format(purchase.getAmountTons())
                 });
@@ -343,16 +353,32 @@ public class RouteOptimizerPanel extends JPanel {
     /**
      * Initializes the view with the selected construction site and request defaults.
      *
-     * @param constructionSiteId site identifier to load via controller
-     * @param defaultCapacity    default cargo capacity
-     * @param defaultMaxMarkets  default max markets per run
+     * @param constructionSiteId  site identifier to load via controller
+     * @param defaultCapacity     default cargo capacity, i.e. the ship's total hull capacity used
+     *                            for every run; the optimizer discounts the first run internally
+     *                            by whatever is already sitting in the hold (see onboardCommodities)
+     * @param defaultMaxMarkets   default max markets per run
+     * @param onboardCommodities  commodities already carried in the cargo hold (commodity id -> tons),
+     *                            credited toward demand instead of being re-purchased
      */
-    public void displaySite(long constructionSiteId, double defaultCapacity, int defaultMaxMarkets) {
+    public void displaySite(long constructionSiteId,
+                            double defaultCapacity,
+                            int defaultMaxMarkets,
+                            java.util.Map<Long, Integer> onboardCommodities) {
         adjustingSpinners = true;
-        capacitySpinner.setValue(defaultCapacity);
+        // The spinner enforces a display range, but a near-full cargo bay can leave less free
+        // space than that range's minimum. Clamp only what's shown; the request keeps the real value.
+        capacitySpinner.setValue(clampToSpinnerRange((SpinnerNumberModel) capacitySpinner.getModel(), defaultCapacity));
         maxMarketsSpinner.setValue(defaultMaxMarkets);
         adjustingSpinners = false;
         controller.updateOptimizationParameters(defaultCapacity, defaultMaxMarkets);
+        controller.setOnboardCommodities(onboardCommodities);
         controller.loadConstructionSite(constructionSiteId);
+    }
+
+    private static double clampToSpinnerRange(SpinnerNumberModel model, double value) {
+        double min = ((Number) model.getMinimum()).doubleValue();
+        double max = ((Number) model.getMaximum()).doubleValue();
+        return Math.max(min, Math.min(max, value));
     }
 }

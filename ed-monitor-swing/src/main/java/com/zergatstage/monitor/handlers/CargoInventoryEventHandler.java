@@ -31,6 +31,13 @@ public class CargoInventoryEventHandler implements LogEventHandler{
     /**
      * Processes the given log event.
      * "event":"Cargo", "Vessel":"Ship", "Count":1232, "Inventory":[]
+     *
+     * <p>In real gameplay this journal line almost never carries the "Inventory" array inline -
+     * it only reports the total {@code Count}. The authoritative per-commodity breakdown is
+     * written to the sibling {@code Cargo.json} file instead, which is watched continuously by
+     * {@link com.zergatstage.monitor.service.CargoDataIOService}. This handler only covers the
+     * rare case where the journal line does carry the full snapshot inline.
+     *
      * @param event the JSON object representing the log event.
      */
     @Override

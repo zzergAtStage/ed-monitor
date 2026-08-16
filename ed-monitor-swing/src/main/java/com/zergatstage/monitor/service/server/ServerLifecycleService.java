@@ -2,8 +2,13 @@ package com.zergatstage.monitor.service.server;
 
 import com.zergatstage.monitor.config.ServerManagementProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -20,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +38,22 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class ServerLifecycleService implements AutoCloseable {
+    /**
+     * Value of {@code spring.application.name} / {@code info.app.name} that ed-monitor-server
+     * reports on its {@code /actuator/info} endpoint. Used to make sure a port that answers
+     * health checks is actually our backend and not some unrelated Spring Boot app sharing the
+     * same default port.
+     */
+    private static final String EXPECTED_APP_NAME = "ed-monitor-server";
+
     private final ServerManagementProperties properties;
     private final ExecutorService executor;
     private final HttpClient httpClient;
     private final ReentrantLock lifecycleLock = new ReentrantLock();
     private final AtomicReference<Process> processRef = new AtomicReference<>();
     private final String sessionIdentifier = "ed-monitor-session-" + UUID.randomUUID();
+    private volatile URI effectiveHealthUri;
+    private volatile Consumer<String> onServerStarted;
 
     public ServerLifecycleService(ServerManagementProperties properties) {
         this(properties, Executors.newSingleThreadExecutor(r -> {
@@ -53,6 +69,16 @@ public class ServerLifecycleService implements AutoCloseable {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(properties.healthTimeout())
                 .build();
+        this.effectiveHealthUri = properties.healthUri();
+    }
+
+    public void setOnServerStarted(Consumer<String> listener) {
+        this.onServerStarted = listener;
+    }
+
+    public String getEffectiveBaseUrl() {
+        URI uri = effectiveHealthUri;
+        return uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort();
     }
 
     public CompletableFuture<ServerCommandResult> startBackend() {
@@ -114,9 +140,21 @@ public class ServerLifecycleService implements AutoCloseable {
             }
             ServerHealthState externalState = fetchHealthState();
             if (externalState == ServerHealthState.ONLINE || externalState == ServerHealthState.UNHEALTHY) {
-                return ServerCommandResult.success("Backend already running (detected existing instance)");
+                if (isOurBackend()) {
+                    return ServerCommandResult.success("Backend already running (detected existing instance)");
+                }
+                log.warn("Something is already answering health checks on port {} but it isn't ed-monitor-server "
+                        + "(failed /actuator/info identity check); starting our own instance on a different port instead",
+                    portOf(effectiveHealthUri));
+            }
+            int preferredPort = portOf(effectiveHealthUri);
+            int port = findFreePort(preferredPort);
+            if (port != preferredPort) {
+                log.info("Port {} is busy; starting backend on port {} instead", preferredPort, port);
+                effectiveHealthUri = withPort(effectiveHealthUri, port);
             }
             List<String> command = buildLaunchCommand();
+            command.add("--server.port=" + port);
             ProcessBuilder builder = new ProcessBuilder(command);
             properties.workingDirectory().ifPresent(path -> builder.directory(path.toFile()));
             builder.redirectErrorStream(true);
@@ -127,7 +165,7 @@ public class ServerLifecycleService implements AutoCloseable {
                 processRef.compareAndSet(process, null);
                 log.info("ed-monitor-server (pid {}) exited with code {}", p.pid(), safeExitValue(p));
             });
-            log.info("Started ed-monitor-server (pid {}) with session {}", process.pid(), sessionIdentifier);
+            log.info("Started ed-monitor-server (pid {}) on port {} with session {}", process.pid(), port, sessionIdentifier);
         } catch (IOException e) {
             return ServerCommandResult.failure("Failed to start backend: " + e.getMessage());
         } finally {
@@ -192,10 +230,12 @@ public class ServerLifecycleService implements AutoCloseable {
             }
             ServerHealthState state = fetchHealthState();
             if (state == ServerHealthState.ONLINE) {
-                return ServerCommandResult.success("Backend is online");
+                notifyServerStarted();
+                return ServerCommandResult.success("Backend is online (port " + portOf(effectiveHealthUri) + ")");
             }
             if (state == ServerHealthState.UNHEALTHY) {
-                return ServerCommandResult.success("Backend started but reported unhealthy status");
+                notifyServerStarted();
+                return ServerCommandResult.success("Backend started but reported unhealthy status (port " + portOf(effectiveHealthUri) + ")");
             }
             sleep(Duration.ofMillis(750));
         }
@@ -349,8 +389,51 @@ public class ServerLifecycleService implements AutoCloseable {
         }
     }
 
+    /**
+     * Confirms that whatever is answering health checks on the configured port is actually
+     * ed-monitor-server, by checking its {@code /actuator/info} response for our app name.
+     * Without this, any unrelated Spring Boot app exposing Actuator health on the same port
+     * (e.g. another local project defaulting to 8080) would be mistaken for an already-running
+     * backend, and every subsequent request from ed-monitor-swing would silently go to it instead.
+     */
+    private boolean isOurBackend() {
+        URI infoUri = infoUri(effectiveHealthUri);
+        HttpRequest request = HttpRequest.newBuilder(infoUri)
+                .timeout(properties.healthTimeout())
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return false;
+            }
+            JSONObject body = new JSONObject(response.body());
+            String appName = body.optJSONObject("app") != null
+                    ? body.getJSONObject("app").optString("name", "")
+                    : "";
+            return EXPECTED_APP_NAME.equalsIgnoreCase(appName);
+        } catch (IOException | InterruptedException | JSONException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            log.debug("Identity check against {} failed: {}", infoUri, e.getMessage());
+            return false;
+        }
+    }
+
+    private static URI infoUri(URI healthUri) {
+        String path = healthUri.getPath();
+        String infoPath = path.endsWith("/health") ? path.substring(0, path.length() - "health".length()) + "info" : path;
+        try {
+            return new URI(healthUri.getScheme(), healthUri.getUserInfo(), healthUri.getHost(), healthUri.getPort(),
+                    infoPath, healthUri.getQuery(), healthUri.getFragment());
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Cannot derive info URI from " + healthUri, e);
+        }
+    }
+
     private ServerHealthState fetchHealthState() {
-        HttpRequest request = HttpRequest.newBuilder(properties.healthUri())
+        HttpRequest request = HttpRequest.newBuilder(effectiveHealthUri)
                 .timeout(properties.healthTimeout())
                 .GET()
                 .build();
@@ -366,10 +449,18 @@ public class ServerLifecycleService implements AutoCloseable {
             if (status >= 500) {
                 return ServerHealthState.ERROR;
             }
-            return ServerHealthState.UNHEALTHY;
+            // 4xx means something else is on this port (e.g. another web app returning 403)
+            return ServerHealthState.DOWN;
         } catch (IOException e) {
+            // Connection refused/reset means nothing is listening on the port yet (still
+            // booting) or it crashed - either way the server hasn't actually answered, so this
+            // is DOWN, not UNHEALTHY. UNHEALTHY is reserved for a genuine HTTP 503 response.
+            // waitForStartupHealth() relies on this: treating a refused connection as UNHEALTHY
+            // would make it fire the "server started" callback on the very first poll attempt,
+            // often within milliseconds of spawning the process, well before Spring Boot has
+            // bound its port.
             log.debug("Health check failed: {}", e.getMessage());
-            return isProcessAlive() ? ServerHealthState.UNHEALTHY : ServerHealthState.DOWN;
+            return ServerHealthState.DOWN;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return ServerHealthState.ERROR;
@@ -397,8 +488,48 @@ public class ServerLifecycleService implements AutoCloseable {
         }
     }
 
+    private void notifyServerStarted() {
+        Consumer<String> listener = onServerStarted;
+        if (listener != null) {
+            listener.accept(getEffectiveBaseUrl());
+        }
+    }
+
+    private static int portOf(URI uri) {
+        int p = uri.getPort();
+        return p == -1 ? ("https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80) : p;
+    }
+
+    private static URI withPort(URI uri, int port) {
+        try {
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), port,
+                    uri.getPath(), uri.getQuery(), uri.getFragment());
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Cannot reconstruct URI with port " + port, e);
+        }
+    }
+
+    private static int findFreePort(int preferred) throws IOException {
+        try (ServerSocket ss = new ServerSocket(preferred)) {
+            return preferred;
+        } catch (IOException ignored) {
+            // preferred port is busy, let OS pick one
+        }
+        try (ServerSocket ss = new ServerSocket(0)) {
+            return ss.getLocalPort();
+        }
+    }
+
     @Override
     public void close() {
         executor.shutdown();
+        try {
+            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            executor.shutdownNow();
+        }
     }
 }

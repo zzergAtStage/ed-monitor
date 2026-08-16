@@ -21,6 +21,8 @@ import com.zergatstage.monitor.theme.ThemeManager;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,8 +42,9 @@ import java.util.Map;
 public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpdateListener {
 
     // zero-based column indices in commoditiesTable:
-    private static final int MATERIAL_COL = 1;
-    private static final int REMAINING_COL = 5;  // adjust if your column order differs
+    private static final int CATEGORY_COL = 1;
+    private static final int MATERIAL_COL = 2;
+    private static final int REMAINING_COL = 6;  // adjust if your column order differs
     // Top table: site progress
     private final JTable siteProgressTable;
     private final DefaultTableModel siteProgressTableModel;
@@ -58,11 +61,12 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private JLabel remainingLabel;
     private JLabel estimatedRunsLabel;
     private JLabel capacityLabel;
-    private static final int DEFAULT_CARGO_CAPACITY = 1298;
     private static final String ALL_SITES_LABEL = "All Sites";
     private static final String SELECTED_SITES_LABEL = "Selected Sites";
     private final LinkedHashSet<String> selectedSiteIds = new LinkedHashSet<>();
     private boolean suppressSiteSelectionEvents;
+    private static final int FALLBACK_CARGO_CAPACITY = 1298;
+
     /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
      */
@@ -108,7 +112,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
 
         // ============= Commodities Table (Bottom) =============
-        String[] commodityColumns = {"Site", "Material", "Required", "InCargo", "Delivered", "Remaining"};
+        String[] commodityColumns = {"Site", "Category", "Material", "Required", "InCargo", "Delivered", "Remaining"};
         commoditiesTableModel = new DefaultTableModel(commodityColumns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -124,6 +128,15 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         commoditiesTable.getColumnModel().getColumn(REMAINING_COL)
                 .setCellRenderer(new HighlightRenderer());
         JScrollPane commoditiesScroll = new JScrollPane(commoditiesTable);
+
+        // Default to the same grouping the in-game commodity market uses: category, then
+        // material name, both ascending — so players aren't hunting up/down categories.
+        TableRowSorter<TableModel> commoditiesSorter =
+                (TableRowSorter<TableModel>) commoditiesTable.getRowSorter();
+        commoditiesSorter.setSortKeys(List.of(
+                new RowSorter.SortKey(CATEGORY_COL, SortOrder.ASCENDING),
+                new RowSorter.SortKey(MATERIAL_COL, SortOrder.ASCENDING)
+        ));
         // ============= Split Pane for top/bottom layout =============
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(siteProgressScroll, BorderLayout.CENTER);
@@ -237,7 +250,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
         // Add cargo capacity info
         gbc.gridx = 6; gbc.gridy = 0;
-        capacityLabel = new JLabel("(Capacity: " + DEFAULT_CARGO_CAPACITY + "t)");
+        capacityLabel = new JLabel("(Capacity: " + getEffectiveCargoCapacity() + "t)");
         capacityLabel.setFont(capacityLabel.getFont().deriveFont(Font.ITALIC, 11f));
         capacityLabel.setForeground(capacityLabelColor());
         summaryPanel.add(capacityLabel, gbc);
@@ -259,6 +272,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
             for (MaterialRequirement req : site.getRequirements()) {
                 Object[] row = {
                         site.getSiteId(),
+                        categoryOf(req.getCommodity()),
                         new RequiredCommodityItem(req.getCommodity().getId(), req.getCommodity().getNameLocalised()),
                         req.getRequiredQuantity(),
                         cargoInventoryManager.getInCargo(req.getCommodity().getId()), // Get in cargo from inventory
@@ -270,6 +284,19 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         }
     }
 
+    /** Prefers the localised category name, matching the in-game market display. */
+    private static String categoryOf(com.zergatstage.domain.dictionary.Commodity commodity) {
+        if (commodity == null) {
+            return "";
+        }
+        String localised = commodity.getCategoryLocalised();
+        if (localised != null && !localised.isBlank()) {
+            return localised;
+        }
+        String category = commodity.getCategory();
+        return category != null ? category : "";
+    }
+
     private void populateAggregatedCommoditiesTable(Collection<ConstructionSite> sites, String siteLabel) {
         commoditiesTableModel.setRowCount(0);
 
@@ -279,7 +306,9 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                 long commodityId = req.getCommodity().getId();
                 CommodityAggregate aggregate = aggregates.computeIfAbsent(
                         commodityId,
-                        id -> new CommodityAggregate(new RequiredCommodityItem(id, req.getCommodity().getNameLocalised()))
+                        id -> new CommodityAggregate(
+                                new RequiredCommodityItem(id, req.getCommodity().getNameLocalised()),
+                                categoryOf(req.getCommodity()))
                 );
                 aggregate.required += req.getRequiredQuantity();
                 aggregate.delivered += req.getDeliveredQuantity();
@@ -290,6 +319,7 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         for (CommodityAggregate aggregate : aggregates.values()) {
             commoditiesTableModel.addRow(new Object[]{
                     siteLabel,
+                    aggregate.category,
                     aggregate.item,
                     aggregate.required,
                     cargoInventoryManager.getInCargo(aggregate.item.getId()),
@@ -450,13 +480,15 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
         }
 
         // Calculate estimated runs needed
-        int estimatedRuns = (totalRemaining > 0) ?
-                (int) Math.ceil((double) totalRemaining / DEFAULT_CARGO_CAPACITY) : 0;
+        int capacity = getEffectiveCargoCapacity();
+        int estimatedRuns = (totalRemaining > 0 && capacity > 0) ?
+                (int) Math.ceil((double) totalRemaining / capacity) : 0;
 
         // Update labels
         deliveredLabel.setText(String.format("%,d t", totalDelivered));
         remainingLabel.setText(String.format("%,d t", totalRemaining));
         estimatedRunsLabel.setText(String.valueOf(estimatedRuns));
+        capacityLabel.setText("(Capacity: " + capacity + "t)");
         applySummaryThemeColors();
 
         // Update colors based on progress
@@ -497,7 +529,8 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                     new RouteOptimizerController(model, dataProvider, optimizationService);
             RouteOptimizerDialog dialog =
                     new RouteOptimizerDialog(SwingUtilities.getWindowAncestor(this), model, controller);
-            dialog.displaySite(site.getMarketId(), DEFAULT_CARGO_CAPACITY, 2);
+            dialog.displaySite(site.getMarketId(), getEffectiveCargoCapacity(), 2,
+                    cargoInventoryManager.getOnboardCommoditySnapshot());
             dialog.setVisible(true);
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(this,
@@ -508,8 +541,20 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     }
 
     private String resolveServerBaseUrl() {
-        return System.getProperty("ed.server.baseUrl",
-                System.getenv().getOrDefault("ED_SERVER_BASE_URL", "http://localhost:8080"));
+        return DefaultManagerFactory.getInstance().getCurrentBaseUrl();
+    }
+
+    private int getEffectiveCargoCapacity() {
+        int actualCapacity = cargoInventoryManager.getCargoCapacity();
+        int capacity = (actualCapacity > 0) ? actualCapacity : FALLBACK_CARGO_CAPACITY;
+        // The hold can't hold less than what's physically sitting in it right now - if the
+        // fallback (or a stale reported capacity) undershoots the onboard tonnage, trust the
+        // onboard tonnage instead so the route optimizer doesn't get handed an impossible capacity.
+        int onboardTons = cargoInventoryManager.getOnboardCommoditySnapshot().values().stream()
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+        return Math.max(capacity, onboardTons);
     }
 
     private Collection<ConstructionSite> resolveSites(Collection<String> siteIds) {
@@ -592,12 +637,14 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
 
     private static class CommodityAggregate {
         private final RequiredCommodityItem item;
+        private final String category;
         private int required;
         private int delivered;
         private int remaining;
 
-        private CommodityAggregate(RequiredCommodityItem item) {
+        private CommodityAggregate(RequiredCommodityItem item, String category) {
             this.item = item;
+            this.category = category;
         }
     }
 

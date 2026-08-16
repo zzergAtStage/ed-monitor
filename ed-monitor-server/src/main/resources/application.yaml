@@ -1,4 +1,12 @@
+server:
+  # Kept off well-known dev ports (8080/8081/8888/9090 etc.) to avoid clashing with other
+  # local projects. ServerLifecycleService overrides this at launch anyway when it auto-starts
+  # the backend, but this is the port used by a manual `spring-boot:run`.
+  port: 50080
+
 spring:
+  application:
+    name: ed-monitor-server
   jpa:
     hibernate:
       ddl-auto: update
@@ -9,7 +17,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,info
   endpoint:
     health:
       show-details: always
@@ -18,3 +26,12 @@ management:
       status:
         http-mapping:
           degraded: 503
+  info:
+    env:
+      enabled: true
+
+# Exposed via /actuator/info so ed-monitor-swing's ServerLifecycleService can tell this apart
+# from an unrelated Spring Boot app that happens to be occupying the same port.
+info:
+  app:
+    name: ${spring.application.name}

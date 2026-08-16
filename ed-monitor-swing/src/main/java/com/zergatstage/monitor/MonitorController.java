@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -14,9 +15,11 @@ import com.zergatstage.ClientApp;
 import com.zergatstage.monitor.config.ServerManagementProperties;
 import com.zergatstage.monitor.factory.DefaultManagerFactory;
 import com.zergatstage.monitor.handlers.ExitHandler;
+import com.zergatstage.monitor.service.CargoDataIOService;
 import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.MarketDataIOService;
 import com.zergatstage.monitor.service.StatusMonitor;
+import com.zergatstage.monitor.service.managers.CargoInventoryManager;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateEvent;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
 import com.zergatstage.monitor.service.server.ServerCommandResult;
@@ -31,10 +34,12 @@ public class MonitorController {
     private final StatusMonitor statusService;
     private final MarketDataIOService marketDataIOService;
     private final MarketDataUpdateService marketDataUpdateService;
+    private final CargoDataIOService cargoDataIOService;
     @Getter
     private final ScheduledExecutorService scheduler;
     private final ExitHandler exitHandler;
     private final ServerLifecycleService serverLifecycleService;
+    private final AtomicBoolean stopped = new AtomicBoolean(false);
 
     public MonitorController(JournalLogMonitor logService,
                              StatusMonitor statusService,
@@ -48,8 +53,13 @@ public class MonitorController {
         Consumer<MarketDataUpdateEvent> marketConsumer = this::onMarketDataUpdate;
         this.marketDataIOService = new MarketDataIOService(marketConsumer);
         marketDataUpdateService = DefaultManagerFactory.getInstance().getMarketDataUpdateService();
+        this.cargoDataIOService = new CargoDataIOService(CargoInventoryManager.getInstance());
         initCommodityRegisrtyOverMarketDataIOService();
         serverLifecycleService = new ServerLifecycleService(ServerManagementProperties.load());
+        serverLifecycleService.setOnServerStarted(url -> {
+            DefaultManagerFactory.getInstance().updateBaseUrl(url);
+            marketDataUpdateService.refreshFromServer();
+        });
     }
 
     private void initCommodityRegisrtyOverMarketDataIOService() {
@@ -69,14 +79,19 @@ public class MonitorController {
     public void startAll() {
         logService.startMonitoring();
         marketDataIOService.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(this::stopAll));
+        cargoDataIOService.start();
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stopAll, "ed-monitor-shutdown"));
     }
 
     public void stopAll() {
+        if (!stopped.compareAndSet(false, true)) {
+            return;
+        }
         scheduler.shutdownNow();
         logService.stopMonitoring();
         statusService.stop();
         marketDataIOService.stop();
+        cargoDataIOService.stop();
         stopBackendOnShutdown();
         serverLifecycleService.close();
     }
@@ -87,9 +102,8 @@ public class MonitorController {
     }
 
     public void toggleLogMonitor(ActionEvent e) {
-        // delegate: if running, stop; else start and schedule
         logService.stopMonitoring();
-        startAll();
+        logService.startMonitoring();
     }
 
     public void toggleStatusMonitor(ActionEvent e) {

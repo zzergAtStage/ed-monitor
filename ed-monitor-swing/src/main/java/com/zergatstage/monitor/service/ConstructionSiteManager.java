@@ -55,8 +55,21 @@ public class ConstructionSiteManager {
      * @param site the construction site to add.
      */
     public void addSite(ConstructionSiteDTO site) {
+        long marketId = site.getMarketId();
+        ConstructionSite existing = sites.get(marketId);
+        if (existing != null) {
+            // Site already tracked — just promote siteId if we got a real name
+            if (site.getSiteId() != null && !site.getSiteId().isBlank()
+                    && !isStubSiteId(site.getSiteId(), marketId)) {
+                existing.setSiteId(site.getSiteId());
+            }
+            notifyListeners();
+            return;
+        }
+        // First time we see this site: create from DTO and mark dirty so it gets pushed
         ConstructionSite savedSite = ConstructionSiteMapper.INSTANCE.constructionSiteDtoToEntity(site);
         sites.put(savedSite.getMarketId(), savedSite);
+        dirtySites.add(savedSite.getMarketId());
         notifyListeners();
     }
 
@@ -286,12 +299,16 @@ public class ConstructionSiteManager {
                 String nameLocalised = resource.optString("Name_Localised", null);
                 String commodityKey = CommodityHelper.normalizeSystemName(name);
                 long commodityId = commodityRegistry.findCommodityId(commodityKey, nameLocalised);
+                if (commodityId == -1) {
+                    log.warn("Unknown commodity skipped: name='{}' localised='{}'", name, nameLocalised);
+                    continue;
+                }
                 int requiredAmount = resource.getInt("RequiredAmount");
                 int providedAmount = resource.getInt("ProvidedAmount");
                 Optional<MaterialRequirement> first = Optional.empty();
                 if (!requirementList.isEmpty()) {
                     first = requirementList.stream()
-                            .filter(c -> c.getCommodity().getId() == commodityId)
+                            .filter(c -> c.getCommodity() != null && c.getCommodity().getId() == commodityId)
                             .findFirst();
                 }
                 if (first.isEmpty()) {

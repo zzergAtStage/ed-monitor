@@ -111,7 +111,7 @@ The server persists market data in H2 and exposes a minimal REST API:
 - `GET /api/markets/{id}` — returns a single market by `marketId`.
 - `PUT /api/markets/{id}` — replaces a market by `marketId`.
 
-Example H2 configuration is pre-set (H2 console enabled in prod profile). Default port is `8080`.
+Example H2 configuration is pre-set (H2 console enabled in prod profile). Default port is `50080`.
 
 ### Quick start
 
@@ -125,7 +125,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=prod
 Load sample market data:
 
 ```
-curl -X POST http://localhost:8080/api/markets \
+curl -X POST http://localhost:50080/api/markets \
      -H "Content-Type: application/json" \
      -d @ed-monitor-server/src/main/resources/Market.json
 ```
@@ -133,13 +133,13 @@ curl -X POST http://localhost:8080/api/markets \
 List markets:
 
 ```
-curl http://localhost:8080/api/markets
+curl http://localhost:50080/api/markets
 ```
 
 Update a market:
 
 ```
-curl -X PUT http://localhost:8080/api/markets/3516841984 \
+curl -X PUT http://localhost:50080/api/markets/3516841984 \
      -H "Content-Type: application/json" \
      -d '{"marketId":3516841984,"stationName":"Updated Station","stationType":"CraterPort","systemName":"Col 285 Sector LH-L c8-9","items":[]}'
 ```
@@ -148,7 +148,7 @@ curl -X PUT http://localhost:8080/api/markets/3516841984 \
 
 The Swing client reads `Market.json` from the Elite Dangerous log directory and, on updates, posts parsed market data to the server using OkHttp.
 
-- Configure server URL via `-Ded.server.baseUrl=http://localhost:8080` (or `ED_SERVER_BASE_URL` env var).
+- Configure server URL via `-Ded.server.baseUrl=http://localhost:50080` (or `ED_SERVER_BASE_URL` env var).
 - On each file update, the client sends the parsed market to `POST /api/markets`.
 - A lightweight `MarketDataHttpService` provides `postMarkets`, `getMarkets`, and `getMarket`.
 
@@ -157,7 +157,7 @@ Run Swing client fat jar:
 ```
 cd ed-monitor-swing
 mvn -q -DskipTests package
-java -Ded.server.baseUrl=http://localhost:8080 -jar target/ed-monitor-swing-0.3.0.jar
+java -Ded.server.baseUrl=http://localhost:50080 -jar target/ed-monitor-swing-0.3.0.jar
 ```
 
 ## Contributing

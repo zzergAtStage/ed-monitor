@@ -153,6 +153,96 @@ class GreedyRouteOptimizationServiceTest {
     }
 
     @Test
+    void onboardCargoIsCreditedAndDiscountsOnlyTheFirstRunCapacity() {
+        CommodityDto steel = commodity(71, "Steel");
+        ConstructionSiteDto site = siteDto(120L, requirement(71, steel, 20));
+        MarketDto depot = market(801L, "Depot", item(steel, 50));
+
+        // Total ship capacity is 20t; 12t of it is already occupied by onboard Steel.
+        GreedyRouteOptimizationService service = service(site, depot);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(120L, 20);
+        request.setOnboardCommodities(Map.of(71L, 12));
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals(1.0, plan.getCoverageFraction(), EPS);
+        assertEquals(2, plan.getRuns().size(), "Onboard cargo plus a single market run for the remaining 8t");
+        var onboardRun = plan.getRuns().get(0);
+        assertEquals(1, onboardRun.getLegs().size());
+        assertEquals(null, onboardRun.getLegs().get(0).getMarketId());
+        assertEquals(12.0, onboardRun.getTotalTonnage(), EPS);
+        assertEquals(8.0, plan.getRuns().get(1).getTotalTonnage(), EPS,
+            "Only the remaining 8t should be bought - the other 12t of capacity is already used by onboard cargo");
+    }
+
+    @Test
+    void onboardCargoOnlyDiscountsTheFirstMarketRunNotLaterOnes() {
+        CommodityDto steel = commodity(73, "Steel");
+        // Demand well beyond what a single 20t trip can carry, so a second run is required.
+        ConstructionSiteDto site = siteDto(122L, requirement(73, steel, 28));
+        MarketDto depot = market(803L, "Depot", item(steel, 50));
+
+        GreedyRouteOptimizationService service = service(site, depot);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(122L, 20);
+        request.setOnboardCommodities(Map.of(73L, 12));
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals(1.0, plan.getCoverageFraction(), EPS);
+        assertEquals(3, plan.getRuns().size(), "Onboard credit, an 8t first market run, then a full 20t second run");
+        assertEquals(12.0, plan.getRuns().get(0).getTotalTonnage(), EPS);
+        assertEquals(8.0, plan.getRuns().get(1).getTotalTonnage(), EPS,
+            "First market run is capped by the 12t already occupied onboard");
+        assertEquals(8.0, plan.getRuns().get(2).getTotalTonnage(), EPS,
+            "Second run gets the full 20t capacity back but only 8t remains to satisfy demand");
+    }
+
+    @Test
+    void onboardCargoNotNeededByDemandStillOccupiesHullSpaceButSkipsTheSyntheticRun() {
+        CommodityDto steel = commodity(72, "Steel");
+        ConstructionSiteDto site = siteDto(121L, requirement(72, steel, 10));
+        MarketDto depot = market(802L, "Depot", item(steel, 50));
+
+        // 5t of unrelated cargo occupies half of the 10t hold, so it still takes two 5t trips.
+        GreedyRouteOptimizationService service = service(site, depot);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(121L, 10);
+        request.setOnboardCommodities(Map.of(999L, 5));
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals(2, plan.getRuns().size(),
+            "No synthetic onboard-credit run since it doesn't match demand, but hull space is still reduced");
+        assertEquals(5.0, plan.getRuns().get(0).getTotalTonnage(), EPS,
+            "First run capped to 5t since 5t of the hold is already occupied by unrelated cargo");
+        assertEquals(5.0, plan.getRuns().get(1).getTotalTonnage(), EPS);
+    }
+
+    @Test
+    void onboardTonsExceedingCapacityFallsBackToFullCapacityInsteadOfAborting() {
+        CommodityDto steel = commodity(74, "Steel");
+        CommodityDto titanium = commodity(75, "Titanium");
+        ConstructionSiteDto site = siteDto(123L,
+            requirement(74, steel, 50),
+            requirement(75, titanium, 10));
+        MarketDto depot = market(804L, "Depot", item(steel, 50));
+
+        // A bad/unknown capacity value (20t) that's smaller than what's already reported onboard
+        // (30t) is physically impossible - the optimizer must not silently zero out the first
+        // market run because of it.
+        GreedyRouteOptimizationService service = service(site, depot);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(123L, 20);
+        request.setOnboardCommodities(Map.of(75L, 30));
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals(1.0, plan.getCoverageFraction(), EPS);
+        assertEquals(4, plan.getRuns().size(),
+            "Onboard credit for titanium, then three 20t market runs to cover the 50t of steel demand");
+        assertEquals(20.0, plan.getRuns().get(1).getTotalTonnage(), EPS,
+            "First market run should use full capacity, not be aborted by a bogus zero capacity");
+    }
+
+    @Test
     void infersConstructionSiteSystemFromDominantMarkets() {
         CommodityDto metals = commodity(61, "Metals");
         ConstructionSiteDto site = siteDto(111L, requirement(61, metals, 60));
@@ -167,6 +257,47 @@ class GreedyRouteOptimizationServiceTest {
         RoutePlanDto plan = service.buildRoutePlan(new RouteOptimizationRequest(111L, 60));
 
         assertEquals("Local Hub", plan.getRuns().get(0).getLegs().get(0).getMarketName());
+    }
+
+    @Test
+    void prefersOrbitalStationOverPlanetaryPortWithEqualStockInSameSystem() {
+        CommodityDto metals = commodity(52, "Metals");
+
+        ConstructionSiteDto site = siteDto(106L, requirement(52, metals, 60));
+
+        MarketDto orbital = market(603L, "Orbital Dock", item(metals, 60));
+        orbital.setStationType("Coriolis");
+
+        MarketDto planetary = market(604L, "Surface Hub", item(metals, 60));
+        planetary.setStationType("CraterOutpost");
+
+        // Both markets share the default "System" system name from the market() helper,
+        // so the only difference the optimizer should react to is dock type.
+        GreedyRouteOptimizationService service = service(site, planetary, orbital);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(106L, 60);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals("Orbital Dock", plan.getRuns().get(0).getLegs().get(0).getMarketName(),
+            "Orbital station should be preferred over an equally-stocked planetary port");
+    }
+
+    @Test
+    void planetaryPortStillWinsWhenItIsTheOnlyOptionWithMatchingStock() {
+        CommodityDto metals = commodity(53, "Metals");
+
+        ConstructionSiteDto site = siteDto(107L, requirement(53, metals, 40));
+
+        MarketDto planetary = market(605L, "Only Surface Hub", item(metals, 40));
+        planetary.setStationType("CraterOutpost");
+
+        GreedyRouteOptimizationService service = service(site, planetary);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(107L, 40);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals(1.0, plan.getCoverageFraction(), EPS,
+            "Planetary port should still be used when it's the only source of the material");
     }
 
     private GreedyRouteOptimizationService service(ConstructionSiteDto site, MarketDto... markets) {

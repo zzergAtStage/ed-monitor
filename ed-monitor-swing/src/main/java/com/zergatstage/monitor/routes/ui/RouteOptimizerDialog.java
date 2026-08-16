@@ -3,6 +3,7 @@ package com.zergatstage.monitor.routes.ui;
 import javax.swing.JDialog;
 import javax.swing.WindowConstants;
 import java.awt.Window;
+import java.util.Map;
 
 /**
  * Modal dialog wrapper for {@link RouteOptimizerPanel}. Ensures controller resources are
@@ -26,8 +27,11 @@ public class RouteOptimizerDialog extends JDialog {
         com.zergatstage.monitor.util.KeyBindingUtil.installEscapeToClose(this);
     }
 
-    public void displaySite(long constructionSiteId, double defaultCapacity, int defaultMaxMarkets) {
-        panel.displaySite(constructionSiteId, defaultCapacity, defaultMaxMarkets);
+    public void displaySite(long constructionSiteId,
+                            double defaultCapacity,
+                            int defaultMaxMarkets,
+                            Map<Long, Integer> onboardCommodities) {
+        panel.displaySite(constructionSiteId, defaultCapacity, defaultMaxMarkets, onboardCommodities);
     }
 
     @Override

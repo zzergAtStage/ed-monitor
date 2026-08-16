@@ -1,5 +1,7 @@
 package com.zergatstage.monitor.routes.dto;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -13,6 +15,12 @@ public class RouteOptimizationRequest {
     private Long constructionSiteId;
     private double cargoCapacityTons;
     private int maxMarketsPerRun = DEFAULT_MAX_MARKETS_PER_RUN;
+
+    /**
+     * Commodities already sitting in the ship's cargo hold (commodity id -> quantity in tons).
+     * These are credited toward outstanding demand instead of being re-purchased from a market.
+     */
+    private Map<Long, Integer> onboardCommodities = new HashMap<>();
 
     /**
      * Creates an empty request with the default {@link #maxMarketsPerRun} value.
@@ -86,6 +94,20 @@ public class RouteOptimizationRequest {
      */
     public void setMaxMarketsPerRun(int maxMarketsPerRun) {
         this.maxMarketsPerRun = maxMarketsPerRun;
+    }
+
+    /**
+     * @return commodities already carried in the ship's cargo hold (commodity id -> tons)
+     */
+    public Map<Long, Integer> getOnboardCommodities() {
+        return onboardCommodities;
+    }
+
+    /**
+     * @param onboardCommodities commodities already carried in the ship's cargo hold (commodity id -> tons)
+     */
+    public void setOnboardCommodities(Map<Long, Integer> onboardCommodities) {
+        this.onboardCommodities = onboardCommodities != null ? new HashMap<>(onboardCommodities) : new HashMap<>();
     }
 
     @Override

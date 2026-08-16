@@ -1,5 +1,7 @@
 package com.zergatstage.monitor.factory;
 
+import lombok.extern.slf4j.Slf4j;
+
 import com.zergatstage.monitor.service.managers.AsteroidManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
@@ -10,6 +12,7 @@ import com.zergatstage.monitor.service.MarketDataHttpService;
 import lombok.Getter;
 
 @Getter
+@Slf4j
 public class DefaultManagerFactory implements ManagerFactory {
 
     public static volatile DefaultManagerFactory instance;
@@ -19,6 +22,7 @@ public class DefaultManagerFactory implements ManagerFactory {
     private final CommodityRegistry commodityRegistry;
     private final MarketDataParser marketDataParser;
     private final MarketDataUpdateService marketDataUpdateService;
+    private volatile String currentBaseUrl;
 
     public static  DefaultManagerFactory getInstance() {
         if (instance == null) {
@@ -42,16 +46,32 @@ public class DefaultManagerFactory implements ManagerFactory {
                this.commodityRegistry,
                 this.getMarketDataParser());
 
-        String baseUrl = System.getProperty("ed.server.baseUrl", System.getenv().getOrDefault("ED_SERVER_BASE_URL", "http://localhost:8080"));
+        this.currentBaseUrl = System.getProperty("ed.server.baseUrl", System.getenv().getOrDefault("ED_SERVER_BASE_URL", "http://localhost:50080"));
         try {
-            this.marketDataUpdateService.setHttpService(new MarketDataHttpService(baseUrl));
+            this.marketDataUpdateService.setHttpService(new MarketDataHttpService(currentBaseUrl));
             // Hook up construction site HTTP sync (every ~10s inside manager)
-            this.constructionSiteManager.setHttpService(new com.zergatstage.monitor.service.ConstructionSitesHttpService(baseUrl));
+            this.constructionSiteManager.setHttpService(new com.zergatstage.monitor.service.ConstructionSitesHttpService(currentBaseUrl));
             // Initial pull from server to populate cache after restart (best-effort)
             this.marketDataUpdateService.refreshFromServer();
         } catch (IllegalArgumentException ignored) {
             // Invalid base URL provided; proceed without HTTP sync.
         }
+    }
+
+    public void updateBaseUrl(String baseUrl) {
+        try {
+            this.marketDataUpdateService.setHttpService(new MarketDataHttpService(baseUrl));
+            this.constructionSiteManager.setHttpService(
+                    new com.zergatstage.monitor.service.ConstructionSitesHttpService(baseUrl));
+            this.currentBaseUrl = baseUrl;
+            log.info("HTTP services switched to {}", baseUrl);
+        } catch (IllegalArgumentException e) {
+            log.warn("Ignoring invalid base URL from server: {}", baseUrl);
+        }
+    }
+
+    public String getCurrentBaseUrl() {
+        return currentBaseUrl;
     }
 
 }

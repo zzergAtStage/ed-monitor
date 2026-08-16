@@ -28,13 +28,13 @@ mvn clean install              # Build all modules (parent + 3 submodules)
 mvn clean test -Ptest          # Run tests with H2 in-memory DB
 mvn exec:java                  # Run Swing client from workspace
 mvn -q -DskipTests package     # Build fat jar (swing module)
-java -Ded.server.baseUrl=http://localhost:8080 -jar target/ed-monitor-swing-0.3.0.jar  # Run with server
+java -Ded.server.baseUrl=http://localhost:50080 -jar target/ed-monitor-swing-0.3.0.jar  # Run with server
 ```
 
 ### Server (ed-monitor-server)
 ```powershell
 cd ed-monitor-server
-mvn spring-boot:run -Dspring-boot.run.profiles=prod  # Start REST API on :8080
+mvn spring-boot:run -Dspring-boot.run.profiles=prod  # Start REST API on :50080
 # Health endpoints: GET /api/health, POST /api/markets, GET /api/markets/{id}
 ```
 

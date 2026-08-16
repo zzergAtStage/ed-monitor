@@ -60,6 +60,13 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
     private static final double SAME_SYSTEM_BONUS = 1.3;
     private static final double JUMP_BASE_PENALTY = 0.75;
     private static final double ADDITIONAL_JUMP_PENALTY = 0.85; // Multiplier for each additional jump
+
+    // Planetary/surface ports require a supercruise + surface approach/glide on top of the
+    // normal dock, so they cost meaningfully more time per visit than an orbital station even
+    // when they're in the same system. journal StationType values, not an exhaustive enum.
+    private static final double PLANETARY_STATION_PENALTY = 0.85;
+    private static final Set<String> PLANETARY_STATION_TYPES = Set.of(
+        "craterport", "crateroutpost", "surfacestation", "onfootsettlement");
     
     private final RouteOptimizerDataProvider dataProvider;
 
@@ -113,9 +120,34 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
         List<DeliveryRunDto> runs = new ArrayList<>();
         int runIndex = 1;
+
+        RunComputationResult onboardResult = buildOnboardCargoRun(runIndex, demands, request.getOnboardCommodities());
+        if (onboardResult != null) {
+            runs.add(onboardResult.runDto);
+            logRunCompletion(requestId, onboardResult);
+            logDemandSnapshot(requestId, "POST_ONBOARD", demands);
+            runIndex++;
+        }
+        // Onboard cargo already occupies hull space, but only for the very next physical trip -
+        // once that run is flown and the hold emptied, later runs are free to use full capacity again.
+        double onboardTons = sumOnboardTons(request.getOnboardCommodities());
+        double firstMarketRunCapacity = request.getCargoCapacityTons() - onboardTons;
+        if (firstMarketRunCapacity < EPSILON) {
+            // A hold can never physically carry more than its own capacity, so onboardTons
+            // exceeding cargoCapacityTons means the capacity value we were given is wrong (e.g.
+            // an unknown-ship fallback). Trust the full capacity for the first run rather than
+            // silently zeroing it out and aborting the whole route.
+            logRouteWarning(requestId, "CAPACITY_UNDERSHOOT",
+                "onboardTons=%s exceeds cargoCapacityTons=%s; using full capacity for the first run"
+                    .formatted(formatDouble(onboardTons), formatDouble(request.getCargoCapacityTons())));
+            firstMarketRunCapacity = request.getCargoCapacityTons();
+        }
+        boolean firstMarketRun = true;
         while (hasRemainingDemand(demands) && hasUsefulMarkets(inventories, demands)) {
+            double runCapacity = firstMarketRun ? firstMarketRunCapacity : request.getCargoCapacityTons();
+            firstMarketRun = false;
             logRunStart(requestId, runIndex, demands, request);
-            RunComputationResult runResult = buildSingleRun(requestId, runIndex, inventories, demands, request, siteSystemName);
+            RunComputationResult runResult = buildSingleRun(requestId, runIndex, inventories, demands, runCapacity, request, siteSystemName);
             if (runResult == null || runResult.deliveredTonnage <= EPSILON) {
                 logRouteWarning(requestId, "RUN_ABORTED",
                     "run %d delivered no tonnage; stopping optimization".formatted(runIndex));
@@ -211,7 +243,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
                 continue;
             }
             MaterialDemand demand = demands.computeIfAbsent(key, ignored ->
-                new MaterialDemand(key, displayName(commodity)));
+                new MaterialDemand(key, displayName(commodity), category(commodity)));
             demand.remaining += remaining;
             demand.initialRequired += remaining;
         }
@@ -266,6 +298,79 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
     }
 
     /**
+     * Sums the tonnage of everything currently sitting in the cargo hold, regardless of whether
+     * it matches the site's demand. Used to discount the hull space already occupied for the
+     * next physical trip - unrelated cargo still takes up room the optimizer must not buy into.
+     */
+    private double sumOnboardTons(Map<Long, Integer> onboardCommodities) {
+        if (onboardCommodities == null || onboardCommodities.isEmpty()) {
+            return 0;
+        }
+        return onboardCommodities.values().stream()
+            .filter(Objects::nonNull)
+            .mapToInt(Integer::intValue)
+            .filter(v -> v > 0)
+            .sum();
+    }
+
+    /**
+     * Builds a synthetic "run" for materials already sitting in the ship's cargo hold.
+     * These tons need no market visit and no extra cargo space (the hull space they occupy
+     * is already reflected in the free capacity passed to the first market run), so they are
+     * credited against demand up front instead of being planned as a purchase.
+     *
+     * @param runIndex             the run number to assign to this synthetic entry
+     * @param demands              remaining material demands, mutated in place
+     * @param onboardCommodities   commodity id -> quantity currently carried in the cargo hold
+     * @return computation result for the onboard cargo, or null if nothing usable is onboard
+     */
+    private RunComputationResult buildOnboardCargoRun(int runIndex,
+                                                       Map<String, MaterialDemand> demands,
+                                                       Map<Long, Integer> onboardCommodities) {
+        if (onboardCommodities == null || onboardCommodities.isEmpty()) {
+            return null;
+        }
+
+        List<PurchaseDto> purchases = new ArrayList<>();
+        Map<String, Double> materialsSummary = new HashMap<>();
+        double delivered = 0;
+
+        for (Map.Entry<Long, Integer> entry : onboardCommodities.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) {
+                continue;
+            }
+            MaterialDemand demand = demands.get("id:" + entry.getKey());
+            if (demand == null || demand.remaining <= EPSILON) {
+                continue;
+            }
+            double amount = Math.min(demand.remaining, entry.getValue());
+            if (amount <= EPSILON) {
+                continue;
+            }
+            demand.consume(amount);
+            delivered += amount;
+            purchases.add(new PurchaseDto(demand.displayName, amount, demand.category));
+            materialsSummary.merge(demand.displayName, amount, Double::sum);
+        }
+
+        if (purchases.isEmpty()) {
+            return null;
+        }
+
+        RunLegDto leg = new RunLegDto();
+        leg.setMarketId(null);
+        leg.setMarketName("Cargo hold (already onboard)");
+        leg.setPurchases(purchases);
+
+        DeliveryRunDto runDto = new DeliveryRunDto();
+        runDto.setRunIndex(runIndex);
+        runDto.setLegs(new ArrayList<>(List.of(leg)));
+        runDto.setTotalTonnage(delivered);
+        runDto.setMaterialsSummaryTons(materialsSummary);
+        return new RunComputationResult(runDto, delivered);
+    }
+
+    /**
      * Builds a single delivery run with proper inter-system jump tracking.
      * 
      * @param runIndex the sequential run number
@@ -279,9 +384,9 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
                                                 int runIndex,
                                                 List<MarketInventory> inventories,
                                                 Map<String, MaterialDemand> demands,
+                                                double capacity,
                                                 RouteOptimizationRequest request,
                                                 String siteSystemName) {
-        double capacity = request.getCargoCapacityTons();
         int maxMarkets = Math.max(1, request.getMaxMarketsPerRun());
         Set<MarketInventory> visited = new HashSet<>();
         List<RunLegDto> legs = new ArrayList<>();
@@ -376,12 +481,13 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             
             double scarcityBonus = computeScarcityBonus(inventory, demands);
             double systemMultiplier = computeSystemMultiplier(inventory, context);
-            
-            // Score combines load potential, scarcity, and system jump considerations
-            double score = potentialLoad * systemMultiplier
+            double stationTypeMultiplier = computeStationTypeMultiplier(inventory);
+
+            // Score combines load potential, scarcity, and system jump/dock-approach considerations
+            double score = potentialLoad * systemMultiplier * stationTypeMultiplier
                 + SCARCITY_WEIGHT_FACTOR * scarcityBonus;
             logCandidateEvaluation(trace, inventory, candidateOrder, potentialLoad, scarcityBonus,
-                systemMultiplier, score, true, "OK", capacityLimit);
+                systemMultiplier * stationTypeMultiplier, score, true, "OK", capacityLimit);
             
             if (score > bestScore + EPSILON) {
                 bestScore = score;
@@ -418,7 +524,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             demand.consume(requestAmount);
             stock.stock -= requestAmount;
             loaded += requestAmount;
-            purchases.add(new PurchaseDto(demand.displayName, requestAmount));
+            purchases.add(new PurchaseDto(demand.displayName, requestAmount, demand.category));
         }
 
         if (purchases.isEmpty()) {
@@ -485,6 +591,11 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             return 1.0;
         }
 
+        if (context.currentSystem != null
+            && marketSystem.equalsIgnoreCase(context.currentSystem)) {
+            return SAME_SYSTEM_BONUS;
+        }
+
         if (context.currentSystem == null) {
             if (context.preferredSystem != null
                 && marketSystem.equalsIgnoreCase(context.preferredSystem)) {
@@ -493,10 +604,24 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             return 1.0;
         }
 
-        // This market requires a jump to a different system
-        // Apply base penalty, with additional penalty based on accumulated jumps
+        // Genuinely a different system - apply base penalty, with additional
+        // penalty based on accumulated jumps
         double jumpPenalty = JUMP_BASE_PENALTY * Math.pow(ADDITIONAL_JUMP_PENALTY, context.jumpCount);
         return jumpPenalty;
+    }
+
+    /**
+     * Penalizes planetary/surface ports relative to orbital stations, reflecting the extra
+     * time a supercruise + surface approach costs versus a quick orbital dock.
+     */
+    private double computeStationTypeMultiplier(MarketInventory inventory) {
+        String stationType = inventory.market.getStationType();
+        if (stationType == null || stationType.isBlank()) {
+            return 1.0;
+        }
+        return PLANETARY_STATION_TYPES.contains(stationType.toLowerCase(Locale.ROOT))
+            ? PLANETARY_STATION_PENALTY
+            : 1.0;
     }
 
     private boolean isBetterTieCandidate(MarketInventory challenger,
@@ -604,6 +729,16 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             return "Commodity-" + commodity.getId();
         }
         return "Commodity";
+    }
+
+    private static String category(CommodityDto commodity) {
+        if (commodity == null) {
+            return null;
+        }
+        if (commodity.getCategoryLocalised() != null && !commodity.getCategoryLocalised().isBlank()) {
+            return commodity.getCategoryLocalised();
+        }
+        return commodity.getCategory();
     }
 
     private static String resolveMarketDisplayName(MarketDto market) {
@@ -966,13 +1101,19 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
     private static class MaterialDemand {
         private final String displayName;
+        private final String category;
         private double remaining;
         private double initialRequired;
         private int sellerCount;
         private double scarcityWeight = 1.0;
 
         MaterialDemand(String key, String displayName) {
+            this(key, displayName, null);
+        }
+
+        MaterialDemand(String key, String displayName, String category) {
             this.displayName = displayName;
+            this.category = category;
         }
 
         void finalizeScarcityWeight() {
