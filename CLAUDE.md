@@ -67,6 +67,46 @@ See `Docs/ARCHITECTURE.md` and `.github/copilot-instructions.md` for full detail
 ### MapStruct mapper caveat
 `ConstructionSiteMapper.constructionSiteDtoToEntity()` intentionally ignores the `version` field (JPA `@Version`). The entity's `version` field has no `@Setter`. If you need to transfer version across a DTO boundary in the Swing client, do it before calling the mapper or work around it in the calling code.
 
+### Route optimizer market scoring
+`GreedyRouteOptimizationService.selectBestMarket()` scores each candidate market as
+`potentialLoad * systemMultiplier * stationTypeMultiplier + SCARCITY_WEIGHT_FACTOR * scarcityBonus`.
+
+- `systemMultiplier` compares the candidate market's `systemName` against
+  `RouteContext.currentSystem` (which starts as the construction site's own home system,
+  resolved via the site's `marketId` — **not** the player's live location, so it's unaffected
+  by relogging mid-jump). Same system → `SAME_SYSTEM_BONUS` (1.3x); different system → a jump
+  penalty (`JUMP_BASE_PENALTY` compounded by `ADDITIONAL_JUMP_PENALTY` per accumulated jump).
+- `stationTypeMultiplier` penalizes planetary/surface ports (`CraterPort`, `CraterOutpost`,
+  `SurfaceStation`, `OnFootSettlement`) by `PLANETARY_STATION_PENALTY` (0.85x) relative to
+  orbital stations, since a supercruise + surface approach costs real extra time the raw
+  stock/scarcity numbers don't capture. It only breaks ties/near-ties — a planetary port with
+  meaningfully more or scarcer stock than the alternatives still wins.
+- Because `potentialLoad` caps at cargo capacity, multiple same-system stations with enough
+  stock to fill the hold will tie on that term; `scarcityBonus` is what actually decides between
+  them in that case, not raw total stock.
+
+### Backend startup health-check semantics
+`ServerLifecycleService.fetchHealthState()` must return `DOWN` (not `UNHEALTHY`) when the
+health-check connection is refused/reset, even if the spawned process handle is still alive.
+`UNHEALTHY` is reserved for a genuine HTTP 503 response from the actuator endpoint.
+`waitForStartupHealth()` treats both `ONLINE` and `UNHEALTHY` as terminal — it fires the
+"server started" callback (`DefaultManagerFactory.updateBaseUrl()` + market refresh) on the
+first state that isn't a bare connection failure. If `fetchHealthState()` ever maps
+connection-refused to `UNHEALTHY` again, that callback fires within milliseconds of spawning
+the JVM, long before the Spring Boot fat jar has bound its port, and any one-shot work in that
+callback (like a market refresh) will silently fail.
+
+### Logging
+- App-wide logs: `logs/ed-monitor-app.log` (root logger, `INFO`).
+- Route optimizer per-candidate trace (`ROUTE_STEP`/`ROUTE_DECISION`/`ROUTE_SUMMARY`):
+  `logs/com.zergatstage.monitor.routes.service.log`. Its level is driven by the
+  `-Ded.route.logLevel` JVM property (defaults to `INFO` via `${ed.route.logLevel:-INFO}` in
+  `logback.xml`), set in `ED-monitor.vbs`. Flip that VBS variable to `DEBUG` and relaunch to get
+  the full per-market scoring trace — no rebuild needed.
+- The launcher (`ED-monitor.vbs`/`ED-monitor.bat`) uses `javaw.exe`, which has no console, so
+  without the file appenders above, startup errors (e.g. a failed market refresh) are otherwise
+  invisible.
+
 ### WSL path for Elite Dangerous journal
 The game runs on Windows; the journal is at:
 ```
