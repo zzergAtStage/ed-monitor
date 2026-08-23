@@ -3,6 +3,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 out/
+tmp/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -40,6 +41,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+
+
 /.idea/codeStyles/codeStyleConfig.xml
 /data/marketdb.mv.db
 /.idea/codeStyles/Project.xml
@@ -56,3 +60,4 @@ data/ed-monitor-server.log
 *.log
 **/logs/
 TASKS.md
+ED-monitor.lnk

@@ -6,6 +6,7 @@ import com.zergatstage.monitor.service.managers.AsteroidManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
 import com.zergatstage.monitor.service.managers.DroneManager;
+import com.zergatstage.monitor.service.managers.EventLogManager;
 import com.zergatstage.monitor.service.managers.MarketDataParser;
 import com.zergatstage.monitor.service.managers.MarketDataUpdateService;
 import com.zergatstage.monitor.service.MarketDataHttpService;
@@ -22,6 +23,7 @@ public class DefaultManagerFactory implements ManagerFactory {
     private final CommodityRegistry commodityRegistry;
     private final MarketDataParser marketDataParser;
     private final MarketDataUpdateService marketDataUpdateService;
+    private final EventLogManager eventLogManager;
     private volatile String currentBaseUrl;
 
     public static  DefaultManagerFactory getInstance() {
@@ -41,6 +43,7 @@ public class DefaultManagerFactory implements ManagerFactory {
         this.droneManager = new DroneManager();
         this.asteroidManager = new AsteroidManager();
         this.commodityRegistry = CommodityRegistry.getInstance();
+        this.eventLogManager = new EventLogManager();
         this.marketDataParser = new MarketDataParser();
         this.marketDataUpdateService = new MarketDataUpdateService(
                this.commodityRegistry,

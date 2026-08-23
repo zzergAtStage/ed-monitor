@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * The JournalLogMonitor class is responsible for monitoring the Elite Dangerous log directory
@@ -32,6 +33,7 @@ public class JournalLogMonitor {
     private final GenericFileMonitor fileMonitor;
     private final Dispatcher dispatcher;
     private final ExecutorService parsingPool;
+    private final Consumer<JSONObject> rawEventListener;
     /**
      * Constructs a LogMonitor.
      *
@@ -40,7 +42,22 @@ public class JournalLogMonitor {
      */
     public JournalLogMonitor(Path logDirectoryPath,
                              Map<String, LogEventHandler> eventHandlers, Dispatcher dispatcher) {
+        this(logDirectoryPath, eventHandlers, dispatcher, null);
+    }
+
+    /**
+     * Constructs a LogMonitor with an additional tap that observes every parsed journal event,
+     * regardless of whether a handler is registered for its event type.
+     *
+     * @param logDirectoryPath   the path to the folder containing your Journal.log
+     * @param eventHandlers      the list of event handlers to dispatch incoming events to
+     * @param rawEventListener   optional callback invoked for every successfully parsed event
+     */
+    public JournalLogMonitor(Path logDirectoryPath,
+                             Map<String, LogEventHandler> eventHandlers, Dispatcher dispatcher,
+                             Consumer<JSONObject> rawEventListener) {
         this.dispatcher = dispatcher;
+        this.rawEventListener = rawEventListener;
 
         // Process lastest log file in the directory
         List<Path> logFiles = findLogFiles(logDirectoryPath);
@@ -135,6 +152,13 @@ public class JournalLogMonitor {
         try {
             JSONObject json = new JSONObject(new JSONTokener(line));
             String eventType = json.getString("event");
+            if (rawEventListener != null) {
+                try {
+                    rawEventListener.accept(json);
+                } catch (Exception ex) {
+                    log.warn("rawEventListener failed for event '{}': {}", eventType, ex.getMessage());
+                }
+            }
             // Dispatch to all handlers that claim they can handle this event
             LogEventHandler logEventHandler = handlers.get(eventType);
             if (logEventHandler != null) {

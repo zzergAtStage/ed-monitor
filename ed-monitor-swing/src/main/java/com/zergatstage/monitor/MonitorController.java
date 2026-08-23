@@ -4,6 +4,12 @@ import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -99,6 +105,57 @@ public class MonitorController {
     public void onExit(ActionEvent e) {
         stopAll();
         exitHandler.exit(0);
+    }
+
+    /**
+     * Relaunches the application with the same command line the current JVM was started with,
+     * then gracefully shuts down this instance. Used after a setting (e.g. UI scale) that only
+     * takes effect on a fresh launch.
+     *
+     * @return true if a new process was successfully started (this process will exit shortly
+     *         after); false if the relaunch could not be performed, in which case this instance
+     *         keeps running unchanged.
+     */
+    public boolean restartApplication() {
+        if (!relaunchProcess()) {
+            return false;
+        }
+        stopAll();
+        exitHandler.exit(0);
+        return true;
+    }
+
+    private boolean relaunchProcess() {
+        ProcessHandle.Info info = ProcessHandle.current().info();
+        Optional<String> command = info.command();
+        if (command.isEmpty()) {
+            log.warn("Cannot relaunch: current process command is unavailable.");
+            return false;
+        }
+
+        List<String> commandLine = new ArrayList<>();
+        commandLine.add(preferWindowlessJavaLauncher(command.get()));
+        info.arguments().ifPresent(args -> commandLine.addAll(Arrays.asList(args)));
+
+        try {
+            new ProcessBuilder(commandLine).inheritIO().start();
+            log.info("Relaunched application: {}", commandLine);
+            return true;
+        } catch (IOException e) {
+            log.warn("Failed to relaunch application: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * On Windows, prefer javaw.exe over java.exe for the relaunch so no console window flashes.
+     */
+    private static String preferWindowlessJavaLauncher(String javaExecutable) {
+        if (!javaExecutable.endsWith("java.exe")) {
+            return javaExecutable;
+        }
+        Path javaw = Path.of(javaExecutable).resolveSibling("javaw.exe");
+        return Files.exists(javaw) ? javaw.toString() : javaExecutable;
     }
 
     public void toggleLogMonitor(ActionEvent e) {

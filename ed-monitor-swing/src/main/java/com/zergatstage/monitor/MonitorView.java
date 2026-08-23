@@ -30,9 +30,11 @@ import javax.swing.event.MenuListener;
 import com.zergatstage.monitor.component.ConstructionSitePanel;
 import com.zergatstage.monitor.component.DictionaryManagerDialog;
 import com.zergatstage.monitor.component.DroneProvisionerPanel;
+import com.zergatstage.monitor.component.EventViewerPanel;
 import com.zergatstage.monitor.component.ServerManagementMenu;
 import com.zergatstage.monitor.config.UiConstants;
 import com.zergatstage.monitor.theme.AppTheme;
+import com.zergatstage.monitor.theme.ScaleManager;
 import com.zergatstage.monitor.theme.ThemeManager;
 import com.zergatstage.monitor.util.KeyBindingUtil;
 
@@ -45,6 +47,7 @@ public class MonitorView {
     private final JFrame frame;
     private final DroneProvisionerPanel droneProvisionerPanel;
     private final ConstructionSitePanel constructionSitePanel;
+    private final EventViewerPanel eventViewerPanel;
     private float currentOpacity = 0.6f;
     private boolean overlayMode = false;
 
@@ -55,6 +58,7 @@ public class MonitorView {
 
         droneProvisionerPanel = new DroneProvisionerPanel();
         constructionSitePanel = new ConstructionSitePanel();
+        eventViewerPanel = new EventViewerPanel();
         // Status labels
         Image icon = null;
         try {
@@ -83,6 +87,7 @@ public class MonitorView {
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Construction Sites", constructionSitePanel);
         tabs.addTab("Asteroid provisioner", droneProvisionerPanel);
+        tabs.addTab("Events", eventViewerPanel);
 
         mainPanel.add(tabs, BorderLayout.CENTER);
 
@@ -196,9 +201,41 @@ public class MonitorView {
         themeMenu.add(light);
         themeMenu.add(dark);
         settings.add(themeMenu);
+        settings.add(createScaleMenu());
 
         syncThemeSelection(light, dark);
         return settings;
+    }
+
+    private JMenu createScaleMenu() {
+        JMenu scaleMenu = new JMenu(UiConstants.SCALE_SUBMENU);
+        ButtonGroup group = new ButtonGroup();
+        int currentPercent = ScaleManager.getInstance().getCurrentScalePercent();
+        for (int percent : ScaleManager.SUPPORTED_SCALE_PERCENTS) {
+            JRadioButtonMenuItem item = new JRadioButtonMenuItem(percent + "%", percent == currentPercent);
+            item.addActionListener(e -> onScaleSelected(percent));
+            group.add(item);
+            scaleMenu.add(item);
+        }
+        return scaleMenu;
+    }
+
+    private void onScaleSelected(int percent) {
+        if (percent == ScaleManager.getInstance().getCurrentScalePercent()) {
+            return;
+        }
+        ScaleManager.getInstance().setScalePercentForNextLaunch(percent);
+        int choice = JOptionPane.showConfirmDialog(frame,
+                "UI scale set to " + percent + "%. This takes effect after a restart.\nRestart now?",
+                "Restart required",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        if (choice == JOptionPane.YES_OPTION && !controller.restartApplication()) {
+            JOptionPane.showMessageDialog(frame,
+                    "Could not restart automatically. Please close and reopen the app to apply the new scale.",
+                    "Restart failed",
+                    JOptionPane.WARNING_MESSAGE);
+        }
     }
 
     private void syncThemeSelection(JRadioButtonMenuItem light, JRadioButtonMenuItem dark) {

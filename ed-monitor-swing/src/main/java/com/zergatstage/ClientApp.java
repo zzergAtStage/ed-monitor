@@ -8,6 +8,7 @@ import com.zergatstage.monitor.factory.MonitorServiceFactoryImpl;
 import com.zergatstage.monitor.handlers.DefaultExitHandler;
 import com.zergatstage.monitor.service.JournalLogMonitor;
 import com.zergatstage.monitor.service.StatusMonitor;
+import com.zergatstage.monitor.theme.ScaleManager;
 import com.zergatstage.monitor.theme.ThemeManager;
 import lombok.extern.log4j.Log4j2;
 import java.nio.file.Path;
@@ -23,6 +24,10 @@ public class ClientApp {
 
     public static void main(String[] args) {
         System.out.println("Starting Log Monitor Application…");
+
+        // Must run before any Swing/FlatLaf class is touched: FlatLaf reads its uiScale
+        // system property exactly once, at Look & Feel setup.
+        ScaleManager.getInstance().applyStartupScale();
 
         log.info("Debug enabled? {}", log.isDebugEnabled());
 
