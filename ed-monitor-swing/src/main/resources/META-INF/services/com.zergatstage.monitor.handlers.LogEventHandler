@@ -9,3 +9,6 @@ com.zergatstage.monitor.handlers.LocationEventHandler
 com.zergatstage.monitor.handlers.LoadoutEventHandler
 com.zergatstage.monitor.handlers.MarketBuyEventHandler
 com.zergatstage.monitor.handlers.MarketSellEventHandler
+com.zergatstage.monitor.handlers.CarrierStatsEventHandler
+com.zergatstage.monitor.handlers.CarrierJumpEventHandler
+com.zergatstage.monitor.handlers.CarrierLocationEventHandler

@@ -5,6 +5,8 @@ import com.zergatstage.monitor.http.dto.ConstructionSiteDto;
 import com.zergatstage.monitor.http.dto.MarketDto;
 import com.zergatstage.monitor.http.dto.MarketItemDto;
 import com.zergatstage.monitor.http.dto.MaterialRequirementDto;
+import com.zergatstage.monitor.routes.dto.CarrierSnapshot;
+import com.zergatstage.monitor.routes.dto.HaulingMode;
 import com.zergatstage.monitor.routes.dto.RouteOptimizationRequest;
 import com.zergatstage.monitor.routes.dto.RoutePlanDto;
 import com.zergatstage.monitor.routes.spi.RouteOptimizerDataProvider;
@@ -298,6 +300,189 @@ class GreedyRouteOptimizationServiceTest {
 
         assertEquals(1.0, plan.getCoverageFraction(), EPS,
             "Planetary port should still be used when it's the only source of the material");
+    }
+
+    @Test
+    void unloadToSiteSplitsCarrierHoldIntoShipCapacitySizedRuns() {
+        CommodityDto ironOre = commodity(200, "IronOre");
+        ConstructionSiteDto site = siteDto(200L, requirement(200, ironOre, 3000));
+
+        Map<Long, Integer> hold = new HashMap<>();
+        hold.put(200L, 3000);
+        CarrierSnapshot carrier = new CarrierSnapshot(9000L, "System", 0, hold);
+
+        GreedyRouteOptimizationService service = service(site /* candidate markets irrelevant */);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(200L, 500);
+        request.setMode(HaulingMode.UNLOAD_TO_SITE);
+        request.setCarrier(carrier);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals(6, plan.getRuns().size(), "3000t at 500t per run should take exactly 6 runs");
+        for (var run : plan.getRuns()) {
+            assertEquals(500.0, run.getTotalTonnage(), EPS);
+            assertEquals(1, run.getLegs().size());
+            assertEquals(9000L, run.getLegs().get(0).getMarketId(),
+                "every leg should be sourced from the carrier acting as the sole market");
+        }
+    }
+
+    @Test
+    void unloadToSiteNeverPlansMoreThanSiteStillNeeds() {
+        CommodityDto steel = commodity(201, "SteelUnload");
+        ConstructionSiteDto site = siteDto(201L, requirement(201, steel, 200));
+
+        Map<Long, Integer> hold = new HashMap<>();
+        hold.put(201L, 1000);
+        CarrierSnapshot carrier = new CarrierSnapshot(9001L, "System", 0, hold);
+
+        GreedyRouteOptimizationService service = service(site);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(201L, 500);
+        request.setMode(HaulingMode.UNLOAD_TO_SITE);
+        request.setCarrier(carrier);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        double totalPlanned = plan.getRuns().stream().mapToDouble(r -> r.getTotalTonnage()).sum();
+        assertEquals(200.0, totalPlanned, EPS,
+            "site only needs 200t more, so the carrier's extra 800t must not be planned");
+    }
+
+    @Test
+    void loadCarrierCapsTotalPlannedTonnageAtCarrierFreeSpace() {
+        CommodityDto alphaOre = commodity(210, "AlphaOre");
+        CommodityDto betaOre = commodity(211, "BetaOre");
+        ConstructionSiteDto site = siteDto(210L,
+            requirement(210, alphaOre, 6000),
+            requirement(211, betaOre, 4000));
+
+        MarketDto alphaMarket = market(910, "Alpha Market", item(alphaOre, 6000));
+        MarketDto betaMarket = market(911, "Beta Market", item(betaOre, 4000));
+
+        GreedyRouteOptimizationService service = service(site, alphaMarket, betaMarket);
+        CarrierSnapshot carrier = new CarrierSnapshot(9010L, "System", 2000, Map.of());
+        RouteOptimizationRequest request = new RouteOptimizationRequest(210L, 500);
+        request.setMode(HaulingMode.LOAD_CARRIER);
+        request.setCarrier(carrier);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        double totalPlanned = plan.getRuns().stream().mapToDouble(r -> r.getTotalTonnage()).sum();
+        assertTrue(totalPlanned <= 2000.0 + EPS,
+            "10000t of outstanding demand must not exceed the carrier's 2000t free space");
+        assertEquals(2000.0, totalPlanned, EPS,
+            "stock is plentiful, so the full 2000t of free space should be used");
+    }
+
+    @Test
+    void loadCarrierPrioritizesScarceCommodityWhenSpaceIsTight() {
+        CommodityDto rare = commodity(212, "RareOre");
+        CommodityDto common = commodity(213, "CommonOre");
+        ConstructionSiteDto site = siteDto(212L,
+            requirement(212, rare, 500),
+            requirement(213, common, 500));
+
+        // Rare is sold by exactly one market (scarcityWeight = 1/1 = 1.0);
+        // common is sold by three markets (scarcityWeight = 1/3).
+        MarketDto rareMarket = market(920, "Rare Only Hub", item(rare, 500));
+        MarketDto commonMarketA = market(921, "Common Hub A", item(common, 500));
+        MarketDto commonMarketB = market(922, "Common Hub B", item(common, 500));
+        MarketDto commonMarketC = market(923, "Common Hub C", item(common, 500));
+
+        GreedyRouteOptimizationService service =
+            service(site, rareMarket, commonMarketA, commonMarketB, commonMarketC);
+        CarrierSnapshot carrier = new CarrierSnapshot(9020L, "System", 500, Map.of());
+        RouteOptimizationRequest request = new RouteOptimizationRequest(212L, 500);
+        request.setMode(HaulingMode.LOAD_CARRIER);
+        request.setCarrier(carrier);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        double rareTons = sumPurchasesForMaterial(plan, "RareOre");
+        double commonTons = sumPurchasesForMaterial(plan, "CommonOre");
+        assertEquals(500.0, rareTons, EPS, "the scarce commodity should get the entire tight carrier space");
+        assertEquals(0.0, commonTons, EPS, "the common commodity should be dropped when space is tight");
+    }
+
+    @Test
+    void loadCarrierSubtractsWhatCarrierAlreadyHolds() {
+        CommodityDto widget = commodity(220, "Widget");
+        ConstructionSiteDto site = siteDto(220L, requirement(220, widget, 500));
+        MarketDto widgetMarket = market(920 + 10, "Widget Market", item(widget, 500));
+
+        Map<Long, Integer> hold = new HashMap<>();
+        hold.put(220L, 300);
+        CarrierSnapshot carrier = new CarrierSnapshot(9021L, "System", 1000, hold);
+
+        GreedyRouteOptimizationService service = service(site, widgetMarket);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(220L, 500);
+        request.setMode(HaulingMode.LOAD_CARRIER);
+        request.setCarrier(carrier);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        double totalPlanned = plan.getRuns().stream().mapToDouble(r -> r.getTotalTonnage()).sum();
+        assertEquals(200.0, totalPlanned, EPS,
+            "carrier already holds 300t of the 500t needed, so only 200t should be planned");
+        assertEquals(1.0, plan.getCoverageFraction(), EPS);
+    }
+
+    @Test
+    void supplyHubMarketWinsOverEquivalentNonHubMarket() {
+        CommodityDto metals = commodity(230, "Metals");
+        ConstructionSiteDto site = siteDto(230L, requirement(230, metals, 60));
+
+        MarketDto hub = market(930, "Hub Market", item(metals, 60));
+        hub.setSupplyHub(true);
+        MarketDto plain = market(931, "Plain Market", item(metals, 60));
+
+        GreedyRouteOptimizationService service = service(site, plain, hub);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(230L, 60);
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals("Hub Market", plan.getRuns().get(0).getLegs().get(0).getMarketName(),
+            "a market flagged as a supply hub should be preferred over an equivalent non-hub market");
+    }
+
+    @Test
+    void directModeIsDefaultWhenModeIsNotSet() {
+        CommodityDto steel = commodity(231, "SteelDirect");
+        CommodityDto polymers = commodity(232, "PolymersDirect");
+
+        ConstructionSiteDto site = siteDto(231L,
+            requirement(231, steel, 10),
+            requirement(232, polymers, 5));
+
+        MarketDto depot = market(940, "Depot", item(steel, 50), item(polymers, 50));
+
+        GreedyRouteOptimizationService service = service(site, depot);
+        RouteOptimizationRequest request = new RouteOptimizationRequest(231L, 100);
+
+        assertEquals(HaulingMode.DIRECT, request.getMode(), "mode should default to DIRECT");
+
+        RoutePlanDto plan = service.buildRoutePlan(request);
+
+        assertEquals(1, plan.getRuns().size());
+        assertEquals(1.0, plan.getCoverageFraction(), EPS);
+        var run = plan.getRuns().get(0);
+        assertEquals(1, run.getLegs().size());
+        assertEquals(15.0, run.getTotalTonnage(), EPS);
+        assertEquals(2, run.getMaterialsSummaryTons().size());
+    }
+
+    private static double sumPurchasesForMaterial(RoutePlanDto plan, String materialName) {
+        double total = 0;
+        for (var run : plan.getRuns()) {
+            for (var leg : run.getLegs()) {
+                for (var purchase : leg.getPurchases()) {
+                    if (materialName.equals(purchase.getMaterialName())) {
+                        total += purchase.getAmountTons();
+                    }
+                }
+            }
+        }
+        return total;
     }
 
     private GreedyRouteOptimizationService service(ConstructionSiteDto site, MarketDto... markets) {

@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +24,9 @@ public class MarketDto {
     private String stationName;
     private String stationType;
     private String systemName;
+
+    private boolean supplyHub;
+    private Instant lastUpdated;
 
     @Valid
     private List<MarketItemDto> items = new ArrayList<>();

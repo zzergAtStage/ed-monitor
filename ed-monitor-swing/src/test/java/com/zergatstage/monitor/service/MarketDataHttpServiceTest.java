@@ -37,8 +37,16 @@ class MarketDataHttpServiceTest {
     void postAndGetMarkets() throws Exception {
         // Enqueue responses
         server.enqueue(new MockResponse().setResponseCode(201));
-        MarketDto dto = new MarketDto(1L, "Station", "Type", "System",
-                List.of(new MarketItemDto(new CommodityDto(1L, "Gold", "Gold", "Metals", "Metals"), 1, 2, 3, 4)));
+        // Populated field-by-field rather than through the all-args constructor: MarketDto gains
+        // fields as the feature set grows, and every new field silently breaks a positional
+        // constructor call here. Setters keep this test independent of field count and order.
+        MarketDto dto = new MarketDto();
+        dto.setMarketId(1L);
+        dto.setStationName("Station");
+        dto.setStationType("Type");
+        dto.setSystemName("System");
+        dto.setItems(List.of(
+                new MarketItemDto(new CommodityDto(1L, "Gold", "Gold", "Metals", "Metals"), 1, 2, 3, 4)));
         String body = mapper.writeValueAsString(new MarketDto[]{dto});
         server.enqueue(new MockResponse().setResponseCode(200).setBody(body).addHeader("Content-Type", "application/json"));
 

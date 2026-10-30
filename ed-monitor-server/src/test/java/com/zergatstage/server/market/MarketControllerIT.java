@@ -32,7 +32,7 @@ class MarketControllerIT {
         // Build payload
         CommodityDto commodity = new CommodityDto(128049154L, "Gold", "Gold", "Metals", "Metals");
         MarketItemDto item = new MarketItemDto(commodity, 48000, 47000, 100, 0);
-        MarketDto market = new MarketDto(3516841984L, "Baxter Base", "CraterPort", "Some System", List.of(item));
+        MarketDto market = new MarketDto(3516841984L, "Baxter Base", "CraterPort", "Some System", false, null, List.of(item));
 
         // POST list
         ResponseEntity<MarketDto[]> postRes = rest.postForEntity(url("/api/v1/markets"), List.of(market), MarketDto[].class);

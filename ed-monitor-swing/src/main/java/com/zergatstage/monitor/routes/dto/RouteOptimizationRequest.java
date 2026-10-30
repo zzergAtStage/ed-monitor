@@ -23,6 +23,19 @@ public class RouteOptimizationRequest {
     private Map<Long, Integer> onboardCommodities = new HashMap<>();
 
     /**
+     * How cargo should be routed with respect to a personal Fleet Carrier. Defaults to
+     * {@link HaulingMode#DIRECT} (no carrier involvement) and is never {@code null}.
+     */
+    private HaulingMode mode = HaulingMode.DIRECT;
+
+    /**
+     * Snapshot of the Fleet Carrier to haul via, required for {@link HaulingMode#LOAD_CARRIER}
+     * and {@link HaulingMode#UNLOAD_TO_SITE}. {@code null} when {@link #mode} is
+     * {@link HaulingMode#DIRECT}.
+     */
+    private CarrierSnapshot carrier;
+
+    /**
      * Creates an empty request with the default {@link #maxMarketsPerRun} value.
      */
     public RouteOptimizationRequest() {
@@ -110,6 +123,35 @@ public class RouteOptimizationRequest {
         this.onboardCommodities = onboardCommodities != null ? new HashMap<>(onboardCommodities) : new HashMap<>();
     }
 
+    /**
+     * @return how cargo should be routed with respect to a personal Fleet Carrier; never {@code null}
+     */
+    public HaulingMode getMode() {
+        return mode;
+    }
+
+    /**
+     * @param mode how cargo should be routed with respect to a personal Fleet Carrier;
+     *             {@code null} is normalized to {@link HaulingMode#DIRECT}
+     */
+    public void setMode(HaulingMode mode) {
+        this.mode = mode != null ? mode : HaulingMode.DIRECT;
+    }
+
+    /**
+     * @return snapshot of the Fleet Carrier to haul via, or {@code null} when not applicable
+     */
+    public CarrierSnapshot getCarrier() {
+        return carrier;
+    }
+
+    /**
+     * @param carrier snapshot of the Fleet Carrier to haul via, or {@code null} when not applicable
+     */
+    public void setCarrier(CarrierSnapshot carrier) {
+        this.carrier = carrier;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -121,12 +163,16 @@ public class RouteOptimizationRequest {
         RouteOptimizationRequest that = (RouteOptimizationRequest) o;
         return Double.compare(that.cargoCapacityTons, cargoCapacityTons) == 0
             && maxMarketsPerRun == that.maxMarketsPerRun
-            && Objects.equals(constructionSiteId, that.constructionSiteId);
+            && Objects.equals(constructionSiteId, that.constructionSiteId)
+            && Objects.equals(onboardCommodities, that.onboardCommodities)
+            && mode == that.mode
+            && Objects.equals(carrier, that.carrier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(constructionSiteId, cargoCapacityTons, maxMarketsPerRun);
+        return Objects.hash(constructionSiteId, cargoCapacityTons, maxMarketsPerRun,
+            onboardCommodities, mode, carrier);
     }
 
     @Override
@@ -135,6 +181,9 @@ public class RouteOptimizationRequest {
             + "constructionSiteId=" + constructionSiteId
             + ", cargoCapacityTons=" + cargoCapacityTons
             + ", maxMarketsPerRun=" + maxMarketsPerRun
+            + ", onboardCommodities=" + onboardCommodities
+            + ", mode=" + mode
+            + ", carrier=" + carrier
             + '}';
     }
 }

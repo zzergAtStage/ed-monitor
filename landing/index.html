@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ed-monitor is a free, open-source Java desktop and optional server toolkit for Elite Dangerous. It reads the game's Journal.log in real time and turns it into live trackers and a route planner.">
+  <title>ED-MONITOR — Elite Dangerous journal, turned into a live command console</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+
+  <header class="site-header">
+    <nav class="top-nav" aria-label="Primary">
+      <a class="brand" href="#hero">
+        <img class="brand-logo" src="../assets/app-logo.png" alt="ed-monitor logo" height="32" width="32">
+        <span class="brand-name">ED-MONITOR</span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="primaryMenu" aria-label="Toggle navigation menu">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+
+      <ul class="primary-menu" id="primaryMenu">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#route-optimizer">Route Optimizer</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#timeline">Timeline</a></li>
+        <li><a href="#get-started">Get started</a></li>
+        <li class="nav-github"><a href="https://github.com/zzergAtStage/ed-monitor" rel="noopener" target="_blank">View on GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-inner reveal">
+        <p class="eyebrow">Free &amp; open source · Java desktop toolkit</p>
+        <h1>ED-MONITOR</h1>
+        <p class="tagline">Your Elite Dangerous journal, turned into a live command console.</p>
+        <span class="badge">v0.3.1</span>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#get-started">Get started</a>
+          <a class="btn btn-secondary" href="https://github.com/zzergAtStage/ed-monitor" rel="noopener" target="_blank">View on GitHub</a>
+        </div>
+        <img class="hero-image" src="../Docs/Cobra.png" alt="Cobra Mk III illustration">
+      </div>
+    </section>
+
+    <section id="features">
+      <h2 class="section-title reveal">Features</h2>
+      <ul class="feature-grid">
+        <li class="feature-card reveal">
+          <h3>Live journal monitoring</h3>
+          <p>Polls the Elite Dangerous journal every second and reads only new data; the whole journal is replayed at startup so trackers are rebuilt from scratch.</p>
+        </li>
+        <li class="feature-card reveal">
+          <h3>Colonisation construction tracking</h3>
+          <p>Tracks construction sites and the materials still required vs. delivered; highlights required and carried commodities.</p>
+        </li>
+        <li class="feature-card reveal">
+          <h3>Cargo tracking</h3>
+          <p>A reconciled view of what is in the cargo bay, matched against docked market data.</p>
+        </li>
+        <li class="feature-card reveal">
+          <h3>Route optimizer</h3>
+          <p>Plans multi-market delivery runs per construction site with cargo-capacity and max-market constraints; shows per-run leg breakdowns and tonnage coverage.</p>
+        </li>
+        <li class="feature-card reveal">
+          <h3>Persistent market data</h3>
+          <p>An optional local server stores market data (H2 database) and exposes a small REST API on port 50080; the desktop client syncs with it automatically.</p>
+        </li>
+        <li class="feature-card reveal">
+          <h3>Dark &amp; light themes</h3>
+          <p>Modern FlatLaf themes, detects the Windows 11 theme, switchable at runtime.</p>
+        </li>
+        <li class="feature-card reveal">
+          <h3>Overlay mode and shortcuts</h3>
+          <p>Compact overlay mode; double-press Esc to minimise the main window, single Esc closes dialogs.</p>
+        </li>
+        <li class="feature-card reveal">
+          <h3>Asteroid mining helper</h3>
+          <p>Shows proportions of the most valuable metals with colour-coded highlighting.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section id="screenshots">
+      <h2 class="section-title reveal">Screenshots</h2>
+      <div class="gallery" id="gallery">
+        <button class="thumb" type="button" data-index="0">
+          <img src="../Docs/ConstructionSiteView-0.3.0.png" alt="Construction site view in dark theme, listing required materials and delivered quantities" loading="lazy">
+        </button>
+        <button class="thumb" type="button" data-index="1">
+          <img src="../Docs/ConstructionSiteViewLight-0.3.0.png" alt="Construction site view in light theme" loading="lazy">
+        </button>
+        <button class="thumb" type="button" data-index="2">
+          <img src="../Docs/RouteOptimizerView-0.3.0.png" alt="Route optimizer showing planned delivery runs and legs" loading="lazy">
+        </button>
+        <button class="thumb" type="button" data-index="3">
+          <img src="../Docs/AppSwithDark-LightTheme-0.3.0.png" alt="Switching between dark and light themes" loading="lazy">
+        </button>
+        <button class="thumb" type="button" data-index="4">
+          <img src="../Docs/AppOverlayMode-0.3.0.png" alt="Compact overlay mode on top of the game" loading="lazy">
+        </button>
+        <button class="thumb" type="button" data-index="5">
+          <img src="../Docs/AppServerManagementBeta-0.3.0.png" alt="Server management panel (beta)" loading="lazy">
+        </button>
+      </div>
+    </section>
+
+    <section id="route-optimizer">
+      <h2 class="section-title reveal">Route Optimizer</h2>
+      <p class="section-subtitle reveal">Plan multi-market delivery runs per construction site, scored by stock, scarcity, same-system proximity and planetary-port penalties.</p>
+      <ol class="steps">
+        <li class="step reveal">
+          <span class="step-number" aria-hidden="true">01</span>
+          <h3>Load site context and candidate markets</h3>
+        </li>
+        <li class="step reveal">
+          <span class="step-number" aria-hidden="true">02</span>
+          <h3>Tune cargo capacity and max markets per run</h3>
+        </li>
+        <li class="step reveal">
+          <span class="step-number" aria-hidden="true">03</span>
+          <h3>Read the leg breakdown and tonnage coverage</h3>
+        </li>
+      </ol>
+    </section>
+
+    <section id="how-it-works">
+      <h2 class="section-title reveal">How it works</h2>
+      <div class="arch-diagram reveal" aria-label="ed-monitor architecture diagram">
+        <div class="arch-box">Journal.log</div>
+        <div class="arch-arrow" aria-hidden="true">&#8594;</div>
+        <div class="arch-box">Journal monitor <span class="arch-note">(1&nbsp;s polling)</span></div>
+        <div class="arch-arrow" aria-hidden="true">&#8594;</div>
+        <div class="arch-box">Event handlers</div>
+        <div class="arch-arrow" aria-hidden="true">&#8594;</div>
+        <div class="arch-box">Managers</div>
+        <div class="arch-arrow" aria-hidden="true">&#8594;</div>
+        <div class="arch-box">Swing UI</div>
+        <div class="arch-sync">
+          <span class="arch-note">Optional: Managers &lt;-&gt; Spring Boot server (REST + H2)</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="timeline">
+      <h2 class="section-title reveal">Timeline</h2>
+      <ol class="timeline">
+        <li class="timeline-item reveal">
+          <span class="timeline-dot" aria-hidden="true"></span>
+          <div class="timeline-body">
+            <h3><span class="version">0.3.1</span></h3>
+            <p>Route optimizer locality scoring fix; fixed a backend startup race; log viewer and UI scaling settings.</p>
+          </div>
+        </li>
+        <li class="timeline-item reveal">
+          <span class="timeline-dot" aria-hidden="true"></span>
+          <div class="timeline-body">
+            <h3><span class="version">0.3.0</span></h3>
+            <p>Dark/light themes, Elite-inspired material highlighting, global key bindings, route optimizer polish.</p>
+          </div>
+        </li>
+        <li class="timeline-item reveal">
+          <span class="timeline-dot" aria-hidden="true"></span>
+          <div class="timeline-body">
+            <h3><span class="version">0.1.1</span></h3>
+            <p>Asteroid mining helper (metal proportions with colour coding).</p>
+          </div>
+        </li>
+        <li class="timeline-item reveal">
+          <span class="timeline-dot" aria-hidden="true"></span>
+          <div class="timeline-body">
+            <h3><span class="version">0.1.0</span></h3>
+            <p>Reworked core, commodity tracker matched to docked market data, reliable cargo-bay tracking.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="get-started">
+      <h2 class="section-title reveal">Get started</h2>
+      <p class="requirements reveal">Requires JDK 21+ and Maven to build. Built with Java (Swing desktop client, Spring Boot server). Runs on Windows.</p>
+      <div class="code-block reveal">
+        <button class="copy-btn" id="copyBtn" type="button">Copy</button>
+        <pre><code id="quickStartCode">git clone https://github.com/zzergAtStage/ed-monitor.git
+cd ed-monitor
+.\mvnw clean install -DskipTests
+.\mvnw -pl ed-monitor-swing -am exec:java</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Free and open source. Not affiliated with or endorsed by Frontier Developments plc. Elite Dangerous is a trademark of Frontier Developments plc.</p>
+    <p><a href="https://github.com/zzergAtStage/ed-monitor" rel="noopener" target="_blank">View on GitHub</a></p>
+    <p class="footer-year" id="footerYear"></p>
+  </footer>
+
+  <dialog class="lightbox" id="lightbox">
+    <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+    <div class="lightbox-frame" role="document">
+      <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close image">✕</button>
+      <img class="lightbox-img" id="lightboxImg" src="" alt="">
+      <p class="lightbox-caption" id="lightboxCaption"></p>
+      <div class="lightbox-controls">
+        <button class="lightbox-prev" id="lightboxPrev" type="button" aria-label="Previous image">&#8592;</button>
+        <button class="lightbox-next" id="lightboxNext" type="button" aria-label="Next image">&#8594;</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

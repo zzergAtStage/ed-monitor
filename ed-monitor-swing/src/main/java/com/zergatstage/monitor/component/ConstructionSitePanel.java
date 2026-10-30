@@ -68,6 +68,25 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
     private static final int FALLBACK_CARGO_CAPACITY = 1298;
 
     /**
+     * Invoked by {@link #openRouteOptimizer()} with the selected site's market id when set. When
+     * present, "Plan Route..." hands off to this listener (the Hauling tab) instead of opening the
+     * legacy {@link RouteOptimizerDialog}.
+     */
+    private java.util.function.LongConsumer planRouteListener;
+
+    /**
+     * Registers the callback invoked when the commander clicks "Plan Route..." with exactly one
+     * site selected. Typically wired by {@code MonitorView} to select the Hauling tab and
+     * preselect the site there. When no listener is registered, the legacy modal
+     * {@link RouteOptimizerDialog} is used instead so the panel remains functional standalone.
+     *
+     * @param listener callback receiving the selected site's market id, or {@code null} to clear
+     */
+    public void setPlanRouteListener(java.util.function.LongConsumer listener) {
+        this.planRouteListener = listener;
+    }
+
+    /**
      * Constructs the ConstructionSitePanel and initializes the UI components.
      */
     public ConstructionSitePanel() {
@@ -518,6 +537,10 @@ public class ConstructionSitePanel extends JPanel implements ConstructionSiteUpd
                     "Unable to load construction site details.",
                     "Route Optimizer",
                     JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (planRouteListener != null) {
+            planRouteListener.accept(site.getMarketId());
             return;
         }
         try {

@@ -165,6 +165,11 @@ public class RouteOptimizerModel {
             source.getMaxMarketsPerRun()
         );
         copy.setOnboardCommodities(source.getOnboardCommodities());
+        // mode/carrier must survive the copy: every parameter update (capacity, max markets,
+        // onboard cargo) round-trips the request through here, so dropping them would silently
+        // reset a Fleet Carrier hauling plan back to DIRECT before the optimizer ever sees it.
+        copy.setMode(source.getMode());
+        copy.setCarrier(source.getCarrier());
         return copy;
     }
 }

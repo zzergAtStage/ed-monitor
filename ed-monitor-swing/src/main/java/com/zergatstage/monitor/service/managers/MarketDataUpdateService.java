@@ -9,7 +9,10 @@ import com.zergatstage.monitor.service.CommodityRegistry;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONException;
 
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Service responsible for handling market data updates.
@@ -85,6 +88,7 @@ public class MarketDataUpdateService extends BaseManager{
             }
             marketCache.putFirst(parsedMarket.getMarketId(), parsedMarket);
             commodityRegistry.loadMarketData(marketCache);
+            applyCarrierHoldSnapshotIfOwnCarrierMarket(parsedMarket);
             try {
                 if (httpService != null) {
                     httpService.postMarkets(java.util.List.of(MarketDtoMapper.toDto(parsedMarket)));
@@ -98,6 +102,41 @@ public class MarketDataUpdateService extends BaseManager{
             // Log the parsing error; consider using a logging framework in production
             log.error("Error parsing market data: {}", e.getMessage());
         }
+    }
+
+    /**
+     * When the player opens the commodity screen on their own Fleet Carrier, the game rewrites
+     * {@code Market.json} with the carrier's own market (a full listing of everything currently
+     * in the hold, as stock). That in-game screen is the only place the true carrier hold is
+     * ever fully re-read from scratch, so this market doubles as the authoritative hold snapshot
+     * for {@link CarrierManager} - every other update path (cargo transfers, manual edits) is
+     * either a delta on top of it or an explicit override, never a fresh full read.
+     * <p>
+     * This is purely an additional side effect: the normal market-cache/upsert handling above is
+     * unchanged, and the snapshot is only attempted when the market is unambiguously identifiable
+     * as the player's own carrier (matching {@code StationType} and {@code MarketID} against the
+     * known carrier id).
+     *
+     * @param parsedMarket the just-parsed market, already upserted into the cache
+     */
+    private void applyCarrierHoldSnapshotIfOwnCarrierMarket(Market parsedMarket) {
+        if (!"FleetCarrier".equalsIgnoreCase(parsedMarket.getStationType())) {
+            return;
+        }
+        long carrierId = CarrierManager.getInstance().getCarrierId();
+        if (carrierId == 0 || parsedMarket.getMarketId() == null || carrierId != parsedMarket.getMarketId()) {
+            log.debug("Skipping carrier hold snapshot: carrier id not yet known or market id mismatch " +
+                    "(carrierId={}, marketId={}).", carrierId, parsedMarket.getMarketId());
+            return;
+        }
+        Map<Long, Integer> quantitiesByCommodityId = new HashMap<>();
+        for (MarketItem item : parsedMarket.getItems().values()) {
+            if (item.getCommodity() != null) {
+                quantitiesByCommodityId.put(item.getCommodity().getId(), item.getStock());
+            }
+        }
+        Instant snapshotAt = parsedMarket.getLastUpdated() != null ? parsedMarket.getLastUpdated() : Instant.now();
+        CarrierManager.getInstance().applyHoldSnapshot(quantitiesByCommodityId, snapshotAt);
     }
 
     /**

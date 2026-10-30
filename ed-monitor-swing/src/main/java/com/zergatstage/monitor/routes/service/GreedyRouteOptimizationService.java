@@ -5,7 +5,9 @@ import com.zergatstage.monitor.http.dto.ConstructionSiteDto;
 import com.zergatstage.monitor.http.dto.MarketDto;
 import com.zergatstage.monitor.http.dto.MarketItemDto;
 import com.zergatstage.monitor.http.dto.MaterialRequirementDto;
+import com.zergatstage.monitor.routes.dto.CarrierSnapshot;
 import com.zergatstage.monitor.routes.dto.DeliveryRunDto;
+import com.zergatstage.monitor.routes.dto.HaulingMode;
 import com.zergatstage.monitor.routes.dto.PurchaseDto;
 import com.zergatstage.monitor.routes.dto.RouteOptimizationRequest;
 import com.zergatstage.monitor.routes.dto.RoutePlanDto;
@@ -67,7 +69,12 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
     private static final double PLANETARY_STATION_PENALTY = 0.85;
     private static final Set<String> PLANETARY_STATION_TYPES = Set.of(
         "craterport", "crateroutpost", "surfacestation", "onfootsettlement");
-    
+
+    // A market flagged by the player as a bulk supply hub (e.g. a Brewer Corporation station)
+    // is preferred over an equivalent non-hub market, since it is curated to reliably restock
+    // the commodities this optimizer cares about.
+    private static final double SUPPLY_HUB_BONUS = 1.25;
+
     private final RouteOptimizerDataProvider dataProvider;
 
     /**
@@ -103,6 +110,11 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         }
         logConstructionSite(requestId, site);
 
+        HaulingMode mode = request.getMode() != null ? request.getMode() : HaulingMode.DIRECT;
+        if (mode == HaulingMode.LOAD_CARRIER) {
+            return buildCarrierLoadPlan(requestId, request, site);
+        }
+
         Map<String, MaterialDemand> demands = buildMaterialDemands(site);
         logDemandSnapshot(requestId, "INITIAL", demands);
         double initialDemand = initialDemand(demands.values());
@@ -114,6 +126,18 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
 
         List<MarketDto> candidateMarkets = loadCandidateMarkets(request.getConstructionSiteId());
         String siteSystemName = resolveConstructionSiteSystem(site, candidateMarkets);
+        if (mode == HaulingMode.UNLOAD_TO_SITE) {
+            CarrierSnapshot carrier = request.getCarrier();
+            if (carrier == null) {
+                logRouteWarning(requestId, "MISSING_CARRIER",
+                    "carrier snapshot must be provided for UNLOAD_TO_SITE mode");
+                return emptyPlan(request.getConstructionSiteId(), 0);
+            }
+            // The carrier is parked next to the site; feed it as the sole candidate market so the
+            // existing run-building loop (splitting into ship-capacity-sized runs, ordering by
+            // demand) runs completely unchanged.
+            candidateMarkets = List.of(buildCarrierMarket(carrier, siteSystemName));
+        }
         enrichSellerCounts(demands, candidateMarkets);
         List<MarketInventory> inventories = buildMarketInventories(candidateMarkets, demands.keySet());
         logCandidateMarkets(requestId, candidateMarkets, inventories);
@@ -248,6 +272,214 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             demand.initialRequired += remaining;
         }
         return demands;
+    }
+
+    /**
+     * Builds a synthetic {@link MarketDto} representing a Fleet Carrier parked next to the
+     * construction site, for {@link HaulingMode#UNLOAD_TO_SITE}. The market is fed as the sole
+     * candidate into the existing run-building loop unchanged: one {@link MarketItemDto} per
+     * commodity currently held, with {@code buyPrice}/{@code demand} left at zero since no
+     * purchase actually occurs.
+     *
+     * @param carrier         the carrier snapshot to represent as a market
+     * @param siteSystemName  the construction site's system name; deliberately used instead of
+     *                        the carrier's own reported location so the existing
+     *                        {@code SAME_SYSTEM_BONUS} applies and no jump penalty is charged -
+     *                        the carrier is assumed parked at the site
+     * @return synthetic market usable by the existing candidate-market pipeline
+     */
+    private MarketDto buildCarrierMarket(CarrierSnapshot carrier, String siteSystemName) {
+        MarketDto market = new MarketDto();
+        market.setMarketId(carrier.getCarrierId());
+        market.setStationName("Fleet Carrier " + carrier.getCarrierId());
+        market.setStationType("FleetCarrier");
+        market.setSystemName(siteSystemName);
+        List<MarketItemDto> items = new ArrayList<>();
+        for (Map.Entry<Long, Integer> entry : carrier.getHold().entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) {
+                continue;
+            }
+            CommodityDto commodity = new CommodityDto();
+            commodity.setId(entry.getKey());
+            MarketItemDto item = new MarketItemDto();
+            item.setCommodity(commodity);
+            item.setStock(entry.getValue());
+            item.setBuyPrice(0);
+            item.setDemand(0);
+            items.add(item);
+        }
+        market.setItems(items);
+        return market;
+    }
+
+    /**
+     * Builds a route plan whose runs stage materials on the player's Fleet Carrier rather than
+     * delivering them to the construction site, for {@link HaulingMode#LOAD_CARRIER}. A later
+     * {@link HaulingMode#UNLOAD_TO_SITE} run is expected to move the staged cargo from the
+     * carrier to the site.
+     *
+     * <p>The per-commodity target is the site's outstanding demand minus whatever is already on
+     * the carrier or already onboard the ship (credited via a synthetic first run exactly like
+     * {@link #buildOnboardCargoRun}), then the combined total is capped at the carrier's free
+     * cargo space. Capping allocates in descending scarcity order (reusing the
+     * {@code scarcityWeight} computed by {@link #enrichSellerCounts}) so rare commodities make
+     * the cut before common ones are dropped: a common commodity can be topped up on a later
+     * trip, whereas a scarce one may not be available at all by then.</p>
+     *
+     * <p>Runs are then built with the existing {@link #buildSingleRun} loop, but with the route
+     * context's preferred/starting system set to the carrier's system instead of the
+     * construction site's system, since the destination of every run here is the carrier.</p>
+     *
+     * <p><b>Coverage caveat:</b> {@link RoutePlanDto#getCoverageFraction()} for this mode is
+     * computed against the capped carrier-load target established above, not the site's full
+     * outstanding demand. For a build larger than a single carrier load, reaching 100% site
+     * coverage is expected to take several LOAD_CARRIER + UNLOAD_TO_SITE cycles - a plan that
+     * fully loads the carrier will correctly report full (1.0) coverage of this run's target
+     * even though the site itself remains far from complete.</p>
+     *
+     * @param requestId correlation id used for logging
+     * @param request   the optimization request; must carry a non-null {@link CarrierSnapshot}
+     * @param site      the construction site being supplied
+     * @return the carrier-load route plan, or an empty plan if no carrier snapshot, no
+     *         outstanding demand, or no carrier free space is available
+     */
+    private RoutePlanDto buildCarrierLoadPlan(String requestId,
+                                              RouteOptimizationRequest request,
+                                              ConstructionSiteDto site) {
+        CarrierSnapshot carrier = request.getCarrier();
+        if (carrier == null) {
+            logRouteWarning(requestId, "MISSING_CARRIER",
+                "carrier snapshot must be provided for LOAD_CARRIER mode");
+            return emptyPlan(request.getConstructionSiteId(), 0);
+        }
+
+        Map<String, MaterialDemand> demands = buildMaterialDemands(site);
+        logDemandSnapshot(requestId, "INITIAL", demands);
+
+        List<MarketDto> candidateMarkets = loadCandidateMarkets(request.getConstructionSiteId());
+        enrichSellerCounts(demands, candidateMarkets);
+
+        List<DeliveryRunDto> runs = new ArrayList<>();
+        int runIndex = 1;
+
+        // Credit what's already in the ship's hold up front, exactly like the DIRECT flow -
+        // it needs no market visit, only a flight to the carrier.
+        RunComputationResult onboardResult = buildOnboardCargoRun(runIndex, demands, request.getOnboardCommodities());
+        if (onboardResult != null) {
+            runs.add(onboardResult.runDto);
+            logRunCompletion(requestId, onboardResult);
+            runIndex++;
+        }
+
+        // Whatever the carrier already holds also reduces what still needs to be loaded onto it.
+        applyExistingHoldings(demands, carrier.getHold());
+        logDemandSnapshot(requestId, "POST_EXISTING_HOLDINGS", demands);
+
+        double targetBeforeCap = remainingDemand(demands.values());
+        if (targetBeforeCap <= EPSILON) {
+            logRouteWarning(requestId, "NO_DEMAND",
+                "construction site %s has no outstanding demand once carrier/onboard holdings are accounted for"
+                    .formatted(request.getConstructionSiteId()));
+            return emptyPlan(request.getConstructionSiteId(), 1.0);
+        }
+
+        capDemandToCarrierSpace(demands, carrier.getFreeSpace());
+        double cappedTarget = remainingDemand(demands.values());
+        logDemandSnapshot(requestId, "POST_CARRIER_CAP", demands);
+        if (cappedTarget <= EPSILON) {
+            logRouteWarning(requestId, "NO_CARRIER_SPACE",
+                "carrier %s has no free space for outstanding demand".formatted(carrier.getCarrierId()));
+            return emptyPlan(request.getConstructionSiteId(), 0);
+        }
+
+        List<MarketInventory> inventories = buildMarketInventories(candidateMarkets, demands.keySet());
+        logCandidateMarkets(requestId, candidateMarkets, inventories);
+
+        double onboardTons = sumOnboardTons(request.getOnboardCommodities());
+        double firstMarketRunCapacity = request.getCargoCapacityTons() - onboardTons;
+        if (firstMarketRunCapacity < EPSILON) {
+            logRouteWarning(requestId, "CAPACITY_UNDERSHOOT",
+                "onboardTons=%s exceeds cargoCapacityTons=%s; using full capacity for the first run"
+                    .formatted(formatDouble(onboardTons), formatDouble(request.getCargoCapacityTons())));
+            firstMarketRunCapacity = request.getCargoCapacityTons();
+        }
+        boolean firstMarketRun = true;
+        while (hasRemainingDemand(demands) && hasUsefulMarkets(inventories, demands)) {
+            double runCapacity = firstMarketRun ? firstMarketRunCapacity : request.getCargoCapacityTons();
+            firstMarketRun = false;
+            logRunStart(requestId, runIndex, demands, request);
+            RunComputationResult runResult = buildSingleRun(requestId, runIndex, inventories, demands, runCapacity,
+                request, carrier.getSystemName());
+            if (runResult == null || runResult.deliveredTonnage <= EPSILON) {
+                logRouteWarning(requestId, "RUN_ABORTED",
+                    "run %d delivered no tonnage; stopping optimization".formatted(runIndex));
+                break;
+            }
+            runs.add(runResult.runDto);
+            logRunCompletion(requestId, runResult);
+            logDemandSnapshot(requestId, "POST_RUN_" + runIndex, demands);
+            runIndex++;
+        }
+
+        RoutePlanDto plan = new RoutePlanDto();
+        plan.setConstructionSiteId(request.getConstructionSiteId());
+        plan.setRuns(runs);
+        double remaining = remainingDemand(demands.values());
+        double coverage = cappedTarget <= EPSILON ? 1.0 : (cappedTarget - remaining) / cappedTarget;
+        plan.setCoverageFraction(Math.max(0, Math.min(1, coverage)));
+        logRouteSummary(requestId, runs, coverage, demands, inventories, cappedTarget);
+        return plan;
+    }
+
+    /**
+     * Subtracts commodities already present in some external holding (e.g. a carrier's hold)
+     * from remaining demand, without generating a purchase/run - the material simply doesn't
+     * need to be acquired again.
+     *
+     * @param demands  remaining material demands, mutated in place
+     * @param holdings commodity id -> quantity already held
+     */
+    private void applyExistingHoldings(Map<String, MaterialDemand> demands, Map<Long, Integer> holdings) {
+        if (holdings == null || holdings.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<Long, Integer> entry : holdings.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) {
+                continue;
+            }
+            MaterialDemand demand = demands.get("id:" + entry.getKey());
+            if (demand != null) {
+                demand.consume(entry.getValue());
+            }
+        }
+    }
+
+    /**
+     * Caps the combined outstanding demand to the carrier's free cargo space, allocating in
+     * descending scarcity order ({@code scarcityWeight}, i.e. rarest commodities first) so that
+     * scarce commodities are prioritized over common ones when the total demand exceeds what the
+     * carrier can hold. A common commodity dropped here can be topped up on a later trip; a
+     * scarce one might not be available at all by then, so it must not be the one sacrificed.
+     *
+     * @param demands   remaining material demands, mutated in place so their combined
+     *                  {@code remaining} never exceeds {@code freeSpace}
+     * @param freeSpace the carrier's free cargo space, in tons
+     */
+    private void capDemandToCarrierSpace(Map<String, MaterialDemand> demands, int freeSpace) {
+        double budget = Math.max(0, freeSpace);
+        List<MaterialDemand> byScarcity = demands.values().stream()
+            .filter(MaterialDemand::hasRemaining)
+            .sorted(Comparator.comparingDouble((MaterialDemand d) -> d.scarcityWeight).reversed())
+            .collect(Collectors.toList());
+        for (MaterialDemand demand : byScarcity) {
+            if (budget <= EPSILON) {
+                demand.remaining = 0;
+                continue;
+            }
+            double allocate = Math.min(demand.remaining, budget);
+            demand.remaining = allocate;
+            budget -= allocate;
+        }
     }
 
     private void enrichSellerCounts(Map<String, MaterialDemand> demands, List<MarketDto> markets) {
@@ -469,25 +701,28 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         for (MarketInventory inventory : inventories) {
             candidateOrder++;
             if (visited.contains(inventory)) {
-                logCandidateEvaluation(trace, inventory, candidateOrder, 0, 0, 0, 0, false, "ALREADY_VISITED", capacityLimit);
+                logCandidateEvaluation(trace, inventory, candidateOrder, 0, 0, 0, 0, 0, 0, false, "ALREADY_VISITED", capacityLimit);
                 continue;
             }
             
             double potentialLoad = computePotentialLoad(inventory, demands, capacityLimit);
             if (potentialLoad <= EPSILON) {
-                logCandidateEvaluation(trace, inventory, candidateOrder, potentialLoad, 0, 0, 0, false, "NO_MATCHING_STOCK", capacityLimit);
+                logCandidateEvaluation(trace, inventory, candidateOrder, potentialLoad, 0, 0, 0, 0, 0, false, "NO_MATCHING_STOCK", capacityLimit);
                 continue;
             }
             
             double scarcityBonus = computeScarcityBonus(inventory, demands);
             double systemMultiplier = computeSystemMultiplier(inventory, context);
             double stationTypeMultiplier = computeStationTypeMultiplier(inventory);
+            double hubMultiplier = computeHubMultiplier(inventory);
 
-            // Score combines load potential, scarcity, and system jump/dock-approach considerations
-            double score = potentialLoad * systemMultiplier * stationTypeMultiplier
+            // Score combines load potential, scarcity, and system jump/dock-approach/hub considerations
+            double score = potentialLoad * systemMultiplier * stationTypeMultiplier * hubMultiplier
                 + SCARCITY_WEIGHT_FACTOR * scarcityBonus;
+            // Each multiplier is logged under its own name: this trace is the documented tool for
+            // diagnosing route decisions, so a field called systemMultiplier must mean exactly that.
             logCandidateEvaluation(trace, inventory, candidateOrder, potentialLoad, scarcityBonus,
-                systemMultiplier * stationTypeMultiplier, score, true, "OK", capacityLimit);
+                systemMultiplier, stationTypeMultiplier, hubMultiplier, score, true, "OK", capacityLimit);
             
             if (score > bestScore + EPSILON) {
                 bestScore = score;
@@ -622,6 +857,17 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         return PLANETARY_STATION_TYPES.contains(stationType.toLowerCase(Locale.ROOT))
             ? PLANETARY_STATION_PENALTY
             : 1.0;
+    }
+
+    /**
+     * Rewards markets the player has flagged as a bulk supply hub (e.g. a Brewer Corporation
+     * station), since those are curated to reliably restock the commodities being hauled.
+     *
+     * @param inventory the candidate market
+     * @return {@link #SUPPLY_HUB_BONUS} when the market is flagged as a supply hub, else {@code 1.0}
+     */
+    private double computeHubMultiplier(MarketInventory inventory) {
+        return inventory.market.isSupplyHub() ? SUPPLY_HUB_BONUS : 1.0;
     }
 
     private boolean isBetterTieCandidate(MarketInventory challenger,
@@ -879,6 +1125,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
                                         double potentialLoad,
                                         double scarcityBonus,
                                         double systemMultiplier,
+                                        double stationTypeMultiplier,
+                                        double hubMultiplier,
                                         double score,
                                         boolean feasible,
                                         String reason,
@@ -886,7 +1134,7 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
         if (!log.isDebugEnabled()) {
             return;
         }
-        log.debug("ROUTE_STEP requestId={} runIndex={} legIndex={} candidateOrder={} marketId={} marketSystem={} currentSystem={} potentialLoad={} scarcityBonus={} systemMultiplier={} score={} capacityLimit={} feasible={} reason={}",
+        log.debug("ROUTE_STEP requestId={} runIndex={} legIndex={} candidateOrder={} marketId={} marketSystem={} currentSystem={} potentialLoad={} scarcityBonus={} systemMultiplier={} stationTypeMultiplier={} hubMultiplier={} score={} capacityLimit={} feasible={} reason={}",
             trace.requestId(),
             trace.runIndex(),
             trace.legIndex(),
@@ -897,6 +1145,8 @@ public class GreedyRouteOptimizationService implements RouteOptimizationService 
             formatDouble(potentialLoad),
             formatDouble(scarcityBonus),
             formatDouble(systemMultiplier),
+            formatDouble(stationTypeMultiplier),
+            formatDouble(hubMultiplier),
             formatDouble(score),
             formatDouble(capacityLimit),
             feasible,

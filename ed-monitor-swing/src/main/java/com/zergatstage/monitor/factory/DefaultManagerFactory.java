@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.zergatstage.monitor.service.managers.AsteroidManager;
 import com.zergatstage.monitor.service.CommodityRegistry;
 import com.zergatstage.monitor.service.ConstructionSiteManager;
+import com.zergatstage.monitor.service.managers.CarrierManager;
 import com.zergatstage.monitor.service.managers.DroneManager;
 import com.zergatstage.monitor.service.managers.EventLogManager;
 import com.zergatstage.monitor.service.managers.MarketDataParser;
@@ -24,6 +25,7 @@ public class DefaultManagerFactory implements ManagerFactory {
     private final MarketDataParser marketDataParser;
     private final MarketDataUpdateService marketDataUpdateService;
     private final EventLogManager eventLogManager;
+    private final CarrierManager carrierManager;
     private volatile String currentBaseUrl;
 
     public static  DefaultManagerFactory getInstance() {
@@ -48,12 +50,15 @@ public class DefaultManagerFactory implements ManagerFactory {
         this.marketDataUpdateService = new MarketDataUpdateService(
                this.commodityRegistry,
                 this.getMarketDataParser());
+        this.carrierManager = CarrierManager.getInstance();
 
         this.currentBaseUrl = System.getProperty("ed.server.baseUrl", System.getenv().getOrDefault("ED_SERVER_BASE_URL", "http://localhost:50080"));
         try {
             this.marketDataUpdateService.setHttpService(new MarketDataHttpService(currentBaseUrl));
             // Hook up construction site HTTP sync (every ~10s inside manager)
             this.constructionSiteManager.setHttpService(new com.zergatstage.monitor.service.ConstructionSitesHttpService(currentBaseUrl));
+            // Hook up carrier HTTP sync (every ~10s inside manager)
+            this.carrierManager.setHttpService(new com.zergatstage.monitor.service.CarrierHttpService(currentBaseUrl));
             // Initial pull from server to populate cache after restart (best-effort)
             this.marketDataUpdateService.refreshFromServer();
         } catch (IllegalArgumentException ignored) {
@@ -66,6 +71,8 @@ public class DefaultManagerFactory implements ManagerFactory {
             this.marketDataUpdateService.setHttpService(new MarketDataHttpService(baseUrl));
             this.constructionSiteManager.setHttpService(
                     new com.zergatstage.monitor.service.ConstructionSitesHttpService(baseUrl));
+            this.carrierManager.setHttpService(
+                    new com.zergatstage.monitor.service.CarrierHttpService(baseUrl));
             this.currentBaseUrl = baseUrl;
             log.info("HTTP services switched to {}", baseUrl);
         } catch (IllegalArgumentException e) {

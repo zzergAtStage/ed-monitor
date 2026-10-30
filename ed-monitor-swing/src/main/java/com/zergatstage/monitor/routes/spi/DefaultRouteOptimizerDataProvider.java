@@ -96,12 +96,16 @@ public class DefaultRouteOptimizerDataProvider implements RouteOptimizerDataProv
                 .toList();
             if (!matchingItems.isEmpty()) {
                 // TODO(route-optimizer): replace client-side filtering with dedicated "candidate markets" endpoint.
+                // supplyHub must be carried over: this trimmed copy is what the optimizer scores,
+                // so dropping the flag here would make the player's hub marking a no-op.
                 candidates.add(new MarketDto(
                     market.getMarketId(),
                     market.getStationName(),
                     market.getStationType(),
                     market.getSystemName(),
-                    new ArrayList<>(matchingItems)
+                    new ArrayList<>(matchingItems),
+                    market.isSupplyHub(),
+                    market.getLastUpdated()
                 ));
             }
         }

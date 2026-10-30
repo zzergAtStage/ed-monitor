@@ -4,9 +4,12 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import lombok.*;
 import jakarta.persistence.Id;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +28,20 @@ public class Market {
     private String stationName;
     private String stationType;
     private String systemName;
+
+    /**
+     * Player-marked bulk supply hub (e.g. a Brewer Corporation station) that stocks the full
+     * construction material set. Set manually via the API; never derived from journal data.
+     */
+    @org.hibernate.annotations.ColumnDefault("false")
+    @jakarta.persistence.Column(nullable = false)
+    private boolean supplyHub;
+
+    /**
+     * When this market's stock figures were last refreshed from the game's Market.json.
+     * Used to show the player how stale the numbers are.
+     */
+    private Instant lastUpdated;
 
     @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
@@ -59,6 +76,16 @@ public class Market {
      */
     public MarketItem getItem(Long commodityId) {
         return items.get(commodityId);
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        lastUpdated = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        lastUpdated = Instant.now();
     }
 
 //    @Override

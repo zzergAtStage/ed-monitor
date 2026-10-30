@@ -140,6 +140,18 @@ public class RouteOptimizerController {
     }
 
     /**
+     * Submits an arbitrary unit of work to this controller's background executor, so callers
+     * (e.g. a "mark as supply hub" HTTP call triggered from the UI) can keep I/O off the EDT
+     * without spinning up their own thread pool. The task is responsible for hopping back to the
+     * EDT itself (e.g. via {@link SwingUtilities#invokeLater}) if it needs to touch Swing state.
+     *
+     * @param task unit of work to run off the EDT
+     */
+    public void runAsync(Runnable task) {
+        executorService.submit(task);
+    }
+
+    /**
      * Stops internal background processing. Should be invoked when the UI is disposed.
      */
     public void shutdown() {

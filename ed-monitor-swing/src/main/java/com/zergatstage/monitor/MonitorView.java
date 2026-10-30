@@ -31,6 +31,7 @@ import com.zergatstage.monitor.component.ConstructionSitePanel;
 import com.zergatstage.monitor.component.DictionaryManagerDialog;
 import com.zergatstage.monitor.component.DroneProvisionerPanel;
 import com.zergatstage.monitor.component.EventViewerPanel;
+import com.zergatstage.monitor.component.HaulingPanel;
 import com.zergatstage.monitor.component.ServerManagementMenu;
 import com.zergatstage.monitor.config.UiConstants;
 import com.zergatstage.monitor.theme.AppTheme;
@@ -48,6 +49,8 @@ public class MonitorView {
     private final DroneProvisionerPanel droneProvisionerPanel;
     private final ConstructionSitePanel constructionSitePanel;
     private final EventViewerPanel eventViewerPanel;
+    private final HaulingPanel haulingPanel;
+    private JTabbedPane tabs;
     private float currentOpacity = 0.6f;
     private boolean overlayMode = false;
 
@@ -59,6 +62,13 @@ public class MonitorView {
         droneProvisionerPanel = new DroneProvisionerPanel();
         constructionSitePanel = new ConstructionSitePanel();
         eventViewerPanel = new EventViewerPanel();
+        haulingPanel = new HaulingPanel();
+        constructionSitePanel.setPlanRouteListener(marketId -> {
+            haulingPanel.selectSite(marketId);
+            if (tabs != null) {
+                tabs.setSelectedComponent(haulingPanel);
+            }
+        });
         // Status labels
         Image icon = null;
         try {
@@ -69,8 +79,10 @@ public class MonitorView {
             log.error("Failed to load application icon", e);
         }
 
-        // Ensure the app stays on top when not minimized
-        frame.setAlwaysOnTop(false);
+        // Always-on-top is what makes overlay mode an actual overlay: without it the
+        // window drops behind Elite Dangerous as soon as the game regains focus.
+        // Keep it tied to overlayMode so a normal (decorated) window behaves normally.
+        frame.setAlwaysOnTop(overlayMode);
         KeyBindingUtil.installDoubleEscapeToMinimize(frame);
 
         buildUI();
@@ -84,8 +96,9 @@ public class MonitorView {
         // Main panel with tabs
 
         JPanel mainPanel = new JPanel(new BorderLayout());
-        JTabbedPane tabs = new JTabbedPane();
+        tabs = new JTabbedPane();
         tabs.addTab("Construction Sites", constructionSitePanel);
+        tabs.addTab("Hauling", haulingPanel);
         tabs.addTab("Asteroid provisioner", droneProvisionerPanel);
         tabs.addTab("Events", eventViewerPanel);
 
@@ -261,6 +274,8 @@ public class MonitorView {
         forceOpaque();
         frame.dispose();
         frame.setUndecorated(enable);
+        // Re-assert always-on-top after the peer was destroyed by dispose().
+        frame.setAlwaysOnTop(enable);
 
         // Apply opacity if supported in overlay mode; otherwise revert to 1.0
         if (enable) {
@@ -277,7 +292,12 @@ public class MonitorView {
 
         frame.setSize(size);
         frame.setLocation(loc);
-        if (wasVisible) frame.setVisible(true);
+        if (wasVisible) {
+            frame.setVisible(true);
+            if (enable) {
+                frame.toFront();
+            }
+        }
     }
 
     private boolean applyWindowOpacity() {

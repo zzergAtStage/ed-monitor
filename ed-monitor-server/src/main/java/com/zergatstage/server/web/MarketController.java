@@ -43,5 +43,21 @@ public class MarketController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    /**
+     * Sets or clears the player-controlled supplyHub flag on a market. This is the only
+     * endpoint that may change the flag; regular market upserts always preserve the stored
+     * value.
+     *
+     * @param id    the market id
+     * @param value the new supplyHub value
+     * @return the updated market, or 404 if no market with that id exists
+     */
+    @PutMapping("/{id}/supply-hub")
+    public ResponseEntity<MarketDto> setSupplyHub(@PathVariable Long id, @RequestParam boolean value) {
+        return service.setSupplyHub(id, value)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
 

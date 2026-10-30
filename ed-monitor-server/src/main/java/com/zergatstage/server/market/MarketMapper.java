@@ -20,6 +20,8 @@ public class MarketMapper {
                 .stationName(dto.getStationName())
                 .stationType(dto.getStationType())
                 .systemName(dto.getSystemName())
+                .supplyHub(dto.isSupplyHub())
+                .lastUpdated(dto.getLastUpdated())
                 .items(new HashMap<>())
                 .build();
 
@@ -59,6 +61,8 @@ public class MarketMapper {
         dto.setStationName(entity.getStationName());
         dto.setStationType(entity.getStationType());
         dto.setSystemName(entity.getSystemName());
+        dto.setSupplyHub(entity.isSupplyHub());
+        dto.setLastUpdated(entity.getLastUpdated());
         List<MarketItemDto> items = entity.getItems().values().stream()
                 .map(MarketMapper::toDto)
                 .collect(Collectors.toList());

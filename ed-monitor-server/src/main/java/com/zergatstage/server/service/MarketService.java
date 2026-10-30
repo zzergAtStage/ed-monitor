@@ -28,8 +28,25 @@ public class MarketService {
     @Transactional
     public List<MarketDto> upsertAll(List<MarketDto> incoming) {
         Map<Long, Commodity> commodityById = ensureCommodities(incoming);
+
+        // Incoming payloads are derived from the game's Market.json and never carry the
+        // player-set supplyHub flag. Load the currently-stored markets in one batch (avoiding
+        // N+1 lookups) so that flag can be preserved across this full-entity replace instead of
+        // being silently wiped back to false on every refresh.
+        Set<Long> incomingIds = incoming.stream()
+                .filter(Objects::nonNull)
+                .map(MarketDto::getMarketId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Market> existingById = marketRepository.findAllById(incomingIds).stream()
+                .collect(Collectors.toMap(Market::getMarketId, m -> m));
+
         List<Market> toSave = incoming.stream()
-                .map(dto -> MarketMapper.toEntity(dto, commodityById))
+                .map(dto -> {
+                    Market entity = MarketMapper.toEntity(dto, commodityById);
+                    preserveSupplyHub(entity, dto, existingById.get(dto.getMarketId()));
+                    return entity;
+                })
                 .toList();
         List<Market> saved = marketRepository.saveAll(toSave);
         return saved.stream().map(MarketMapper::toDto).collect(Collectors.toList());
@@ -49,8 +66,43 @@ public class MarketService {
         dto.setMarketId(id);
         Map<Long, Commodity> commodityById = ensureCommodities(List.of(dto));
         Market merged = MarketMapper.toEntity(dto, commodityById);
+        // Same rationale as upsertAll: don't let a Market.json-derived update wipe a
+        // previously-set supplyHub flag just because the incoming DTO defaults it to false.
+        preserveSupplyHub(merged, dto, marketRepository.findById(id).orElse(null));
         Market saved = marketRepository.save(merged);
         return Optional.of(MarketMapper.toDto(saved));
+    }
+
+    /**
+     * Sets the player-controlled supplyHub flag on a market. This is the only path that may
+     * change the flag — {@link #upsertAll} and {@link #updateDto} always preserve the stored
+     * value instead.
+     *
+     * @param id    the market id
+     * @param value the new supplyHub value
+     * @return the updated market DTO, or empty if no market with that id exists
+     */
+    @Transactional
+    public Optional<MarketDto> setSupplyHub(Long id, boolean value) {
+        return marketRepository.findById(id).map(market -> {
+            market.setSupplyHub(value);
+            return MarketMapper.toDto(marketRepository.save(market));
+        });
+    }
+
+    /**
+     * Preserves the stored supplyHub flag across a full-entity replace triggered by a
+     * Market.json refresh. Market.json never contains this player-set metadata, so a DTO's
+     * default {@code false} must never clobber a previously stored {@code true}; only an
+     * explicit {@code true} on the incoming DTO is allowed to change the flag here.
+     *
+     * @param entity   the entity about to be saved
+     * @param dto      the incoming DTO
+     * @param existing the currently-stored market, or {@code null} if this is a new market
+     */
+    private void preserveSupplyHub(Market entity, MarketDto dto, Market existing) {
+        boolean preserved = dto.isSupplyHub() || (existing != null && existing.isSupplyHub());
+        entity.setSupplyHub(preserved);
     }
 
     private Map<Long, Commodity> ensureCommodities(List<MarketDto> payload) {
