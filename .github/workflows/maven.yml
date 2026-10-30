@@ -101,7 +101,7 @@ jobs:
       with:
         tag: ${{ steps.version.outputs.VERSION }}
         name: Release ${{ steps.version.outputs.VERSION }}
-        draft: false
+        draft: true
         prerelease: false
         artifacts: 'dist/ed-monitor-*-windows-x64.zip'
         artifactErrorsFailBuild: true
