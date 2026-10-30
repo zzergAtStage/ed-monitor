@@ -73,7 +73,7 @@ public class FleetCarrier {
      * Timestamp of the last update to this entity. Automatically set on persist and update.
      */
     @org.hibernate.annotations.ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant lastUpdated;
 
     /**

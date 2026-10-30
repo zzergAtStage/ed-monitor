@@ -30,7 +30,7 @@ public class ConstructionSite{
     private long version;
 
     @org.hibernate.annotations.ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant lastUpdated;
 
     /**
